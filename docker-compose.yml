@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: car-rental-db
+    environment:
+      POSTGRES_USER: car_rental_user
+      POSTGRES_PASSWORD: car_rental_password
+      POSTGRES_DB: car_rental_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - car-rental-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U car_rental_user -d car_rental_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend FastAPI
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: car-rental-backend
+    environment:
+      DATABASE_URL: postgresql://car_rental_user:car_rental_password@postgres:5432/car_rental_db
+      SECRET_KEY: your-secret-key-change-in-production
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      ENVIRONMENT: development
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - /app/__pycache__
+    networks:
+      - car-rental-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Frontend React
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: car-rental-frontend
+    environment:
+      REACT_APP_API_URL: http://localhost:8000
+      REACT_APP_ENV: development
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - car-rental-network
+    depends_on:
+      - backend
+    command: npm start
+
+  # PgAdmin (Optional - for database management)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: car-rental-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@carrental.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "5050:80"
+    networks:
+      - car-rental-network
+    depends_on:
+      - postgres
+    profiles:
+      - tools
+
+networks:
+  car-rental-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
