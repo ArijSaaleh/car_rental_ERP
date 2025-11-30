@@ -97,6 +97,7 @@ class Vehicle(Base):
     
     # Relationships
     agency = relationship("Agency", back_populates="vehicles")
+    bookings = relationship("Booking", back_populates="vehicle")
     
     def __repr__(self):
         return f"<Vehicle(id={self.id}, license_plate={self.license_plate}, brand={self.brand}, model={self.model})>"

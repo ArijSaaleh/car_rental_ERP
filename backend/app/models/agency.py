@@ -62,6 +62,10 @@ class Agency(Base):
     # Relationships
     users = relationship("User", back_populates="agency", cascade="all, delete-orphan")
     vehicles = relationship("Vehicle", back_populates="agency", cascade="all, delete-orphan")
+    customers = relationship("Customer", back_populates="agency", cascade="all, delete-orphan")
+    bookings = relationship("Booking", back_populates="agency", cascade="all, delete-orphan")
+    contracts = relationship("Contract", back_populates="agency", cascade="all, delete-orphan")
+    payments = relationship("Payment", back_populates="agency", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<Agency(id={self.id}, name={self.name}, plan={self.subscription_plan})>"

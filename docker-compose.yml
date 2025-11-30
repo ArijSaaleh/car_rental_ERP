@@ -1,9 +1,7 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:15-alpine
+    image: postgres:latest
     container_name: car-rental-db
     environment:
       POSTGRES_USER: car_rental_user
