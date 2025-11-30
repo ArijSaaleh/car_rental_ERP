@@ -2,6 +2,8 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import ProprietaireDashboard from './pages/ProprietaireDashboard';
+import SuperAdminDashboard from './pages/SuperAdmin/SuperAdminDashboard';
 import { authService } from './services/auth.service';
 import './App.css';
 
@@ -21,7 +23,23 @@ function App() {
             path="/dashboard"
             element={
               <ProtectedRoute>
+                <ProprietaireDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard-old"
+            element={
+              <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/super-admin"
+            element={
+              <ProtectedRoute>
+                <SuperAdminDashboard />
               </ProtectedRoute>
             }
           />

@@ -1,6 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Box, Button, Card, CardContent, TextField, Typography, Grid, IconButton, Alert } from '@mui/material';
-import { Camera, Check, Close } from '@mui/icons-material';
+import { Box, Button, Card, CardContent, TextField, Typography, Grid, IconButton, Alert, AppBar, Toolbar, Avatar, Chip, Stack, Paper, Stepper, Step, StepLabel } from '@mui/material';
+import { Camera, Check, Close, DirectionsCar, Assignment, PhotoCamera, Send, Logout } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import { authService } from '../services/auth.service';
+import { gradients, animations } from '../theme/theme';
 
 interface VehicleInspection {
   vehicleId: number;
@@ -14,6 +17,7 @@ interface VehicleInspection {
 }
 
 const AgentParkInterface: React.FC = () => {
+  const [activeStep, setActiveStep] = useState(0);
   const [inspection, setInspection] = useState<VehicleInspection>({
     vehicleId: 0,
     licensePlate: '',
@@ -30,6 +34,9 @@ const AgentParkInterface: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const navigate = useNavigate();
+
+  const steps = ['Info Véhicule', 'Photos', 'État & Notes', 'Validation'];
 
   useEffect(() => {
     // Enregistrer le service worker
@@ -115,12 +122,26 @@ const AgentParkInterface: React.FC = () => {
           notes: ''
         });
         setSuccessMessage('');
+        setActiveStep(0);
       }, 2000);
       
     } catch (error) {
       console.error('Erreur soumission:', error);
       alert('Erreur lors de l\'enregistrement');
     }
+  };
+
+  const handleLogout = async () => {
+    await authService.logout();
+    navigate('/login');
+  };
+
+  const handleNext = () => {
+    setActiveStep((prev) => prev + 1);
+  };
+
+  const handleBack = () => {
+    setActiveStep((prev) => prev - 1);
   };
 
   return (
@@ -144,7 +165,7 @@ const AgentParkInterface: React.FC = () => {
                 fullWidth
                 label="Plaque d'immatriculation"
                 value={inspection.licensePlate}
-                onChange={(e) => setInspection({ ...inspection, licensePlate: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInspection({ ...inspection, licensePlate: e.target.value })}
                 placeholder="Ex: 123 TUN 4567"
               />
             </Grid>
@@ -155,7 +176,7 @@ const AgentParkInterface: React.FC = () => {
                 fullWidth
                 label="Type d'inspection"
                 value={inspection.inspectionType}
-                onChange={(e) => setInspection({ ...inspection, inspectionType: e.target.value as 'pickup' | 'return' })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInspection({ ...inspection, inspectionType: e.target.value as 'pickup' | 'return' })}
                 SelectProps={{ native: true }}
               >
                 <option value="pickup">Départ</option>
@@ -169,7 +190,7 @@ const AgentParkInterface: React.FC = () => {
                 fullWidth
                 label="Niveau carburant"
                 value={inspection.fuelLevel}
-                onChange={(e) => setInspection({ ...inspection, fuelLevel: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInspection({ ...inspection, fuelLevel: e.target.value })}
                 SelectProps={{ native: true }}
               >
                 <option value="full">Plein</option>
@@ -187,7 +208,7 @@ const AgentParkInterface: React.FC = () => {
                 type="number"
                 label="Kilométrage"
                 value={inspection.mileage}
-                onChange={(e) => setInspection({ ...inspection, mileage: parseInt(e.target.value) || 0 })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInspection({ ...inspection, mileage: parseInt(e.target.value) || 0 })}
                 placeholder="Ex: 45000"
                 InputProps={{ inputProps: { min: 0 } }}
               />
@@ -201,7 +222,7 @@ const AgentParkInterface: React.FC = () => {
                 rows={2}
                 label="Dommages visibles"
                 value={inspection.damages}
-                onChange={(e) => setInspection({ ...inspection, damages: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInspection({ ...inspection, damages: e.target.value })}
                 placeholder="Décrire les rayures, bosses, etc."
               />
             </Grid>
@@ -214,7 +235,7 @@ const AgentParkInterface: React.FC = () => {
                 rows={2}
                 label="Notes additionnelles"
                 value={inspection.notes}
-                onChange={(e) => setInspection({ ...inspection, notes: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInspection({ ...inspection, notes: e.target.value })}
                 placeholder="Autres observations..."
               />
             </Grid>

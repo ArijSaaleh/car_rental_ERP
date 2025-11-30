@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import decode_access_token
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.models.agency import Agency
 
 
@@ -92,3 +92,29 @@ def require_role(allowed_roles: list[str]):
         return current_user
     
     return role_checker
+
+
+def check_permission(minimum_role: UserRole):
+    """
+    Dependency to check if the current user has at least the minimum required role
+    Role hierarchy: SUPER_ADMIN > PROPRIETAIRE > MANAGER > EMPLOYEE
+    """
+    role_hierarchy = {
+        UserRole.SUPER_ADMIN: 4,
+        UserRole.PROPRIETAIRE: 3,
+        UserRole.MANAGER: 2,
+        UserRole.EMPLOYEE: 1
+    }
+    
+    async def permission_checker(current_user: User = Depends(get_current_user)) -> User:
+        current_level = role_hierarchy.get(current_user.role, 0)
+        required_level = role_hierarchy.get(minimum_role, 0)
+        
+        if current_level < required_level:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access forbidden. Minimum required role: {minimum_role.value}"
+            )
+        return current_user
+    
+    return permission_checker

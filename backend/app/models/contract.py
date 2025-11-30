@@ -3,7 +3,8 @@ Contract model for legal documentation and PDF generation
 """
 from datetime import datetime
 from enum import Enum
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, JSON, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Boolean
+from sqlalchemy.dialects.postgresql import UUID, JSON
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -26,7 +27,7 @@ class Contract(Base):
     contract_number = Column(String(50), unique=True, index=True, nullable=False)
     
     # Relations multi-tenant
-    agency_id = Column(Integer, ForeignKey("agencies.id"), nullable=False, index=True)
+    agency_id = Column(UUID(as_uuid=True), ForeignKey("agencies.id"), nullable=False, index=True)
     booking_id = Column(Integer, ForeignKey("bookings.id"), nullable=False, unique=True, index=True)
     
     # Statut
@@ -44,7 +45,7 @@ class Contract(Base):
     
     agent_signature_data = Column(Text, nullable=True)
     agent_signed_at = Column(DateTime, nullable=True)
-    agent_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    agent_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     
     # Conditions Générales de Location (CGL)
     terms_and_conditions = Column(Text, nullable=False)  # CGL de l'agence
@@ -66,3 +67,4 @@ class Contract(Base):
     agency = relationship("Agency", back_populates="contracts")
     booking = relationship("Booking", back_populates="contract")
     agent = relationship("User", foreign_keys=[agent_id])
+    documents = relationship("Document", back_populates="contract", cascade="all, delete-orphan")

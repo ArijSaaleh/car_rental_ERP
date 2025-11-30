@@ -1,12 +1,14 @@
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:latest
+    image: postgres:15-alpine
     container_name: car-rental-db
+    pull_policy: missing
     environment:
       POSTGRES_USER: car_rental_user
       POSTGRES_PASSWORD: car_rental_password
       POSTGRES_DB: car_rental_db
+      PGDATA: /var/lib/postgresql/data/pgdata
     ports:
       - "5432:5432"
     volumes:

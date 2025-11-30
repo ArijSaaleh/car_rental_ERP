@@ -34,7 +34,7 @@ class PaymentResponse(BaseModel):
     card_last4: Optional[str] = None
     card_brand: Optional[str] = None
     description: Optional[str] = None
-    metadata: Optional[Dict[str, Any]] = None
+    payment_metadata: Optional[Dict[str, Any]] = None
     processed_by_user_id: Optional[int] = None
     paid_at: Optional[datetime] = None
     created_at: datetime

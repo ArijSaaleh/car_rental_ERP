@@ -98,14 +98,19 @@ class Vehicle(Base):
     # Relationships
     agency = relationship("Agency", back_populates="vehicles")
     bookings = relationship("Booking", back_populates="vehicle")
+    maintenances = relationship("Maintenance", back_populates="vehicle", cascade="all, delete-orphan")
+    damage_reports = relationship("DamageReport", back_populates="vehicle", cascade="all, delete-orphan")
+    documents = relationship("Document", back_populates="vehicle", cascade="all, delete-orphan")
+    reviews = relationship("Review", back_populates="vehicle", cascade="all, delete-orphan")
+    insurances = relationship("Insurance", back_populates="vehicle", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<Vehicle(id={self.id}, license_plate={self.license_plate}, brand={self.brand}, model={self.model})>"
     
     def is_available(self) -> bool:
         """Check if vehicle is available for rental"""
-        return self.status == VehicleStatus.DISPONIBLE
+        return bool(self.status == VehicleStatus.DISPONIBLE)
     
     def needs_maintenance(self) -> bool:
         """Check if vehicle is in maintenance"""
-        return self.status == VehicleStatus.MAINTENANCE
+        return bool(self.status == VehicleStatus.MAINTENANCE)

@@ -143,7 +143,7 @@ class BookingService:
         available_vehicles = []
         for vehicle in all_vehicles:
             if BookingService.check_vehicle_availability(
-                db, vehicle.id, start_date, end_date, agency_id
+                db, vehicle.vehicle_id, start_date, end_date, agency_id
             ):
                 available_vehicles.append(vehicle)
         
@@ -183,7 +183,7 @@ class BookingService:
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Véhicule non trouvé"
                 )
-            daily_rate = float(vehicle.daily_rate)
+            daily_rate = float(getattr(vehicle, 'daily_rate'))
         
         # Calculs financiers (Tunisie)
         subtotal = daily_rate * duration

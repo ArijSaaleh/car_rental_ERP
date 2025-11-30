@@ -3,7 +3,8 @@ Payment model for payment gateway integration
 """
 from datetime import datetime
 from enum import Enum
-from sqlalchemy import Column, Integer, String, DateTime, Numeric, ForeignKey, Text, JSON
+from sqlalchemy import Column, Integer, String, DateTime, Numeric, ForeignKey, Text
+from sqlalchemy.dialects.postgresql import UUID, JSON
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -43,8 +44,9 @@ class Payment(Base):
     payment_reference = Column(String(100), unique=True, index=True, nullable=False)
     
     # Relations multi-tenant
-    agency_id = Column(Integer, ForeignKey("agencies.id"), nullable=False, index=True)
+    agency_id = Column(UUID(as_uuid=True), ForeignKey("agencies.id"), nullable=False, index=True)
     booking_id = Column(Integer, ForeignKey("bookings.id"), nullable=False, index=True)
+    invoice_id = Column(Integer, ForeignKey("invoices.id"), nullable=True, index=True)
     
     # Informations de paiement
     payment_method = Column(String(30), nullable=False)
@@ -71,8 +73,8 @@ class Payment(Base):
     
     # Metadata
     description = Column(Text, nullable=True)
-    metadata = Column(JSON, nullable=True)
-    processed_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    payment_metadata = Column(JSON, nullable=True)  # Renommé de 'metadata' pour éviter conflit SQLAlchemy
+    processed_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     
     # Horodatage
     paid_at = Column(DateTime, nullable=True)
@@ -82,4 +84,5 @@ class Payment(Base):
     # Relations
     agency = relationship("Agency", back_populates="payments")
     booking = relationship("Booking", back_populates="payments")
+    invoice = relationship("Invoice", back_populates="payments")
     processed_by = relationship("User", foreign_keys=[processed_by_user_id])

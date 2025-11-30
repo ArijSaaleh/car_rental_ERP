@@ -20,16 +20,8 @@ if (-not (Test-Path "backend\.env")) {
     Copy-Item "backend\.env.example" "backend\.env"
 }
 
-# Pull images first (in case of network issues)
-Write-Host "[*] Pulling Docker images..." -ForegroundColor Yellow
-docker-compose pull
-
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "[WARNING] Could not pull some images. Continuing with local build..." -ForegroundColor Yellow
-}
-
-# Build and start containers
-Write-Host "[*] Building and starting containers..." -ForegroundColor Yellow
+# Skip pull, build directly (avoid Docker Hub timeout)
+Write-Host "[*] Building and starting Docker containers (offline mode)..." -ForegroundColor Green
 docker-compose up -d --build
 
 if ($LASTEXITCODE -ne 0) {

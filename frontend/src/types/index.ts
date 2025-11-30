@@ -33,6 +33,8 @@ export interface User {
   id: string;
   email: string;
   full_name: string;
+  first_name?: string;
+  last_name?: string;
   phone?: string;
   role: UserRole;
   agency_id?: string;
@@ -119,3 +121,6 @@ export interface VehicleStats {
   out_of_service: number;
   utilization_rate: number;
 }
+
+// Re-export admin types
+export * from './admin';

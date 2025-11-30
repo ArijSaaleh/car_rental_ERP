@@ -4,6 +4,7 @@ Customer model for client management
 from datetime import datetime
 from enum import Enum
 from sqlalchemy import Column, Integer, String, DateTime, Date, ForeignKey, Boolean, Text
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -22,7 +23,7 @@ class Customer(Base):
     id = Column(Integer, primary_key=True, index=True)
     
     # Multi-tenant
-    agency_id = Column(Integer, ForeignKey("agencies.id"), nullable=False, index=True)
+    agency_id = Column(UUID(as_uuid=True), ForeignKey("agencies.id"), nullable=False, index=True)
     
     # Informations générales
     customer_type = Column(String(20), default=CustomerType.INDIVIDUAL)
@@ -70,3 +71,8 @@ class Customer(Base):
     # Relations
     agency = relationship("Agency", back_populates="customers")
     bookings = relationship("Booking", back_populates="customer")
+    damage_reports = relationship("DamageReport", back_populates="customer")
+    invoices = relationship("Invoice", back_populates="customer")
+    documents = relationship("Document", back_populates="customer")
+    notifications = relationship("Notification", back_populates="customer", cascade="all, delete-orphan")
+    reviews = relationship("Review", back_populates="customer")

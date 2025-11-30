@@ -5,6 +5,7 @@ from datetime import datetime, date
 from enum import Enum
 from typing import Optional
 from sqlalchemy import Column, Integer, String, DateTime, Date, Numeric, ForeignKey, Text, Boolean
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -35,10 +36,10 @@ class Booking(Base):
     booking_number = Column(String(50), unique=True, index=True, nullable=False)
     
     # Relations multi-tenant
-    agency_id = Column(Integer, ForeignKey("agencies.id"), nullable=False, index=True)
-    vehicle_id = Column(Integer, ForeignKey("vehicles.id"), nullable=False, index=True)
+    agency_id = Column(UUID(as_uuid=True), ForeignKey("agencies.id"), nullable=False, index=True)
+    vehicle_id = Column(UUID(as_uuid=True), ForeignKey("vehicles.id"), nullable=False, index=True)
     customer_id = Column(Integer, ForeignKey("customers.id"), nullable=False, index=True)
-    created_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     
     # Dates de réservation
     start_date = Column(Date, nullable=False, index=True)
@@ -85,3 +86,8 @@ class Booking(Base):
     created_by = relationship("User", foreign_keys=[created_by_user_id])
     contract = relationship("Contract", back_populates="booking", uselist=False)
     payments = relationship("Payment", back_populates="booking")
+    damage_reports = relationship("DamageReport", back_populates="booking", cascade="all, delete-orphan")
+    invoices = relationship("Invoice", back_populates="booking", cascade="all, delete-orphan")
+    documents = relationship("Document", back_populates="booking", cascade="all, delete-orphan")
+    review = relationship("Review", back_populates="booking", uselist=False, cascade="all, delete-orphan")
+    booking_discounts = relationship("BookingDiscount", back_populates="booking", cascade="all, delete-orphan")

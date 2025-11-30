@@ -2,12 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.dependencies import get_current_user
 from app.schemas.user import UserLogin, UserCreate, UserResponse, Token
 from app.services.auth import AuthService
-from app.models.user import UserRole
+from app.models.user import User, UserRole
 
 
-router = APIRouter(prefix="/auth", tags=["Authentication"])
+router = APIRouter()
 
 
 @router.post("/login", response_model=Token)
@@ -66,3 +67,13 @@ async def logout():
         "message": "Successfully logged out",
         "detail": "Please remove the access token from your client"
     }
+
+
+@router.get("/me", response_model=UserResponse)
+async def get_current_user_info(
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get current authenticated user information
+    """
+    return current_user

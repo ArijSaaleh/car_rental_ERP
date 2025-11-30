@@ -21,7 +21,16 @@ const Login: React.FC = () => {
     try {
       const response = await authService.login(credentials);
       authService.storeToken(response.access_token);
-      navigate('/dashboard');
+      
+      // Get user info to determine navigation
+      const user = await authService.getCurrentUser();
+      
+      // Navigate based on user role
+      if (user.role === 'super_admin') {
+        navigate('/super-admin');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Échec de la connexion. Veuillez réessayer.');
     } finally {

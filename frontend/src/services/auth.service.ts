@@ -21,7 +21,7 @@ export const authService = {
 
   // Get current user (you would need to implement this endpoint in backend)
   getCurrentUser: async (): Promise<User> => {
-    const response = await apiClient.get<User>('/api/v1/users/me');
+    const response = await apiClient.get<User>('/api/v1/auth/me');
     return response.data;
   },
 

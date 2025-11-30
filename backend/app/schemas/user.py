@@ -30,6 +30,12 @@ class UserUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 
+class UserChangePassword(BaseModel):
+    """Schema for changing user password"""
+    current_password: str = Field(..., min_length=8, max_length=100)
+    new_password: str = Field(..., min_length=8, max_length=100)
+
+
 class UserResponse(UserBase):
     """Schema for user response"""
     id: UUID
