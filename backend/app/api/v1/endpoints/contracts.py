@@ -2,14 +2,16 @@
 Contract endpoints with PDF generation and e-signature
 """
 from datetime import datetime
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from typing import List, Optional
+from uuid import UUID
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_user
-from app.models.user import User
+from app.core.dependencies import get_current_user, verify_agency_access
+from app.models.user import User, UserRole
+from app.models.agency import Agency
 from app.models.contract import Contract, ContractStatus
 from app.models.booking import Booking
 from app.services.pdf_service import PDFContractService
@@ -26,25 +28,50 @@ router = APIRouter()
 @router.post("/", response_model=ContractResponse, status_code=status.HTTP_201_CREATED)
 async def create_contract(
     contract_data: ContractCreate,
+    agency_id: Optional[UUID] = Query(None, description="Agency ID"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    Créer un contrat pour une réservation
+    Create a contract for a booking
+    
+    Role-based access:
+    - Manager/Employees: Can create contracts in their assigned agency
+    - Proprietaire/Super Admin: Must provide agency_id parameter
     """
-    # Vérifier que la réservation existe
+    # Determine target agency
+    target_agency_id = agency_id
+    
+    if current_user.role in [UserRole.MANAGER, UserRole.AGENT_COMPTOIR, UserRole.AGENT_PARC]:  # type: ignore
+        if not current_user.agency_id:  # type: ignore
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Your account is not assigned to an agency"
+            )
+        target_agency_id = current_user.agency_id  # type: ignore
+    else:
+        if not target_agency_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="agency_id parameter is required"
+            )
+    
+    # Verify agency access
+    await verify_agency_access(current_user, target_agency_id, db)
+    
+    # Check that the booking exists
     booking = db.query(Booking).filter(
         Booking.id == contract_data.booking_id,
-        Booking.agency_id == current_user.agency_id
+        Booking.agency_id == target_agency_id
     ).first()
     
     if not booking:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Réservation non trouvée"
+            detail="Booking not found"
         )
     
-    # Vérifier qu'un contrat n'existe pas déjà
+    # Check that a contract doesn't already exist
     existing_contract = db.query(Contract).filter(
         Contract.booking_id == contract_data.booking_id
     ).first()
@@ -52,16 +79,16 @@ async def create_contract(
     if existing_contract:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Un contrat existe déjà pour cette réservation"
+            detail="A contract already exists for this booking"
         )
     
-    # Générer le numéro de contrat
+    # Generate contract number
     contract_number = f"CTR-{booking.booking_number.replace('RES-', '')}"
     
-    # Créer le contrat
+    # Create contract
     new_contract = Contract(
         contract_number=contract_number,
-        agency_id=current_user.agency_id,
+        agency_id=target_agency_id,
         booking_id=contract_data.booking_id,
         terms_and_conditions=contract_data.terms_and_conditions,
         special_clauses=contract_data.special_clauses,
@@ -77,14 +104,39 @@ async def create_contract(
 
 @router.get("/", response_model=List[ContractResponse])
 async def list_contracts(
+    agency_id: Optional[UUID] = Query(None, description="Agency ID"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    Liste tous les contrats de l'agence
+    List all contracts
+    
+    Role-based access:
+    - Manager/Employees: Auto-use their assigned agency
+    - Proprietaire/Super Admin: Must provide agency_id parameter
     """
+    # Determine target agency
+    target_agency_id = agency_id
+    
+    if current_user.role in [UserRole.MANAGER, UserRole.AGENT_COMPTOIR, UserRole.AGENT_PARC]:  # type: ignore
+        if not current_user.agency_id:  # type: ignore
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Your account is not assigned to an agency"
+            )
+        target_agency_id = current_user.agency_id  # type: ignore
+    else:
+        if not target_agency_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="agency_id parameter is required"
+            )
+    
+    # Verify agency access
+    await verify_agency_access(current_user, target_agency_id, db)
+    
     contracts = db.query(Contract).filter(
-        Contract.agency_id == current_user.agency_id
+        Contract.agency_id == target_agency_id
     ).order_by(Contract.created_at.desc()).all()
     
     return contracts
@@ -97,18 +149,22 @@ async def get_contract(
     db: Session = Depends(get_db)
 ):
     """
-    Récupère un contrat spécifique
+    Get a specific contract
+    
+    Role-based access:
+    - Automatically verifies user has access to the contract's agency
     """
-    contract = db.query(Contract).filter(
-        Contract.id == contract_id,
-        Contract.agency_id == current_user.agency_id
-    ).first()
+    # Get contract first to determine its agency
+    contract = db.query(Contract).filter(Contract.id == contract_id).first()
     
     if not contract:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Contrat non trouvé"
+            detail="Contract not found"
         )
+    
+    # Verify access to the contract's agency
+    await verify_agency_access(current_user, contract.agency_id, db)
     
     return contract
 
@@ -120,18 +176,22 @@ async def download_contract_pdf(
     db: Session = Depends(get_db)
 ):
     """
-    Télécharge le PDF du contrat
+    Download the contract PDF
+    
+    Role-based access:
+    - Automatically verifies user has access to the contract's agency
     """
-    contract = db.query(Contract).filter(
-        Contract.id == contract_id,
-        Contract.agency_id == current_user.agency_id
-    ).first()
+    # Get contract first to determine its agency
+    contract = db.query(Contract).filter(Contract.id == contract_id).first()
     
     if not contract:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Contrat non trouvé"
+            detail="Contract not found"
         )
+    
+    # Verify access to the contract's agency
+    await verify_agency_access(current_user, contract.agency_id, db)
     
     # Générer le PDF
     pdf_buffer = PDFContractService.generate_contract_pdf(db, contract)
@@ -153,18 +213,22 @@ async def generate_contract_pdf(
     db: Session = Depends(get_db)
 ):
     """
-    Génère et sauvegarde le PDF du contrat
+    Generate and save the contract PDF
+    
+    Role-based access:
+    - Automatically verifies user has access to the contract's agency
     """
-    contract = db.query(Contract).filter(
-        Contract.id == contract_id,
-        Contract.agency_id == current_user.agency_id
-    ).first()
+    # Get contract first to determine its agency
+    contract = db.query(Contract).filter(Contract.id == contract_id).first()
     
     if not contract:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Contrat non trouvé"
+            detail="Contract not found"
         )
+    
+    # Verify access to the contract's agency
+    await verify_agency_access(current_user, contract.agency_id, db)
     
     # Générer et sauvegarder le PDF
     filepath = PDFContractService.save_contract_pdf(db, contract_id)
@@ -185,26 +249,30 @@ async def sign_contract_customer(
     db: Session = Depends(get_db)
 ):
     """
-    Signature du contrat par le client (signature électronique)
+    Customer contract signature (electronic signature)
+    
+    Role-based access:
+    - Automatically verifies user has access to the contract's agency
     """
-    contract = db.query(Contract).filter(
-        Contract.id == contract_id,
-        Contract.agency_id == current_user.agency_id
-    ).first()
+    # Get contract first to determine its agency
+    contract = db.query(Contract).filter(Contract.id == contract_id).first()
     
     if not contract:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Contrat non trouvé"
+            detail="Contract not found"
         )
+    
+    # Verify access to the contract's agency
+    await verify_agency_access(current_user, contract.agency_id, db)
     
     if contract.status not in [ContractStatus.DRAFT, ContractStatus.PENDING_SIGNATURE]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Le contrat ne peut plus être signé"
+            detail="Contract can no longer be signed"
         )
     
-    # Enregistrer la signature client
+    # Record customer signature
     contract.customer_signature_data = signature_data.signature_data
     contract.customer_signed_at = datetime.utcnow()
     contract.customer_ip_address = signature_data.ip_address
@@ -231,26 +299,30 @@ async def sign_contract_agent(
     db: Session = Depends(get_db)
 ):
     """
-    Signature du contrat par l'agent de l'agence
+    Agent contract signature
+    
+    Role-based access:
+    - Automatically verifies user has access to the contract's agency
     """
-    contract = db.query(Contract).filter(
-        Contract.id == contract_id,
-        Contract.agency_id == current_user.agency_id
-    ).first()
+    # Get contract first to determine its agency
+    contract = db.query(Contract).filter(Contract.id == contract_id).first()
     
     if not contract:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Contrat non trouvé"
+            detail="Contract not found"
         )
+    
+    # Verify access to the contract's agency
+    await verify_agency_access(current_user, contract.agency_id, db)
     
     if contract.status not in [ContractStatus.DRAFT, ContractStatus.PENDING_SIGNATURE]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Le contrat ne peut plus être signé"
+            detail="Contract can no longer be signed"
         )
     
-    # Enregistrer la signature agent
+    # Record agent signature
     contract.agent_signature_data = signature_data.signature_data
     contract.agent_signed_at = datetime.utcnow()
     contract.agent_id = current_user.id
@@ -275,23 +347,27 @@ async def update_contract(
     db: Session = Depends(get_db)
 ):
     """
-    Met à jour un contrat (uniquement si non signé)
+    Update a contract (only if not signed)
+    
+    Role-based access:
+    - Automatically verifies user has access to the contract's agency
     """
-    contract = db.query(Contract).filter(
-        Contract.id == contract_id,
-        Contract.agency_id == current_user.agency_id
-    ).first()
+    # Get contract first to determine its agency
+    contract = db.query(Contract).filter(Contract.id == contract_id).first()
     
     if not contract:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Contrat non trouvé"
+            detail="Contract not found"
         )
+    
+    # Verify access to the contract's agency
+    await verify_agency_access(current_user, contract.agency_id, db)
     
     if contract.status not in [ContractStatus.DRAFT]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Impossible de modifier un contrat en cours de signature ou signé"
+            detail="Cannot modify a contract that is being signed or already signed"
         )
     
     # Mise à jour

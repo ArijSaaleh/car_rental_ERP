@@ -37,6 +37,7 @@ class AdminService:
         # Create agency
         agency = Agency(
             name=request.agency_name,
+            legal_name=request.agency_name,  # Use agency_name as legal_name if not provided
             email=request.email,
             phone=request.phone,
             address=request.address,
@@ -47,10 +48,6 @@ class AdminService:
             subscription_plan=request.subscription_plan,
             is_active=True
         )
-        
-        # Set trial period
-        if request.trial_days > 0:
-            agency.trial_ends_at = datetime.utcnow() + timedelta(days=request.trial_days)
         
         db.add(agency)
         db.flush()
@@ -95,7 +92,6 @@ class AdminService:
             "owner_id": str(owner.id),
             "owner_email": owner.email,
             "subscription_plan": agency.subscription_plan.value,
-            "trial_ends_at": agency.trial_ends_at,
             "message": "Agency onboarded successfully"
         }
     

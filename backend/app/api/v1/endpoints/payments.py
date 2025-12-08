@@ -1,13 +1,15 @@
 """
 Payment endpoints with Tunisian gateway integration
 """
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from typing import List, Optional
+from uuid import UUID
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_user
-from app.models.user import User
+from app.core.dependencies import get_current_user, verify_agency_access
+from app.models.user import User, UserRole
+from app.models.agency import Agency
 from app.models.payment import Payment, PaymentMethod, PaymentStatus
 from app.services.payment_service import PaymentGatewayService
 from app.schemas.payment import (
@@ -23,12 +25,37 @@ router = APIRouter()
 @router.post("/", response_model=PaymentResponse, status_code=status.HTTP_201_CREATED)
 async def create_payment(
     payment_data: PaymentCreate,
+    agency_id: Optional[UUID] = Query(None, description="Agency ID"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    Créer un nouveau paiement
+    Create a new payment
+    
+    Role-based access:
+    - Manager/Employees: Can create payments in their assigned agency
+    - Proprietaire/Super Admin: Must provide agency_id parameter
     """
+    # Determine target agency
+    target_agency_id = agency_id
+    
+    if current_user.role in [UserRole.MANAGER, UserRole.AGENT_COMPTOIR, UserRole.AGENT_PARC]:  # type: ignore
+        if not current_user.agency_id:  # type: ignore
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Your account is not assigned to an agency"
+            )
+        target_agency_id = current_user.agency_id  # type: ignore
+    else:
+        if not target_agency_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="agency_id parameter is required"
+            )
+    
+    # Verify agency access
+    await verify_agency_access(current_user, target_agency_id, db)
+    
     payment = PaymentGatewayService.create_payment(
         db=db,
         booking_id=payment_data.booking_id,
@@ -52,18 +79,22 @@ async def initiate_paymee(
     db: Session = Depends(get_db)
 ):
     """
-    Initie un paiement via Paymee
+    Initiate a payment via Paymee
+    
+    Role-based access:
+    - Automatically verifies user has access to the payment's agency
     """
-    payment = db.query(Payment).filter(
-        Payment.id == payment_id,
-        Payment.agency_id == current_user.agency_id
-    ).first()
+    # Get payment first to determine its agency
+    payment = db.query(Payment).filter(Payment.id == payment_id).first()
     
     if not payment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Paiement non trouvé"
+            detail="Payment not found"
         )
+    
+    # Verify access to the payment's agency
+    await verify_agency_access(current_user, payment.agency_id, db)
     
     # TODO: Récupérer le token Paymee depuis les settings de l'agence
     vendor_token = "YOUR_PAYMEE_VENDOR_TOKEN"
@@ -124,23 +155,27 @@ async def confirm_cash_payment(
     db: Session = Depends(get_db)
 ):
     """
-    Confirme un paiement en espèces
+    Confirm a cash payment
+    
+    Role-based access:
+    - Automatically verifies user has access to the payment's agency
     """
-    payment = db.query(Payment).filter(
-        Payment.id == payment_id,
-        Payment.agency_id == current_user.agency_id
-    ).first()
+    # Get payment first to determine its agency
+    payment = db.query(Payment).filter(Payment.id == payment_id).first()
     
     if not payment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Paiement non trouvé"
+            detail="Payment not found"
         )
+    
+    # Verify access to the payment's agency
+    await verify_agency_access(current_user, payment.agency_id, db)
     
     if payment.payment_method != PaymentMethod.CASH:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Ce paiement n'est pas un paiement en espèces"
+            detail="This payment is not a cash payment"
         )
     
     payment = PaymentGatewayService.record_cash_payment(
@@ -154,14 +189,39 @@ async def confirm_cash_payment(
 
 @router.get("/", response_model=List[PaymentResponse])
 async def list_payments(
+    agency_id: Optional[UUID] = Query(None, description="Agency ID"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    Liste tous les paiements de l'agence
+    List all payments
+    
+    Role-based access:
+    - Manager/Employees: Auto-use their assigned agency
+    - Proprietaire/Super Admin: Must provide agency_id parameter
     """
+    # Determine target agency
+    target_agency_id = agency_id
+    
+    if current_user.role in [UserRole.MANAGER, UserRole.AGENT_COMPTOIR, UserRole.AGENT_PARC]:  # type: ignore
+        if not current_user.agency_id:  # type: ignore
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Your account is not assigned to an agency"
+            )
+        target_agency_id = current_user.agency_id  # type: ignore
+    else:
+        if not target_agency_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="agency_id parameter is required"
+            )
+    
+    # Verify agency access
+    await verify_agency_access(current_user, target_agency_id, db)
+    
     payments = db.query(Payment).filter(
-        Payment.agency_id == current_user.agency_id
+        Payment.agency_id == target_agency_id
     ).order_by(Payment.created_at.desc()).all()
     
     return payments
@@ -169,13 +229,38 @@ async def list_payments(
 
 @router.get("/stats")
 async def get_payment_stats(
+    agency_id: Optional[UUID] = Query(None, description="Agency ID"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    Récupère les statistiques de paiement
+    Get payment statistics
+    
+    Role-based access:
+    - Manager/Employees: Auto-use their assigned agency
+    - Proprietaire/Super Admin: Must provide agency_id parameter
     """
-    stats = PaymentGatewayService.get_payment_stats(db, current_user.agency_id)
+    # Determine target agency
+    target_agency_id = agency_id
+    
+    if current_user.role in [UserRole.MANAGER, UserRole.AGENT_COMPTOIR, UserRole.AGENT_PARC]:  # type: ignore
+        if not current_user.agency_id:  # type: ignore
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Your account is not assigned to an agency"
+            )
+        target_agency_id = current_user.agency_id  # type: ignore
+    else:
+        if not target_agency_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="agency_id parameter is required"
+            )
+    
+    # Verify agency access
+    await verify_agency_access(current_user, target_agency_id, db)
+    
+    stats = PaymentGatewayService.get_payment_stats(db, target_agency_id)
     return stats
 
 
@@ -186,17 +271,21 @@ async def get_payment(
     db: Session = Depends(get_db)
 ):
     """
-    Récupère un paiement spécifique
+    Get a specific payment
+    
+    Role-based access:
+    - Automatically verifies user has access to the payment's agency
     """
-    payment = db.query(Payment).filter(
-        Payment.id == payment_id,
-        Payment.agency_id == current_user.agency_id
-    ).first()
+    # Get payment first to determine its agency
+    payment = db.query(Payment).filter(Payment.id == payment_id).first()
     
     if not payment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Paiement non trouvé"
+            detail="Payment not found"
         )
+    
+    # Verify access to the payment's agency
+    await verify_agency_access(current_user, payment.agency_id, db)
     
     return payment

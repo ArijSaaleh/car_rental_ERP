@@ -7,8 +7,10 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_user, check_permission
+from app.core.dependencies import get_current_user, check_permission, verify_agency_access
 from app.models.user import User, UserRole
+from app.models.agency import Agency
+from uuid import UUID
 from app.models.booking import Booking, BookingStatus
 from app.models.vehicle import Vehicle
 from app.services.booking_service import BookingService
@@ -26,18 +28,43 @@ router = APIRouter()
 @router.post("/check-availability", response_model=VehicleAvailabilityResponse)
 async def check_vehicle_availability(
     request: VehicleAvailabilityRequest,
+    agency_id: Optional[UUID] = Query(None, description="Agency ID"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    Vérifie la disponibilité d'un véhicule pour une période donnée
+    Check vehicle availability for a given period
+    
+    Role-based access:
+    - Manager/Employees: Auto-use their assigned agency
+    - Proprietaire/Super Admin: Must provide agency_id parameter
     """
+    # Determine target agency
+    target_agency_id = agency_id
+    
+    if current_user.role in [UserRole.MANAGER, UserRole.AGENT_COMPTOIR, UserRole.AGENT_PARC]:  # type: ignore
+        if not current_user.agency_id:  # type: ignore
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Your account is not assigned to an agency"
+            )
+        target_agency_id = current_user.agency_id  # type: ignore
+    else:
+        if not target_agency_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="agency_id parameter is required"
+            )
+    
+    # Verify agency access
+    await verify_agency_access(current_user, target_agency_id, db)
+    
     is_available = BookingService.check_vehicle_availability(
         db=db,
         vehicle_id=request.vehicle_id,
         start_date=request.start_date,
         end_date=request.end_date,
-        agency_id=current_user.agency_id
+        agency_id=target_agency_id
     )
     
     conflicts = []
@@ -47,10 +74,10 @@ async def check_vehicle_availability(
             vehicle_id=request.vehicle_id,
             start_date=request.start_date,
             end_date=request.end_date,
-            agency_id=current_user.agency_id
+            agency_id=target_agency_id
         )
     
-    # Calcul du prix si disponible
+    # Calculate price if available
     pricing = None
     if is_available:
         pricing = BookingService.calculate_rental_price(
@@ -58,7 +85,7 @@ async def check_vehicle_availability(
             vehicle_id=request.vehicle_id,
             start_date=request.start_date,
             end_date=request.end_date,
-            agency_id=current_user.agency_id
+            agency_id=target_agency_id
         )
     
     return VehicleAvailabilityResponse(
@@ -83,6 +110,7 @@ async def check_vehicle_availability(
 async def get_available_vehicles(
     start_date: date = Query(...),
     end_date: date = Query(...),
+    agency_id: Optional[UUID] = Query(None, description="Agency ID"),
     brand: Optional[str] = Query(None),
     fuel_type: Optional[str] = Query(None),
     transmission: Optional[str] = Query(None),
@@ -91,8 +119,32 @@ async def get_available_vehicles(
     db: Session = Depends(get_db)
 ):
     """
-    Récupère tous les véhicules disponibles pour une période donnée avec filtres optionnels
+    Get all available vehicles for a given period with optional filters
+    
+    Role-based access:
+    - Manager/Employees: Auto-use their assigned agency
+    - Proprietaire/Super Admin: Must provide agency_id parameter
     """
+    # Determine target agency
+    target_agency_id = agency_id
+    
+    if current_user.role in [UserRole.MANAGER, UserRole.AGENT_COMPTOIR, UserRole.AGENT_PARC]:  # type: ignore
+        if not current_user.agency_id:  # type: ignore
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Your account is not assigned to an agency"
+            )
+        target_agency_id = current_user.agency_id  # type: ignore
+    else:
+        if not target_agency_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="agency_id parameter is required"
+            )
+    
+    # Verify agency access
+    await verify_agency_access(current_user, target_agency_id, db)
+    
     filters = {}
     if brand:
         filters["brand"] = brand
@@ -105,7 +157,7 @@ async def get_available_vehicles(
     
     vehicles = BookingService.get_available_vehicles(
         db=db,
-        agency_id=current_user.agency_id,
+        agency_id=target_agency_id,
         start_date=start_date,
         end_date=end_date,
         filters=filters if filters else None
@@ -130,45 +182,69 @@ async def get_available_vehicles(
 @router.post("/", response_model=BookingResponse, status_code=status.HTTP_201_CREATED)
 async def create_booking(
     booking_data: BookingCreate,
+    agency_id: Optional[UUID] = Query(None, description="Agency ID"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    Créer une nouvelle réservation
-    Accessible par: proprietaire, manager, employee
+    Create a new booking
+    
+    Role-based access:
+    - Manager/Employees: Can create bookings in their assigned agency
+    - Proprietaire/Super Admin: Must provide agency_id parameter
     """
-    # Vérifier la disponibilité
+    # Determine target agency
+    target_agency_id = agency_id
+    
+    if current_user.role in [UserRole.MANAGER, UserRole.AGENT_COMPTOIR, UserRole.AGENT_PARC]:  # type: ignore
+        if not current_user.agency_id:  # type: ignore
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Your account is not assigned to an agency"
+            )
+        target_agency_id = current_user.agency_id  # type: ignore
+    else:
+        if not target_agency_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="agency_id parameter is required"
+            )
+    
+    # Verify agency access
+    await verify_agency_access(current_user, target_agency_id, db)
+    
+    # Check availability
     is_available = BookingService.check_vehicle_availability(
         db=db,
         vehicle_id=booking_data.vehicle_id,
         start_date=booking_data.start_date,
         end_date=booking_data.end_date,
-        agency_id=current_user.agency_id
+        agency_id=target_agency_id
     )
     
     if not is_available:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Le véhicule n'est pas disponible pour cette période"
+            detail="Vehicle is not available for this period"
         )
     
-    # Calculer le prix
+    # Calculate price
     pricing = BookingService.calculate_rental_price(
         db=db,
         vehicle_id=booking_data.vehicle_id,
         start_date=booking_data.start_date,
         end_date=booking_data.end_date,
-        agency_id=current_user.agency_id,
+        agency_id=target_agency_id,
         daily_rate=booking_data.daily_rate
     )
     
-    # Générer le numéro de réservation
-    booking_number = BookingService.generate_booking_number(db, current_user.agency_id)
+    # Generate booking number
+    booking_number = BookingService.generate_booking_number(db, target_agency_id)
     
-    # Créer la réservation
+    # Create booking
     new_booking = Booking(
         booking_number=booking_number,
-        agency_id=current_user.agency_id,
+        agency_id=target_agency_id,
         vehicle_id=booking_data.vehicle_id,
         customer_id=booking_data.customer_id,
         created_by_user_id=current_user.id,
@@ -196,6 +272,7 @@ async def create_booking(
 
 @router.get("/", response_model=List[BookingResponse])
 async def list_bookings(
+    agency_id: Optional[UUID] = Query(None, description="Agency ID"),
     status_filter: Optional[str] = Query(None),
     vehicle_id: Optional[int] = Query(None),
     customer_id: Optional[int] = Query(None),
@@ -205,9 +282,33 @@ async def list_bookings(
     db: Session = Depends(get_db)
 ):
     """
-    Liste toutes les réservations de l'agence avec filtres
+    List all bookings with filters
+    
+    Role-based access:
+    - Manager/Employees: Auto-use their assigned agency
+    - Proprietaire/Super Admin: Must provide agency_id parameter
     """
-    query = db.query(Booking).filter(Booking.agency_id == current_user.agency_id)
+    # Determine target agency
+    target_agency_id = agency_id
+    
+    if current_user.role in [UserRole.MANAGER, UserRole.AGENT_COMPTOIR, UserRole.AGENT_PARC]:  # type: ignore
+        if not current_user.agency_id:  # type: ignore
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Your account is not assigned to an agency"
+            )
+        target_agency_id = current_user.agency_id  # type: ignore
+    else:
+        if not target_agency_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="agency_id parameter is required"
+            )
+    
+    # Verify agency access
+    await verify_agency_access(current_user, target_agency_id, db)
+    
+    query = db.query(Booking).filter(Booking.agency_id == target_agency_id)
     
     if status_filter:
         query = query.filter(Booking.status == status_filter)
@@ -227,18 +328,22 @@ async def get_booking(
     db: Session = Depends(get_db)
 ):
     """
-    Récupère une réservation spécifique
+    Get a specific booking
+    
+    Role-based access:
+    - Automatically verifies user has access to the booking's agency
     """
-    booking = db.query(Booking).filter(
-        Booking.id == booking_id,
-        Booking.agency_id == current_user.agency_id
-    ).first()
+    # Get booking first to determine its agency
+    booking = db.query(Booking).filter(Booking.id == booking_id).first()
     
     if not booking:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Réservation non trouvée"
+            detail="Booking not found"
         )
+    
+    # Verify access to the booking's agency
+    await verify_agency_access(current_user, booking.agency_id, db)
     
     return booking
 
@@ -251,20 +356,24 @@ async def update_booking(
     db: Session = Depends(get_db)
 ):
     """
-    Met à jour une réservation
+    Update a booking
+    
+    Role-based access:
+    - Automatically verifies user has access to the booking's agency
     """
-    booking = db.query(Booking).filter(
-        Booking.id == booking_id,
-        Booking.agency_id == current_user.agency_id
-    ).first()
+    # Get booking first to determine its agency
+    booking = db.query(Booking).filter(Booking.id == booking_id).first()
     
     if not booking:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Réservation non trouvée"
+            detail="Booking not found"
         )
     
-    # Si modification des dates, vérifier disponibilité
+    # Verify access to the booking's agency
+    await verify_agency_access(current_user, booking.agency_id, db)
+    
+    # If dates are modified, check availability
     if booking_update.start_date or booking_update.end_date:
         new_start = booking_update.start_date or booking.start_date
         new_end = booking_update.end_date or booking.end_date
@@ -274,14 +383,14 @@ async def update_booking(
             vehicle_id=booking.vehicle_id,
             start_date=new_start,
             end_date=new_end,
-            agency_id=current_user.agency_id,
+            agency_id=booking.agency_id,
             exclude_booking_id=booking_id
         )
         
         if not is_available:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Le véhicule n'est pas disponible pour cette nouvelle période"
+                detail="Vehicle is not available for this new period"
             )
     
     # Mise à jour des champs
@@ -302,19 +411,23 @@ async def cancel_booking(
     db: Session = Depends(get_db)
 ):
     """
-    Annule une réservation (soft delete)
-    Accessible par: manager et au-dessus
+    Cancel a booking (soft delete)
+    
+    Role-based access:
+    - Only MANAGER and above can cancel bookings
+    - Automatically verifies access to booking's agency
     """
-    booking = db.query(Booking).filter(
-        Booking.id == booking_id,
-        Booking.agency_id == current_user.agency_id
-    ).first()
+    # Get booking first to determine its agency
+    booking = db.query(Booking).filter(Booking.id == booking_id).first()
     
     if not booking:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Réservation non trouvée"
+            detail="Booking not found"
         )
+    
+    # Verify access to the booking's agency
+    await verify_agency_access(current_user, booking.agency_id, db)
     
     booking.status = BookingStatus.CANCELLED
     db.commit()
@@ -331,12 +444,27 @@ async def get_vehicle_calendar(
     db: Session = Depends(get_db)
 ):
     """
-    Récupère le calendrier de réservations d'un véhicule
+    Get booking calendar for a vehicle
+    
+    Role-based access:
+    - Automatically verifies user has access to the vehicle's agency
     """
+    # Get vehicle first to determine its agency
+    vehicle = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
+    
+    if not vehicle:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Vehicle not found"
+        )
+    
+    # Verify access to the vehicle's agency
+    await verify_agency_access(current_user, vehicle.agency_id, db)
+    
     calendar = BookingService.get_vehicle_calendar(
         db=db,
         vehicle_id=vehicle_id,
-        agency_id=current_user.agency_id,
+        agency_id=vehicle.agency_id,
         start_date=start_date,
         end_date=end_date
     )

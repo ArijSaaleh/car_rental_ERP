@@ -23,6 +23,7 @@ class AgencyBase(BaseModel):
 class AgencyCreate(AgencyBase):
     """Schema for creating a new agency"""
     subscription_plan: SubscriptionPlan = SubscriptionPlan.BASIQUE
+    parent_agency_id: Optional[UUID] = None  # For creating branches
 
 
 class AgencyUpdate(BaseModel):
@@ -41,6 +42,7 @@ class AgencyUpdate(BaseModel):
 class AgencyResponse(AgencyBase):
     """Schema for agency response"""
     id: UUID
+    parent_agency_id: Optional[UUID] = None
     subscription_plan: SubscriptionPlan
     subscription_start_date: datetime
     subscription_end_date: Optional[datetime]

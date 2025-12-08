@@ -1,0 +1,747 @@
+import { useEffect, useState } from 'react';
+import { Plus, Search, Edit, Trash2, Building2 } from 'lucide-react';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Card, CardContent, CardHeader } from '../../components/ui/card';
+import { Badge } from '../../components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../../components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../../components/ui/dialog';
+import { Label } from '../../components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
+import { RadioGroup, RadioGroupItem } from '../../components/ui/radio-group';
+import { Alert, AlertDescription } from '../../components/ui/alert';
+import api from '../../services/api';
+import { extractErrorMessage } from '../../utils/errorHandler';
+
+interface Agency {
+  id: string;
+  name: string;
+  legal_name: string;
+  tax_id: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  postal_code?: string;
+  country: string;
+  subscription_plan: string;
+  is_active: boolean;
+  proprietaire_id?: number;
+  proprietaire?: {
+    id: number;
+    full_name: string;
+    email: string;
+  };
+  created_at: string;
+}
+
+interface User {
+  id: number;
+  full_name: string;
+  email: string;
+  role: string;
+}
+
+export default function AgencyManagement() {
+  const [agencies, setAgencies] = useState<Agency[]>([]);
+  const [filteredAgencies, setFilteredAgencies] = useState<Agency[]>([]);
+  const [proprietaires, setProprietaires] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedAgency, setSelectedAgency] = useState<Agency | null>(null);
+  const [error, setError] = useState('');
+  const [formData, setFormData] = useState({
+    name: '',
+    legal_name: '',
+    tax_id: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    postal_code: '',
+    country: 'Tunisia',
+    subscription_plan: 'basique',
+    is_active: true,
+    proprietaire_id: '',
+    owner_email: '',
+    owner_nom: '',
+    owner_prenom: '',
+    owner_phone: '',
+    owner_password: '',
+    create_new_owner: false,
+  });
+
+  useEffect(() => {
+    loadAgencies();
+  }, []);
+
+  useEffect(() => {
+    const filtered = agencies.filter(
+      (agency) =>
+        agency.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        agency.legal_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        agency.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        agency.city.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredAgencies(filtered);
+  }, [searchTerm, agencies]);
+
+  const loadAgencies = async () => {
+    try {
+      const [agenciesRes, usersRes] = await Promise.all([
+        api.get('/admin/agencies'),
+        api.get('/admin/users'),
+      ]);
+      setAgencies(agenciesRes.data);
+      setFilteredAgencies(agenciesRes.data);
+      // Filter only proprietaires
+      const owners = usersRes.data.filter((u: User) => u.role === 'proprietaire');
+      setProprietaires(owners);
+    } catch (err) {
+      setError(extractErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenDialog = (agency?: Agency) => {
+    if (agency) {
+      setSelectedAgency(agency);
+      setFormData({
+        name: agency.name,
+        legal_name: agency.legal_name,
+        tax_id: agency.tax_id,
+        email: agency.email,
+        phone: agency.phone,
+        address: agency.address,
+        city: agency.city,
+        postal_code: agency.postal_code || '',
+        country: agency.country,
+        subscription_plan: agency.subscription_plan,
+        is_active: agency.is_active,
+        proprietaire_id: agency.proprietaire_id?.toString() || '',
+        owner_email: '',
+        owner_nom: '',
+        owner_prenom: '',
+        owner_phone: '',
+        owner_password: '',
+        create_new_owner: false,
+      });
+    } else {
+      setSelectedAgency(null);
+      setFormData({
+        name: '',
+        legal_name: '',
+        tax_id: '',
+        email: '',
+        phone: '',
+        address: '',
+        city: '',
+        postal_code: '',
+        country: 'Tunisia',
+        subscription_plan: 'basique',
+        is_active: true,
+        proprietaire_id: '',
+        owner_email: '',
+        owner_nom: '',
+        owner_prenom: '',
+        owner_phone: '',
+        owner_password: '',
+        create_new_owner: true,
+      });
+    }
+    setDialogOpen(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      if (selectedAgency) {
+        // Update existing agency
+        const payload = {
+          ...formData,
+          proprietaire_id: formData.proprietaire_id || null,
+        };
+        await api.put(`/admin/agencies/${selectedAgency.id}`, payload);
+      } else {
+        // Create new agency with onboarding
+        if (formData.create_new_owner) {
+          // Create new owner and agency
+          const payload = {
+            agency_name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            address: formData.address,
+            city: formData.city,
+            postal_code: formData.postal_code || '',
+            country: formData.country,
+            tax_id: formData.tax_id || '',
+            owner_full_name: `${formData.owner_prenom} ${formData.owner_nom}`,
+            owner_email: formData.owner_email,
+            owner_phone: formData.owner_phone || formData.phone,
+            owner_password: formData.owner_password,
+            subscription_plan: formData.subscription_plan,
+            trial_days: 14,
+          };
+          
+          await api.post('/admin/agencies/onboard', payload);
+        } else {
+          // Associate with existing owner
+          const selectedOwner = proprietaires.find(
+            (p) => p.id.toString() === formData.proprietaire_id
+          );
+          
+          if (!selectedOwner) {
+            setError('Veuillez sélectionner un propriétaire');
+            setLoading(false);
+            return;
+          }
+
+          const payload = {
+            agency_name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            address: formData.address,
+            city: formData.city,
+            postal_code: formData.postal_code || '',
+            country: formData.country,
+            tax_id: formData.tax_id || '',
+            owner_full_name: selectedOwner.full_name,
+            owner_email: selectedOwner.email,
+            owner_phone: formData.phone,
+            owner_password: 'TempPassword123!',
+            subscription_plan: formData.subscription_plan,
+            trial_days: 14,
+          };
+          
+          await api.post('/admin/agencies/onboard', payload);
+        }
+      }
+      await loadAgencies();
+      setDialogOpen(false);
+    } catch (err) {
+      setError(extractErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedAgency) return;
+    setLoading(true);
+
+    try {
+      await api.delete(`/admin/agencies/${selectedAgency.id}`);
+      await loadAgencies();
+      setDeleteDialogOpen(false);
+      setSelectedAgency(null);
+    } catch (err) {
+      setError(extractErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getPlanBadge = (plan: string) => {
+    const colors: Record<string, string> = {
+      basique: 'bg-gray-100 text-gray-800',
+      standard: 'bg-blue-100 text-blue-800',
+      premium: 'bg-purple-100 text-purple-800',
+    };
+    return (
+      <Badge className={colors[plan] || 'bg-gray-100 text-gray-800'}>
+        {plan.charAt(0).toUpperCase() + plan.slice(1)}
+      </Badge>
+    );
+  };
+
+  if (loading && agencies.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg text-slate-600">Chargement...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-3xl font-bold text-slate-900 dark:text-white">
+            Gestion des Agences
+          </h2>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">
+            Administrer toutes les agences de la plateforme
+          </p>
+        </div>
+        <Button onClick={() => handleOpenDialog()} className="gap-2">
+          <Plus className="h-4 w-4" />
+          Créer une agence
+        </Button>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="Rechercher par nom, email ou ville..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Agence</TableHead>
+                <TableHead>Contact</TableHead>
+                <TableHead>Localisation</TableHead>
+                <TableHead>Plan</TableHead>
+                <TableHead>Statut</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredAgencies.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                    Aucune agence trouvée
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredAgencies.map((agency) => (
+                  <TableRow key={agency.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-slate-400" />
+                        <div>
+                          <div className="font-medium">{agency.name}</div>
+                          <div className="text-sm text-slate-500">{agency.legal_name}</div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        <div>{agency.email}</div>
+                        <div className="text-slate-500">{agency.phone}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        <div>{agency.city}</div>
+                        <div className="text-slate-500">{agency.country}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>{getPlanBadge(agency.subscription_plan)}</TableCell>
+                    <TableCell>
+                      <Badge variant={agency.is_active ? 'default' : 'destructive'}>
+                        {agency.is_active ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleOpenDialog(agency)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setSelectedAgency(agency);
+                            setDeleteDialogOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Add/Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedAgency ? "Modifier l'agence" : 'Créer une agence'}
+            </DialogTitle>
+            <DialogDescription>
+              Remplissez les informations de l'agence
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmit}>
+            {error && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              {/* Owner Type Selection - Only for new agencies */}
+              {!selectedAgency && (
+                <>
+                  <div className="col-span-2">
+                    <Label>Type de Propriétaire *</Label>
+                    <RadioGroup
+                      value={formData.create_new_owner ? 'new' : 'existing'}
+                      onValueChange={(value: string) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          create_new_owner: value === 'new',
+                        }))
+                      }
+                      className="flex gap-4 mt-2"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="new" id="new-owner" />
+                        <label htmlFor="new-owner" className="cursor-pointer">Nouveau propriétaire</label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="existing" id="existing-owner" />
+                        <label htmlFor="existing-owner" className="cursor-pointer">Propriétaire existant</label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  {/* Existing Owner Dropdown */}
+                  {!formData.create_new_owner && (
+                    <div className="col-span-2 space-y-2">
+                      <Label htmlFor="proprietaire_id">Sélectionner le Propriétaire *</Label>
+                      <Select
+                        value={formData.proprietaire_id}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, proprietaire_id: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choisir un propriétaire existant" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {proprietaires.map((owner) => (
+                            <SelectItem key={owner.id} value={owner.id.toString()}>
+                              {owner.full_name} - {owner.email}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* New Owner Form */}
+                  {formData.create_new_owner && (
+                    <>
+                      <div className="col-span-2 border-b pb-2 mb-2">
+                        <h3 className="font-semibold text-gray-700">Informations du Nouveau Propriétaire</h3>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="owner_prenom">Prénom *</Label>
+                        <Input
+                          id="owner_prenom"
+                          value={formData.owner_prenom}
+                          onChange={(e) =>
+                            setFormData({ ...formData, owner_prenom: e.target.value })
+                          }
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="owner_nom">Nom *</Label>
+                        <Input
+                          id="owner_nom"
+                          value={formData.owner_nom}
+                          onChange={(e) =>
+                            setFormData({ ...formData, owner_nom: e.target.value })
+                          }
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="owner_email">Email *</Label>
+                        <Input
+                          id="owner_email"
+                          type="email"
+                          value={formData.owner_email}
+                          onChange={(e) =>
+                            setFormData({ ...formData, owner_email: e.target.value })
+                          }
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="owner_phone">Téléphone *</Label>
+                        <Input
+                          id="owner_phone"
+                          type="tel"
+                          value={formData.owner_phone}
+                          onChange={(e) =>
+                            setFormData({ ...formData, owner_phone: e.target.value })
+                          }
+                          required
+                          placeholder="+216 XX XXX XXX"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="owner_password">Mot de Passe *</Label>
+                        <Input
+                          id="owner_password"
+                          type="password"
+                          value={formData.owner_password}
+                          onChange={(e) =>
+                            setFormData({ ...formData, owner_password: e.target.value })
+                          }
+                          required
+                          placeholder="Min 8 caractères"
+                        />
+                      </div>
+
+                      <div className="col-span-2 border-b pb-2 mb-2 mt-4">
+                        <h3 className="font-semibold text-gray-700">Informations de l'Agence</h3>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+
+              {/* For editing existing agency - show current owner */}
+              {selectedAgency && (
+                <div className="space-y-2 col-span-2">
+                  <Label htmlFor="proprietaire_id">Propriétaire</Label>
+                  {selectedAgency.proprietaire && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-2">
+                      <p className="text-sm text-blue-800">
+                        <span className="font-semibold">Propriétaire actuel : </span>
+                        {selectedAgency.proprietaire.full_name} ({selectedAgency.proprietaire.email})
+                      </p>
+                    </div>
+                  )}
+                  <Select
+                    value={formData.proprietaire_id}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, proprietaire_id: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner un propriétaire" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {proprietaires.map((owner) => (
+                        <SelectItem key={owner.id} value={owner.id.toString()}>
+                          {owner.full_name} - {owner.email}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="name">Nom Commercial</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="legal_name">Raison Sociale</Label>
+                <Input
+                  id="legal_name"
+                  value={formData.legal_name}
+                  onChange={(e) => setFormData({ ...formData, legal_name: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="tax_id">Matricule Fiscal</Label>
+                <Input
+                  id="tax_id"
+                  value={formData.tax_id}
+                  onChange={(e) => setFormData({ ...formData, tax_id: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone">Téléphone</Label>
+                <Input
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="city">Ville *</Label>
+                <Input
+                  id="city"
+                  value={formData.city}
+                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="postal_code">Code Postal</Label>
+                <Input
+                  id="postal_code"
+                  value={formData.postal_code}
+                  onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
+                  placeholder="1000"
+                />
+              </div>
+
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="address">Adresse *</Label>
+                <Input
+                  id="address"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="country">Pays</Label>
+                <Input
+                  id="country"
+                  value={formData.country}
+                  onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="subscription_plan">Plan d'Abonnement</Label>
+                <Select
+                  value={formData.subscription_plan}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, subscription_plan: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="basique">Basique</SelectItem>
+                    <SelectItem value="standard">Standard</SelectItem>
+                    <SelectItem value="premium">Premium</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="is_active">Statut</Label>
+                <Select
+                  value={formData.is_active ? 'active' : 'inactive'}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, is_active: value === 'active' })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <DialogFooter className="mt-6">
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                Annuler
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? 'Enregistrement...' : 'Enregistrer'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmer la suppression</DialogTitle>
+            <DialogDescription>
+              Êtes-vous sûr de vouloir supprimer cette agence ? Cette action supprimera
+              également tous les utilisateurs, véhicules et données associés.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={loading}>
+              {loading ? 'Suppression...' : 'Supprimer'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

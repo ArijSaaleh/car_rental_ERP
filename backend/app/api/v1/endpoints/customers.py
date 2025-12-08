@@ -3,12 +3,13 @@ Customer Management endpoints
 Allows managing customers (individuals and companies)
 """
 from typing import List, Optional
+from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_user, get_current_tenant
-from app.models.user import User
+from app.core.dependencies import get_current_user, verify_agency_access
+from app.models.user import User, UserRole
 from app.models.agency import Agency
 from app.models.customer import Customer, CustomerType
 from app.schemas.customer import CustomerCreate, CustomerUpdate, CustomerResponse
@@ -19,20 +20,42 @@ router = APIRouter(prefix="/customers", tags=["Customer Management"])
 
 @router.get("/", response_model=List[CustomerResponse])
 async def list_customers(
+    agency_id: Optional[UUID] = Query(None, description="Agency ID"),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     customer_type: Optional[CustomerType] = None,
     search: Optional[str] = None,
     current_user: User = Depends(get_current_user),
-    agency: Agency = Depends(get_current_tenant),
     db: Session = Depends(get_db)
 ):
     """
-    List all customers for the current agency
+    List all customers
     
-    Accessible par: All authenticated users
+    Role-based access:
+    - Manager/Employees: Auto-use their assigned agency
+    - Proprietaire/Super Admin: Must provide agency_id parameter
     """
-    query = db.query(Customer).filter(Customer.agency_id == agency.id)
+    # Determine target agency
+    target_agency_id = agency_id
+    
+    if current_user.role in [UserRole.MANAGER, UserRole.AGENT_COMPTOIR, UserRole.AGENT_PARC]:  # type: ignore
+        if not current_user.agency_id:  # type: ignore
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Your account is not assigned to an agency"
+            )
+        target_agency_id = current_user.agency_id  # type: ignore
+    else:
+        if not target_agency_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="agency_id parameter is required"
+            )
+    
+    # Verify agency access
+    await verify_agency_access(current_user, target_agency_id, db)
+    
+    query = db.query(Customer).filter(Customer.agency_id == target_agency_id)
     
     # Apply filters
     if customer_type:
@@ -57,24 +80,25 @@ async def list_customers(
 async def get_customer(
     customer_id: int,
     current_user: User = Depends(get_current_user),
-    agency: Agency = Depends(get_current_tenant),
     db: Session = Depends(get_db)
 ):
     """
     Get a specific customer by ID
     
-    Accessible par: All authenticated users
+    Role-based access:
+    - Automatically verifies user has access to the customer's agency
     """
-    customer = db.query(Customer).filter(
-        Customer.id == customer_id,
-        Customer.agency_id == agency.id
-    ).first()
+    # Get customer first to determine its agency
+    customer = db.query(Customer).filter(Customer.id == customer_id).first()
     
     if not customer:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Client non trouvé"
+            detail="Customer not found"
         )
+    
+    # Verify access to the customer's agency
+    await verify_agency_access(current_user, customer.agency_id, db)
     
     return customer
 
@@ -82,43 +106,65 @@ async def get_customer(
 @router.post("/", response_model=CustomerResponse, status_code=status.HTTP_201_CREATED)
 async def create_customer(
     customer_data: CustomerCreate,
+    agency_id: Optional[UUID] = Query(None, description="Agency ID"),
     current_user: User = Depends(get_current_user),
-    agency: Agency = Depends(get_current_tenant),
     db: Session = Depends(get_db)
 ):
     """
     Create a new customer
     
-    Accessible par: All authenticated users
+    Role-based access:
+    - Manager/Employees: Can create customers in their assigned agency
+    - Proprietaire/Super Admin: Must provide agency_id parameter
     """
+    # Determine target agency
+    target_agency_id = agency_id
+    
+    if current_user.role in [UserRole.MANAGER, UserRole.AGENT_COMPTOIR, UserRole.AGENT_PARC]:  # type: ignore
+        if not current_user.agency_id:  # type: ignore
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Your account is not assigned to an agency"
+            )
+        target_agency_id = current_user.agency_id  # type: ignore
+    else:
+        if not target_agency_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="agency_id parameter is required"
+            )
+    
+    # Verify agency access
+    await verify_agency_access(current_user, target_agency_id, db)
+    
     # Check if CIN already exists (if provided)
     if customer_data.cin_number:
         existing = db.query(Customer).filter(
             Customer.cin_number == customer_data.cin_number,
-            Customer.agency_id == agency.id
+            Customer.agency_id == target_agency_id
         ).first()
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Un client avec ce numéro CIN existe déjà"
+                detail="A customer with this CIN number already exists"
             )
     
     # Check if company tax ID already exists (if provided)
     if customer_data.company_tax_id:
         existing = db.query(Customer).filter(
             Customer.company_tax_id == customer_data.company_tax_id,
-            Customer.agency_id == agency.id
+            Customer.agency_id == target_agency_id
         ).first()
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Une entreprise avec ce matricule fiscal existe déjà"
+                detail="A company with this tax ID already exists"
             )
     
     # Create customer
     customer = Customer(
         **customer_data.model_dump(),
-        agency_id=agency.id
+        agency_id=target_agency_id
     )
     
     db.add(customer)
@@ -133,24 +179,25 @@ async def update_customer(
     customer_id: int,
     customer_data: CustomerUpdate,
     current_user: User = Depends(get_current_user),
-    agency: Agency = Depends(get_current_tenant),
     db: Session = Depends(get_db)
 ):
     """
     Update a customer
     
-    Accessible par: All authenticated users
+    Role-based access:
+    - Automatically verifies user has access to the customer's agency
     """
-    customer = db.query(Customer).filter(
-        Customer.id == customer_id,
-        Customer.agency_id == agency.id
-    ).first()
+    # Get customer first to determine its agency
+    customer = db.query(Customer).filter(Customer.id == customer_id).first()
     
     if not customer:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Client non trouvé"
+            detail="Customer not found"
         )
+    
+    # Verify access to the customer's agency
+    await verify_agency_access(current_user, customer.agency_id, db)
     
     # Update fields
     update_data = customer_data.model_dump(exclude_unset=True)
@@ -159,13 +206,13 @@ async def update_customer(
     if "cin_number" in update_data and update_data["cin_number"] != customer.cin_number:
         existing = db.query(Customer).filter(
             Customer.cin_number == update_data["cin_number"],
-            Customer.agency_id == agency.id,
+            Customer.agency_id == customer.agency_id,
             Customer.id != customer_id
         ).first()
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Un client avec ce numéro CIN existe déjà"
+                detail="A customer with this CIN number already exists"
             )
     
     for field, value in update_data.items():
@@ -181,28 +228,37 @@ async def update_customer(
 async def delete_customer(
     customer_id: int,
     current_user: User = Depends(get_current_user),
-    agency: Agency = Depends(get_current_tenant),
     db: Session = Depends(get_db)
 ):
     """
     Delete a customer
     
-    Accessible par: PROPRIETAIRE, MANAGER
+    Role-based access:
+    - Automatically verifies user has access to the customer's agency
+    - Only MANAGER and above can delete customers
     
     Note: Will fail if customer has active bookings
     """
+    # Check role permission
+    if current_user.role not in [UserRole.MANAGER, UserRole.PROPRIETAIRE, UserRole.SUPER_ADMIN]:  # type: ignore
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only managers and above can delete customers"
+        )
+    
     from app.models.booking import Booking
     
-    customer = db.query(Customer).filter(
-        Customer.id == customer_id,
-        Customer.agency_id == agency.id
-    ).first()
+    # Get customer first to determine its agency
+    customer = db.query(Customer).filter(Customer.id == customer_id).first()
     
     if not customer:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Client non trouvé"
+            detail="Customer not found"
         )
+    
+    # Verify access to the customer's agency
+    await verify_agency_access(current_user, customer.agency_id, db)
     
     # Check for active bookings
     active_bookings = db.query(Booking).filter(
@@ -213,7 +269,7 @@ async def delete_customer(
     if active_bookings > 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Impossible de supprimer ce client car il a {active_bookings} réservation(s) active(s)"
+            detail=f"Cannot delete this customer because they have {active_bookings} active booking(s)"
         )
     
     db.delete(customer)
@@ -224,24 +280,46 @@ async def delete_customer(
 
 @router.get("/stats/summary", response_model=dict)
 async def get_customers_stats(
+    agency_id: Optional[UUID] = Query(None, description="Agency ID"),
     current_user: User = Depends(get_current_user),
-    agency: Agency = Depends(get_current_tenant),
     db: Session = Depends(get_db)
 ):
     """
     Get customer statistics
     
-    Accessible par: All authenticated users
+    Role-based access:
+    - Manager/Employees: Auto-use their assigned agency
+    - Proprietaire/Super Admin: Must provide agency_id parameter
     """
-    total_customers = db.query(Customer).filter(Customer.agency_id == agency.id).count()
+    # Determine target agency
+    target_agency_id = agency_id
+    
+    if current_user.role in [UserRole.MANAGER, UserRole.AGENT_COMPTOIR, UserRole.AGENT_PARC]:  # type: ignore
+        if not current_user.agency_id:  # type: ignore
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Your account is not assigned to an agency"
+            )
+        target_agency_id = current_user.agency_id  # type: ignore
+    else:
+        if not target_agency_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="agency_id parameter is required"
+            )
+    
+    # Verify agency access
+    await verify_agency_access(current_user, target_agency_id, db)
+    
+    total_customers = db.query(Customer).filter(Customer.agency_id == target_agency_id).count()
     
     individuals = db.query(Customer).filter(
-        Customer.agency_id == agency.id,
+        Customer.agency_id == target_agency_id,
         Customer.customer_type == CustomerType.INDIVIDUAL
     ).count()
     
     companies = db.query(Customer).filter(
-        Customer.agency_id == agency.id,
+        Customer.agency_id == target_agency_id,
         Customer.customer_type == CustomerType.COMPANY
     ).count()
     

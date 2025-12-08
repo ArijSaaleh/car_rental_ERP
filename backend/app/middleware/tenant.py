@@ -34,6 +34,10 @@ class TenantMiddleware(BaseHTTPMiddleware):
         """
         Process each request to extract and validate tenant information
         """
+        # Skip tenant validation for OPTIONS requests (CORS preflight)
+        if request.method == "OPTIONS":
+            return await call_next(request)
+        
         # Skip tenant validation for excluded paths
         if any(request.url.path.startswith(path) for path in self.EXCLUDED_PATHS):
             return await call_next(request)

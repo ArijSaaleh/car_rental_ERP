@@ -48,9 +48,9 @@ async def register(
     """
     # Validate role assignment
     # Only super_admin can create other super_admins
-    # For now, we allow registration but default to EMPLOYEE role
+    # For now, we allow registration but default to AGENT_COMPTOIR role
     if user_data.role == UserRole.SUPER_ADMIN:
-        user_data.role = UserRole.EMPLOYEE
+        user_data.role = UserRole.AGENT_COMPTOIR
     
     user = AuthService.create_user(db, user_data)
     return user

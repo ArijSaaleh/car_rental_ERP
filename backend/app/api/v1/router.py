@@ -13,7 +13,7 @@ api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 api_router.include_router(users.router, tags=["User Management"])
 api_router.include_router(agency.router, tags=["Agency Management"])
 api_router.include_router(customers.router, tags=["Customer Management"])
-api_router.include_router(vehicles.router, prefix="/vehicles", tags=["Vehicles"])
+api_router.include_router(vehicles.router, tags=["Vehicles"])  # No prefix - already defined in vehicles.py
 api_router.include_router(bookings.router, prefix="/bookings", tags=["Bookings"])
 api_router.include_router(contracts.router, prefix="/contracts", tags=["Contracts"])
 api_router.include_router(payments.router, prefix="/payments", tags=["Payments"])

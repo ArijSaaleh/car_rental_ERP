@@ -1,12 +1,11 @@
-"""
+""" 
 Admin schemas for super admin operations
 """
 from datetime import datetime
 from typing import Optional, List
+from uuid import UUID
 from pydantic import BaseModel, EmailStr, Field
 from app.models.agency import SubscriptionPlan
-
-
 # Agency Onboarding
 class AgencyOnboardingRequest(BaseModel):
     # Agency details
@@ -36,11 +35,26 @@ class AgencyOnboardingResponse(BaseModel):
     owner_id: str
     owner_email: str
     subscription_plan: str
-    trial_ends_at: Optional[datetime]
     message: str
     
     class Config:
         from_attributes = True
+
+
+# Agency Update
+class AgencyUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    legal_name: Optional[str] = None
+    tax_id: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    postal_code: Optional[str] = None
+    country: Optional[str] = None
+    subscription_plan: Optional[SubscriptionPlan] = None
+    is_active: Optional[bool] = None
+    proprietaire_id: Optional[UUID] = None
 
 
 # Platform Statistics

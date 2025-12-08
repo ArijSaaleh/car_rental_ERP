@@ -22,18 +22,26 @@ class Agency(Base):
     """
     Agency model - Represents a tenant in the multi-tenant system
     Each agency is a separate client with isolated data
-    A proprietaire (owner) can own multiple agencies
+    A proprietaire (owner) owns ONE main agency + optional branches
     """
     __tablename__ = "agencies"
     
     # Primary Key
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     
-    # Owner (Proprietaire) - A proprietaire can own multiple agencies
+    # Owner (Proprietaire) - A proprietaire owns ONE main agency
     owner_id = Column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="RESTRICT"),
         nullable=True,  # Nullable for initial setup
+        index=True
+    )
+    
+    # Hierarchy: Main Agency → Branches (Succursales)
+    parent_agency_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("agencies.id", ondelete="CASCADE"),
+        nullable=True,  # NULL = main agency, NOT NULL = branch
         index=True
     )
     
@@ -47,7 +55,9 @@ class Agency(Base):
     phone = Column(String(20), nullable=False)
     address = Column(String(500), nullable=False)
     city = Column(String(100), nullable=False)
+    postal_code = Column(String(20), nullable=True)
     country = Column(String(100), default="Tunisia")
+
     
     # Subscription
     subscription_plan = Column(
@@ -70,6 +80,10 @@ class Agency(Base):
     
     # Relationships
     owner = relationship("User", foreign_keys=[owner_id], backref="owned_agencies")
+    
+    # Hierarchy relationships
+    parent_agency = relationship("Agency", remote_side=[id], backref="branches", foreign_keys=[parent_agency_id])
+    
     users = relationship("User", foreign_keys="User.agency_id", back_populates="agency", cascade="all, delete-orphan")
     vehicles = relationship("Vehicle", back_populates="agency", cascade="all, delete-orphan")
     customers = relationship("Customer", back_populates="agency", cascade="all, delete-orphan")
@@ -196,11 +210,25 @@ class Agency(Base):
         return limits.get(self.subscription_plan, 3)  # type: ignore
     
     def get_max_agencies(self) -> int:
-        """Get maximum number of agencies in network (for proprietaire)"""
+        """Get maximum number of BRANCHES allowed (main agency + branches)"""
         limits = {
-            SubscriptionPlan.BASIQUE: 1,
-            SubscriptionPlan.STANDARD: 1,
-            SubscriptionPlan.PREMIUM: 3,
-            SubscriptionPlan.ENTREPRISE: -1,  # Unlimited
+            SubscriptionPlan.BASIQUE: 0,      # No branches, main agency only
+            SubscriptionPlan.STANDARD: 0,     # No branches, main agency only  
+            SubscriptionPlan.PREMIUM: 3,      # Main + 3 branches = 4 total
+            SubscriptionPlan.ENTREPRISE: -1,  # Unlimited branches
         }
-        return limits.get(self.subscription_plan, 1)  # type: ignore
+        return limits.get(self.subscription_plan, 0)  # type: ignore
+    
+    def is_main_agency(self) -> bool:
+        """Check if this is a main agency (not a branch)"""
+        return self.parent_agency_id is None
+    
+    def get_all_branches(self) -> list:
+        """Get all branches of this agency (if main agency)"""
+        if not self.is_main_agency():
+            return []
+        return list(self.branches) if hasattr(self, 'branches') else []
+    
+    def get_main_agency(self):
+        """Get the main agency (self if main, parent if branch)"""
+        return self if self.is_main_agency() else self.parent_agency

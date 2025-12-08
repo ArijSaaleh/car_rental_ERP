@@ -13,13 +13,13 @@ class UserBase(BaseModel):
     email: EmailStr
     full_name: str = Field(..., min_length=1, max_length=255)
     phone: Optional[str] = None
-    role: UserRole = UserRole.EMPLOYEE
+    role: UserRole = UserRole.AGENT_COMPTOIR
 
 
 class UserCreate(UserBase):
     """Schema for creating a new user"""
     password: str = Field(..., min_length=8, max_length=100)
-    agency_id: Optional[UUID] = None
+    agency_id: Optional[UUID] = None  # Required for non-super-admin users, set by backend based on creator's role
 
 
 class UserUpdate(BaseModel):
@@ -28,6 +28,17 @@ class UserUpdate(BaseModel):
     full_name: Optional[str] = Field(None, min_length=1, max_length=255)
     phone: Optional[str] = None
     is_active: Optional[bool] = None
+
+
+class AdminUserUpdate(BaseModel):
+    """Schema for admin updating any user (can change role)"""
+    email: Optional[EmailStr] = None
+    full_name: Optional[str] = Field(None, min_length=1, max_length=255)
+    phone: Optional[str] = None
+    role: Optional[UserRole] = None
+    agency_id: Optional[UUID] = None
+    is_active: Optional[bool] = None
+    password: Optional[str] = Field(None, min_length=8, max_length=100)
 
 
 class UserChangePassword(BaseModel):
