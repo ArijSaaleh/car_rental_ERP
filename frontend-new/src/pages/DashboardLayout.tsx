@@ -41,6 +41,7 @@ export default function DashboardLayout() {
         { name: 'Employés', href: '/owner/employees', icon: Users },
         { name: 'Véhicules', href: '/owner/vehicles', icon: Car },
         { name: 'Clients', href: '/owner/clients', icon: Users },
+        { name: 'Réservations', href: '/owner/bookings', icon: Calendar },
         { name: 'Contrats', href: '/owner/contracts', icon: FileText },
         { name: 'Gestionnaires', href: '/owner/managers', icon: UserCircle },
       ]

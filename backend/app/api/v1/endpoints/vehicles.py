@@ -21,7 +21,7 @@ async def list_vehicles(
     agency_id: Optional[UUID] = Query(None, description="Agency ID (required for managers/employees, optional for super admin/proprietaire)"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    status: Optional[VehicleStatus] = None,
+    vehicle_status: Optional[VehicleStatus] = None,
     brand: Optional[str] = None,
     search: Optional[str] = None,
     current_user: User = Depends(get_current_user),
@@ -57,7 +57,7 @@ async def list_vehicles(
             )
     
     # Verify agency access
-    await verify_agency_access(current_user, target_agency_id, db)
+    verify_agency_access(current_user, target_agency_id, db)
     
     # Get agency and verify feature access
     agency = db.query(Agency).filter(Agency.id == target_agency_id).first()
@@ -76,14 +76,68 @@ async def list_vehicles(
         agency_id=target_agency_id,
         skip=skip,
         limit=page_size,
-        status=status,
+        status=vehicle_status,
         brand=brand,
         search=search
     )
     
+    # Enrich vehicles with current booking information
+    from app.models.booking import Booking, BookingStatus
+    from app.models.customer import Customer
+    from app.schemas.vehicle import CurrentBookingInfo
+    
+    enriched_vehicles = []
+    for vehicle in vehicles:
+        vehicle_dict = {
+            "id": vehicle.id,
+            "license_plate": vehicle.license_plate,
+            "vin": vehicle.vin,
+            "brand": vehicle.brand,
+            "model": vehicle.model,
+            "year": vehicle.year,
+            "color": vehicle.color,
+            "fuel_type": vehicle.fuel_type,
+            "transmission": vehicle.transmission,
+            "seats": vehicle.seats,
+            "doors": vehicle.doors,
+            "mileage": vehicle.mileage,
+            "status": vehicle.status,
+            "registration_number": vehicle.registration_number,
+            "insurance_policy": vehicle.insurance_policy,
+            "insurance_expiry": vehicle.insurance_expiry,
+            "technical_control_expiry": vehicle.technical_control_expiry,
+            "daily_rate": vehicle.daily_rate,
+            "notes": vehicle.notes,
+            "agency_id": vehicle.agency_id,
+            "created_at": vehicle.created_at,
+            "updated_at": vehicle.updated_at,
+            "current_booking": None
+        }
+        
+        # Get active booking for this vehicle
+        active_booking = db.query(Booking).join(Customer).filter(
+            Booking.vehicle_id == vehicle.id,
+            Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS])
+        ).first()
+        
+        if active_booking:
+            customer = db.query(Customer).filter(Customer.id == active_booking.customer_id).first()
+            if customer:
+                vehicle_dict["current_booking"] = {
+                    "id": active_booking.id,
+                    "booking_number": active_booking.booking_number,
+                    "customer_name": f"{customer.first_name} {customer.last_name}",
+                    "customer_phone": customer.phone,
+                    "start_date": active_booking.start_date,
+                    "end_date": active_booking.end_date,
+                    "status": active_booking.status
+                }
+        
+        enriched_vehicles.append(vehicle_dict)
+    
     return {
         "total": total,
-        "vehicles": vehicles,
+        "vehicles": enriched_vehicles,
         "page": page,
         "page_size": page_size
     }
@@ -122,7 +176,7 @@ async def get_vehicle_stats(
             )
     
     # Verify access
-    await verify_agency_access(current_user, target_agency_id, db)
+    verify_agency_access(current_user, target_agency_id, db)
     
     # Get agency
     agency = db.query(Agency).filter(Agency.id == target_agency_id).first()
@@ -163,7 +217,7 @@ async def get_vehicle(
         )
     
     # Verify access to the vehicle's agency
-    await verify_agency_access(current_user, vehicle.agency_id, db)
+    verify_agency_access(current_user, vehicle.agency_id, db)
     
     # Get agency and check feature
     agency = db.query(Agency).filter(Agency.id == vehicle.agency_id).first()
@@ -215,7 +269,7 @@ async def create_vehicle(
             )
     
     # Verify access
-    await verify_agency_access(current_user, target_agency_id, db)
+    verify_agency_access(current_user, target_agency_id, db)
     
     # Get agency
     agency = db.query(Agency).filter(Agency.id == target_agency_id).first()
@@ -265,7 +319,7 @@ async def update_vehicle(
         )
     
     # Verify access
-    await verify_agency_access(current_user, vehicle.agency_id, db)
+    verify_agency_access(current_user, vehicle.agency_id, db)
     
     # Get agency and check feature
     agency = db.query(Agency).filter(Agency.id == vehicle.agency_id).first()
@@ -309,7 +363,7 @@ async def delete_vehicle(
         )
     
     # Verify access
-    await verify_agency_access(current_user, vehicle.agency_id, db)
+    verify_agency_access(current_user, vehicle.agency_id, db)
     
     # Get agency and check feature
     agency = db.query(Agency).filter(Agency.id == vehicle.agency_id).first()

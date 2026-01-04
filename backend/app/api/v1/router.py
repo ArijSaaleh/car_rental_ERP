@@ -2,11 +2,14 @@ from fastapi import APIRouter
 
 from app.api.v1.endpoints import (
     auth, vehicles, bookings, contracts, payments, reports, 
-    admin, users, agency, customers, proprietaire
+    admin, users, agency, customers, proprietaire, health
 )
 
 
 api_router = APIRouter()
+
+# Include health check router first (no auth required)
+api_router.include_router(health.router)
 
 # Include all endpoint routers
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])

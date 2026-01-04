@@ -737,24 +737,24 @@ async def delete_agency(
                     detail=f"Cannot delete agency with {active_bookings} active bookings. Use force=true to override or complete/cancel them first."
                 )
         
-        # Delete in order of dependencies using raw SQL to avoid model/schema issues
+        # Delete in order of dependencies using parameterized queries to prevent SQL injection
         # 1. Delete payments (if table exists)
         try:
-            db.execute(text(f"DELETE FROM payments WHERE agency_id = '{agency_id}'"))
+            db.execute(text("DELETE FROM payments WHERE agency_id = :agency_id"), {"agency_id": agency_id})
         except Exception:
             pass  # Table might not exist or might have schema issues
         
         # 2. Delete bookings
-        db.execute(text(f"DELETE FROM bookings WHERE agency_id = '{agency_id}'"))
+        db.execute(text("DELETE FROM bookings WHERE agency_id = :agency_id"), {"agency_id": agency_id})
         
         # 3. Delete vehicles
-        db.execute(text(f"DELETE FROM vehicles WHERE agency_id = '{agency_id}'"))
+        db.execute(text("DELETE FROM vehicles WHERE agency_id = :agency_id"), {"agency_id": agency_id})
         
         # 4. Delete users
-        db.execute(text(f"DELETE FROM users WHERE agency_id = '{agency_id}'"))
+        db.execute(text("DELETE FROM users WHERE agency_id = :agency_id"), {"agency_id": agency_id})
         
         # 5. Delete agency
-        db.execute(text(f"DELETE FROM agencies WHERE id = '{agency_id}'"))
+        db.execute(text("DELETE FROM agencies WHERE id = :agency_id"), {"agency_id": agency_id})
         
         db.commit()
         

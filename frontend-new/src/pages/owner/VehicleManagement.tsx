@@ -70,9 +70,10 @@ export default function VehicleManagement() {
     model: '',
     year: new Date().getFullYear(),
     color: '',
-    fuel_type: 'essence',
-    transmission: 'manuel',
+    fuel_type: 'ESSENCE',
+    transmission: 'MANUELLE',
     mileage: 0,
+    status: 'DISPONIBLE',
     daily_rate: 0,
   });
 
@@ -123,11 +124,14 @@ export default function VehicleManagement() {
 
     setLoading(true);
     try {
-      const response = await api.get(`/vehicles?agency_id=${selectedAgencyId}&page_size=100`);
-      setVehicles(response.data.vehicles || []);
-      setFilteredVehicles(response.data.vehicles || []);
+      const response = await api.get(`/vehicles?agency_id=${selectedAgencyId}`);
+      const vehiclesList = Array.isArray(response.data) ? response.data : [];
+      setVehicles(vehiclesList);
+      setFilteredVehicles(vehiclesList);
     } catch (err) {
       setError(extractErrorMessage(err));
+      setVehicles([]);
+      setFilteredVehicles([]);
     } finally {
       setLoading(false);
     }
@@ -145,6 +149,7 @@ export default function VehicleManagement() {
         fuel_type: vehicle.fuel_type,
         transmission: vehicle.transmission,
         mileage: vehicle.mileage,
+        status: vehicle.status,
         daily_rate: vehicle.daily_rate || 0,
       });
     } else {
@@ -320,10 +325,10 @@ export default function VehicleManagement() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous les statuts</SelectItem>
-                <SelectItem value="disponible">Disponible</SelectItem>
-                <SelectItem value="loue">Loué</SelectItem>
-                <SelectItem value="maintenance">Maintenance</SelectItem>
-                <SelectItem value="hors_service">Hors Service</SelectItem>
+                <SelectItem value="DISPONIBLE">Disponible</SelectItem>
+                <SelectItem value="LOUE">Loué</SelectItem>
+                <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
+                <SelectItem value="HORS_SERVICE">Hors Service</SelectItem>
               </SelectContent>
             </Select>
 
@@ -503,10 +508,10 @@ export default function VehicleManagement() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="essence">Essence</SelectItem>
-                    <SelectItem value="diesel">Diesel</SelectItem>
-                    <SelectItem value="electrique">Électrique</SelectItem>
-                    <SelectItem value="hybride">Hybride</SelectItem>
+                    <SelectItem value="ESSENCE">Essence</SelectItem>
+                    <SelectItem value="DIESEL">Diesel</SelectItem>
+                    <SelectItem value="ELECTRIQUE">Électrique</SelectItem>
+                    <SelectItem value="HYBRIDE">Hybride</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -521,8 +526,8 @@ export default function VehicleManagement() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="manuel">Manuelle</SelectItem>
-                    <SelectItem value="automatique">Automatique</SelectItem>
+                    <SelectItem value="MANUELLE">Manuelle</SelectItem>
+                    <SelectItem value="AUTOMATIQUE">Automatique</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -537,6 +542,24 @@ export default function VehicleManagement() {
                   required
                   min="0"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="status">Statut *</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(value) => setFormData({ ...formData, status: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="DISPONIBLE">Disponible</SelectItem>
+                    <SelectItem value="LOUE">Loué</SelectItem>
+                    <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
+                    <SelectItem value="HORS_SERVICE">Hors Service</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2 col-span-2">

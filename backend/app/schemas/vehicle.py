@@ -1,9 +1,24 @@
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, date
 from uuid import UUID
 
 from app.models.vehicle import VehicleStatus, FuelType, TransmissionType
+
+
+# ============ Booking Info Schema ============
+
+class CurrentBookingInfo(BaseModel):
+    """Schema for current active booking information"""
+    id: int
+    booking_number: str
+    customer_name: str
+    customer_phone: str
+    start_date: date
+    end_date: date
+    status: str
+    
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ============ Vehicle Schemas ============
@@ -63,6 +78,7 @@ class VehicleResponse(VehicleBase):
     agency_id: UUID
     created_at: datetime
     updated_at: Optional[datetime]
+    current_booking: Optional[CurrentBookingInfo] = None
     
     model_config = ConfigDict(from_attributes=True)
 

@@ -1,32 +1,52 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Suspense, lazy } from 'react';
+import ErrorBoundary from './components/ErrorBoundary';
+import { authService } from './services/auth.service';
+
+// Eager load critical components
 import Login from './pages/Login';
 import DashboardLayout from './pages/DashboardLayout';
-import Dashboard from './pages/Dashboard';
-import Vehicles from './pages/Vehicles';
-import Bookings from './pages/Bookings';
-import Customers from './pages/Customers';
-import Contracts from './pages/Contracts';
-import Payments from './pages/Payments';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import AgencyManagement from './pages/admin/AgencyManagement';
-import Users from './pages/admin/Users';
-import SystemSettings from './pages/admin/SystemSettings';
-import OwnerDashboard from './pages/owner/OwnerDashboard';
-import MyAgencies from './pages/owner/MyAgencies';
-import AgencyManagers from './pages/owner/AgencyManagers';
-import EmployeeManagement from './pages/owner/EmployeeManagement';
-import VehicleManagement from './pages/owner/VehicleManagement';
-import ClientManagement from './pages/owner/ClientManagement';
-import ContractManagement from './pages/owner/ContractManagement';
 import ProtectedRoute from './components/ProtectedRoute';
-import { authService } from './services/auth.service';
+
+// Lazy load routes for code splitting
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Vehicles = lazy(() => import('./pages/Vehicles'));
+const Bookings = lazy(() => import('./pages/Bookings'));
+const Customers = lazy(() => import('./pages/Customers'));
+const Contracts = lazy(() => import('./pages/Contracts'));
+const Payments = lazy(() => import('./pages/Payments'));
+
+// Admin routes
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const AgencyManagement = lazy(() => import('./pages/admin/AgencyManagement'));
+const Users = lazy(() => import('./pages/admin/Users'));
+const SystemSettings = lazy(() => import('./pages/admin/SystemSettings'));
+
+// Owner routes
+const OwnerDashboard = lazy(() => import('./pages/owner/OwnerDashboard'));
+const MyAgencies = lazy(() => import('./pages/owner/MyAgencies'));
+const AgencyManagers = lazy(() => import('./pages/owner/AgencyManagers'));
+const EmployeeManagement = lazy(() => import('./pages/owner/EmployeeManagement'));
+const FleetManagement = lazy(() => import('./pages/owner/FleetManagement'));
+const ClientManagement = lazy(() => import('./pages/owner/ClientManagement'));
+const ContractManagement = lazy(() => import('./pages/owner/ContractManagement'));
+const BookingManagement = lazy(() => import('./pages/owner/BookingManagement'));
+
+// Loading fallback component
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+  </div>
+);
 
 function App() {
   const isAuthenticated = authService.isAuthenticated();
 
   return (
-    <BrowserRouter>
-      <Routes>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Suspense fallback={<LoadingFallback />}>
+          <Routes>
         <Route 
           path="/login" 
           element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />} 
@@ -76,14 +96,17 @@ function App() {
           <Route path="agencies" element={<MyAgencies />} />
           <Route path="managers" element={<AgencyManagers />} />
           <Route path="employees" element={<EmployeeManagement />} />
-          <Route path="vehicles" element={<VehicleManagement />} />
+          <Route path="vehicles" element={<FleetManagement />} />
           <Route path="clients" element={<ClientManagement />} />
+          <Route path="bookings" element={<BookingManagement />} />
           <Route path="contracts" element={<ContractManagement />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
       </Routes>
-    </BrowserRouter>
+        </Suspense>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 

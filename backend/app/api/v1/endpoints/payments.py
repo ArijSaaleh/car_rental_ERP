@@ -54,7 +54,7 @@ async def create_payment(
             )
     
     # Verify agency access
-    await verify_agency_access(current_user, target_agency_id, db)
+    verify_agency_access(current_user, target_agency_id, db)
     
     payment = PaymentGatewayService.create_payment(
         db=db,
@@ -94,7 +94,7 @@ async def initiate_paymee(
         )
     
     # Verify access to the payment's agency
-    await verify_agency_access(current_user, payment.agency_id, db)
+    verify_agency_access(current_user, payment.agency_id, db)
     
     # TODO: Récupérer le token Paymee depuis les settings de l'agence
     vendor_token = "YOUR_PAYMEE_VENDOR_TOKEN"
@@ -170,7 +170,7 @@ async def confirm_cash_payment(
         )
     
     # Verify access to the payment's agency
-    await verify_agency_access(current_user, payment.agency_id, db)
+    verify_agency_access(current_user, payment.agency_id, db)
     
     if payment.payment_method != PaymentMethod.CASH:
         raise HTTPException(
@@ -218,7 +218,7 @@ async def list_payments(
             )
     
     # Verify agency access
-    await verify_agency_access(current_user, target_agency_id, db)
+    verify_agency_access(current_user, target_agency_id, db)
     
     payments = db.query(Payment).filter(
         Payment.agency_id == target_agency_id
@@ -258,7 +258,7 @@ async def get_payment_stats(
             )
     
     # Verify agency access
-    await verify_agency_access(current_user, target_agency_id, db)
+    verify_agency_access(current_user, target_agency_id, db)
     
     stats = PaymentGatewayService.get_payment_stats(db, target_agency_id)
     return stats
@@ -286,6 +286,6 @@ async def get_payment(
         )
     
     # Verify access to the payment's agency
-    await verify_agency_access(current_user, payment.agency_id, db)
+    verify_agency_access(current_user, payment.agency_id, db)
     
     return payment

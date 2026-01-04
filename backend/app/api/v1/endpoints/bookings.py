@@ -57,7 +57,7 @@ async def check_vehicle_availability(
             )
     
     # Verify agency access
-    await verify_agency_access(current_user, target_agency_id, db)
+    verify_agency_access(current_user, target_agency_id, db)
     
     is_available = BookingService.check_vehicle_availability(
         db=db,
@@ -143,7 +143,7 @@ async def get_available_vehicles(
             )
     
     # Verify agency access
-    await verify_agency_access(current_user, target_agency_id, db)
+    verify_agency_access(current_user, target_agency_id, db)
     
     filters = {}
     if brand:
@@ -211,7 +211,7 @@ async def create_booking(
             )
     
     # Verify agency access
-    await verify_agency_access(current_user, target_agency_id, db)
+    verify_agency_access(current_user, target_agency_id, db)
     
     # Check availability
     is_available = BookingService.check_vehicle_availability(
@@ -306,7 +306,7 @@ async def list_bookings(
             )
     
     # Verify agency access
-    await verify_agency_access(current_user, target_agency_id, db)
+    verify_agency_access(current_user, target_agency_id, db)
     
     query = db.query(Booking).filter(Booking.agency_id == target_agency_id)
     
@@ -318,7 +318,74 @@ async def list_bookings(
         query = query.filter(Booking.customer_id == customer_id)
     
     bookings = query.order_by(Booking.created_at.desc()).offset(skip).limit(limit).all()
-    return bookings
+    
+    # Enrich bookings with customer and vehicle information
+    from app.models.customer import Customer
+    from app.models.vehicle import Vehicle
+    
+    enriched_bookings = []
+    for booking in bookings:
+        booking_dict = {
+            "id": booking.id,
+            "booking_number": booking.booking_number,
+            "agency_id": booking.agency_id,
+            "vehicle_id": booking.vehicle_id,
+            "customer_id": booking.customer_id,
+            "created_by_user_id": booking.created_by_user_id,
+            "start_date": booking.start_date,
+            "end_date": booking.end_date,
+            "pickup_datetime": booking.pickup_datetime,
+            "return_datetime": booking.return_datetime,
+            "daily_rate": booking.daily_rate,
+            "duration_days": booking.duration_days,
+            "subtotal": booking.subtotal,
+            "tax_amount": booking.tax_amount,
+            "timbre_fiscal": booking.timbre_fiscal,
+            "total_amount": booking.total_amount,
+            "deposit_amount": booking.deposit_amount,
+            "status": booking.status,
+            "payment_status": booking.payment_status,
+            "initial_mileage": booking.initial_mileage,
+            "final_mileage": booking.final_mileage,
+            "mileage_limit": booking.mileage_limit,
+            "extra_mileage_rate": booking.extra_mileage_rate,
+            "initial_fuel_level": booking.initial_fuel_level,
+            "final_fuel_level": booking.final_fuel_level,
+            "fuel_policy": booking.fuel_policy,
+            "notes": booking.notes,
+            "cancellation_reason": booking.cancellation_reason,
+            "created_at": booking.created_at,
+            "updated_at": booking.updated_at,
+        }
+        
+        # Get customer info
+        customer = db.query(Customer).filter(Customer.id == booking.customer_id).first()
+        if customer:
+            booking_dict["customer"] = {
+                "id": customer.id,
+                "first_name": customer.first_name,
+                "last_name": customer.last_name,
+                "email": customer.email,
+                "phone": customer.phone,
+                "cin_number": customer.cin_number,
+            }
+        
+        # Get vehicle info
+        vehicle = db.query(Vehicle).filter(Vehicle.id == booking.vehicle_id).first()
+        if vehicle:
+            booking_dict["vehicle"] = {
+                "id": str(vehicle.id),
+                "license_plate": vehicle.license_plate,
+                "brand": vehicle.brand,
+                "model": vehicle.model,
+                "year": vehicle.year,
+                "status": vehicle.status.value if hasattr(vehicle.status, 'value') else vehicle.status,
+                "daily_rate": vehicle.daily_rate,
+            }
+        
+        enriched_bookings.append(booking_dict)
+    
+    return enriched_bookings
 
 
 @router.get("/{booking_id}", response_model=BookingResponse)
@@ -343,7 +410,7 @@ async def get_booking(
         )
     
     # Verify access to the booking's agency
-    await verify_agency_access(current_user, booking.agency_id, db)
+    verify_agency_access(current_user, booking.agency_id, db)
     
     return booking
 
@@ -371,7 +438,7 @@ async def update_booking(
         )
     
     # Verify access to the booking's agency
-    await verify_agency_access(current_user, booking.agency_id, db)
+    verify_agency_access(current_user, booking.agency_id, db)
     
     # If dates are modified, check availability
     if booking_update.start_date or booking_update.end_date:
@@ -427,7 +494,7 @@ async def cancel_booking(
         )
     
     # Verify access to the booking's agency
-    await verify_agency_access(current_user, booking.agency_id, db)
+    verify_agency_access(current_user, booking.agency_id, db)
     
     booking.status = BookingStatus.CANCELLED
     db.commit()
@@ -459,7 +526,7 @@ async def get_vehicle_calendar(
         )
     
     # Verify access to the vehicle's agency
-    await verify_agency_access(current_user, vehicle.agency_id, db)
+    verify_agency_access(current_user, vehicle.agency_id, db)
     
     calendar = BookingService.get_vehicle_calendar(
         db=db,

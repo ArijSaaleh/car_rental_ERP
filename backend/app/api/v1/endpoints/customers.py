@@ -53,7 +53,7 @@ async def list_customers(
             )
     
     # Verify agency access
-    await verify_agency_access(current_user, target_agency_id, db)
+    verify_agency_access(current_user, target_agency_id, db)
     
     query = db.query(Customer).filter(Customer.agency_id == target_agency_id)
     
@@ -98,7 +98,7 @@ async def get_customer(
         )
     
     # Verify access to the customer's agency
-    await verify_agency_access(current_user, customer.agency_id, db)
+    verify_agency_access(current_user, customer.agency_id, db)
     
     return customer
 
@@ -135,7 +135,7 @@ async def create_customer(
             )
     
     # Verify agency access
-    await verify_agency_access(current_user, target_agency_id, db)
+    verify_agency_access(current_user, target_agency_id, db)
     
     # Check if CIN already exists (if provided)
     if customer_data.cin_number:
@@ -197,7 +197,7 @@ async def update_customer(
         )
     
     # Verify access to the customer's agency
-    await verify_agency_access(current_user, customer.agency_id, db)
+    verify_agency_access(current_user, customer.agency_id, db)
     
     # Update fields
     update_data = customer_data.model_dump(exclude_unset=True)
@@ -258,7 +258,7 @@ async def delete_customer(
         )
     
     # Verify access to the customer's agency
-    await verify_agency_access(current_user, customer.agency_id, db)
+    verify_agency_access(current_user, customer.agency_id, db)
     
     # Check for active bookings
     active_bookings = db.query(Booking).filter(
@@ -309,7 +309,7 @@ async def get_customers_stats(
             )
     
     # Verify agency access
-    await verify_agency_access(current_user, target_agency_id, db)
+    verify_agency_access(current_user, target_agency_id, db)
     
     total_customers = db.query(Customer).filter(Customer.agency_id == target_agency_id).count()
     

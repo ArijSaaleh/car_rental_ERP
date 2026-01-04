@@ -57,7 +57,7 @@ async def create_contract(
             )
     
     # Verify agency access
-    await verify_agency_access(current_user, target_agency_id, db)
+    verify_agency_access(current_user, target_agency_id, db)
     
     # Check that the booking exists
     booking = db.query(Booking).filter(
@@ -133,7 +133,7 @@ async def list_contracts(
             )
     
     # Verify agency access
-    await verify_agency_access(current_user, target_agency_id, db)
+    verify_agency_access(current_user, target_agency_id, db)
     
     contracts = db.query(Contract).filter(
         Contract.agency_id == target_agency_id
@@ -164,7 +164,7 @@ async def get_contract(
         )
     
     # Verify access to the contract's agency
-    await verify_agency_access(current_user, contract.agency_id, db)
+    verify_agency_access(current_user, contract.agency_id, db)
     
     return contract
 
@@ -191,7 +191,7 @@ async def download_contract_pdf(
         )
     
     # Verify access to the contract's agency
-    await verify_agency_access(current_user, contract.agency_id, db)
+    verify_agency_access(current_user, contract.agency_id, db)
     
     # Générer le PDF
     pdf_buffer = PDFContractService.generate_contract_pdf(db, contract)
@@ -228,7 +228,7 @@ async def generate_contract_pdf(
         )
     
     # Verify access to the contract's agency
-    await verify_agency_access(current_user, contract.agency_id, db)
+    verify_agency_access(current_user, contract.agency_id, db)
     
     # Générer et sauvegarder le PDF
     filepath = PDFContractService.save_contract_pdf(db, contract_id)
@@ -264,7 +264,7 @@ async def sign_contract_customer(
         )
     
     # Verify access to the contract's agency
-    await verify_agency_access(current_user, contract.agency_id, db)
+    verify_agency_access(current_user, contract.agency_id, db)
     
     if contract.status not in [ContractStatus.DRAFT, ContractStatus.PENDING_SIGNATURE]:
         raise HTTPException(
@@ -314,7 +314,7 @@ async def sign_contract_agent(
         )
     
     # Verify access to the contract's agency
-    await verify_agency_access(current_user, contract.agency_id, db)
+    verify_agency_access(current_user, contract.agency_id, db)
     
     if contract.status not in [ContractStatus.DRAFT, ContractStatus.PENDING_SIGNATURE]:
         raise HTTPException(
@@ -362,7 +362,7 @@ async def update_contract(
         )
     
     # Verify access to the contract's agency
-    await verify_agency_access(current_user, contract.agency_id, db)
+    verify_agency_access(current_user, contract.agency_id, db)
     
     if contract.status not in [ContractStatus.DRAFT]:
         raise HTTPException(
