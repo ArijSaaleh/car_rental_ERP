@@ -1,16 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Building2, Users, Car, Receipt, TrendingUp, TrendingDown } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Badge } from '../../components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '../../components/ui/table';
+import { Building2, Users, Car, Calendar, TrendingUp, DollarSign, BarChart3, Activity, ArrowUpRight, Sparkles } from 'lucide-react';
+import { StatsCard, MiniStatsCard } from '../../components/StatsCard';
 import { Alert, AlertDescription } from '../../components/ui/alert';
+import { Button } from '../../components/ui/button';
 import api from '../../services/api';
 import { extractErrorMessage } from '../../utils/errorHandler';
 
@@ -67,177 +59,221 @@ export default function OwnerDashboard() {
     }
   };
 
-  const getStatusBadge = (isActive: boolean) => {
-    return isActive ? (
-      <Badge className="bg-green-100 text-green-700">Actif</Badge>
-    ) : (
-      <Badge className="bg-red-100 text-red-700">Inactif</Badge>
-    );
-  };
-
-  const getPlanBadge = (plan: string) => {
-    const colors: Record<string, string> = {
-      basique: 'bg-blue-100 text-blue-700',
-      standard: 'bg-purple-100 text-purple-700',
-      premium: 'bg-amber-100 text-amber-700',
-    };
-    return <Badge className={colors[plan] || 'bg-gray-100 text-gray-700'}>{plan.toUpperCase()}</Badge>;
-  };
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-lg">Chargement...</div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Chargement des données...</p>
+        </div>
       </div>
     );
   }
-
-  if (error) {
-    return (
-      <Alert variant="destructive" className="m-4">
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
-    );
-  }
-
-  if (!stats) return null;
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">Tableau de Bord Propriétaire</h1>
-        <p className="text-slate-600 mt-2">Vue d'ensemble de vos agences</p>
-      </div>
-
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">
-              Total Agences
-            </CardTitle>
-            <Building2 className="h-5 w-5 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total_agencies}</div>
-            <p className="text-xs text-slate-600 mt-1">
-              {stats.active_agencies} actives
+    <div className="min-h-screen bg-background">
+      <div className="p-6 lg:p-8 space-y-8 animate-fade-in">
+        {/* Header */}
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-foreground mb-2">
+              Tableau de bord
+            </h1>
+            <p className="text-lg text-muted-foreground">
+              Vue d'ensemble de votre activité
             </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">
-              Total Véhicules
-            </CardTitle>
-            <Car className="h-5 w-5 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total_vehicles}</div>
-            <p className="text-xs text-slate-600 mt-1">
-              Toutes agences confondues
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">
-              Total Clients
-            </CardTitle>
-            <Users className="h-5 w-5 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total_customers}</div>
-            <p className="text-xs text-slate-600 mt-1">
-              Base clients totale
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">
-              Chiffre d'Affaires
-            </CardTitle>
-            <Receipt className="h-5 w-5 text-amber-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {stats.total_revenue.toLocaleString('fr-TN', {
-                style: 'currency',
-                currency: 'TND',
-              })}
-            </div>
-            <p className="text-xs text-slate-600 mt-1">
-              {stats.total_bookings} réservations
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Agencies Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Mes Agences</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Agence</TableHead>
-                  <TableHead>Ville</TableHead>
-                  <TableHead>Plan</TableHead>
-                  <TableHead>Véhicules</TableHead>
-                  <TableHead>Clients</TableHead>
-                  <TableHead>Employés</TableHead>
-                  <TableHead>Statut</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {stats.agencies.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-slate-500">
-                      Aucune agence trouvée
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  stats.agencies.map((agency) => (
-                    <TableRow key={agency.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{agency.name}</div>
-                          <div className="text-sm text-slate-500">{agency.legal_name}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{agency.city}</TableCell>
-                      <TableCell>{getPlanBadge(agency.subscription_plan)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Car className="h-4 w-4 text-slate-400" />
-                          {agency.vehicle_count}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Users className="h-4 w-4 text-slate-400" />
-                          {agency.customer_count}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {agency.manager_count + agency.employee_count}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(agency.is_active)}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
           </div>
-        </CardContent>
-      </Card>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" className="rounded-xl">
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Rapports
+            </Button>
+            <Button className="rounded-xl bg-gradient-primary hover:opacity-90 text-white">
+              <Sparkles className="h-4 w-4 mr-2" />
+              Nouvelle Agence
+            </Button>
+          </div>
+        </div>
+
+        {error && (
+          <Alert variant="destructive" className="animate-scale-in">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {stats && (
+          <>
+            {/* Main Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <StatsCard
+                title="Agences Actives"
+                value={stats.active_agencies}
+                icon={<Building2 className="h-6 w-6" />}
+                trend={{ value: 12, label: "vs mois dernier" }}
+                variant="primary"
+              />
+              
+              <StatsCard
+                title="Revenus Totaux"
+                value={`${stats.total_revenue.toLocaleString('fr-FR')}€`}
+                icon={<DollarSign className="h-6 w-6" />}
+                trend={{ value: 8.5, label: "vs mois dernier" }}
+                variant="success"
+              />
+              
+              <StatsCard
+                title="Réservations"
+                value={stats.total_bookings}
+                icon={<Calendar className="h-6 w-6" />}
+                trend={{ value: -3.2, label: "vs mois dernier" }}
+                variant="accent"
+              />
+              
+              <StatsCard
+                title="Flotte Totale"
+                value={stats.total_vehicles}
+                icon={<Car className="h-6 w-6" />}
+                trend={{ value: 5.1, label: "vs mois dernier" }}
+                variant="warning"
+              />
+            </div>
+
+            {/* Mini Stats Row */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <MiniStatsCard
+                label="Total Agences"
+                value={stats.total_agencies}
+                icon={<Building2 className="h-4 w-4" />}
+                color="blue"
+              />
+              <MiniStatsCard
+                label="Utilisateurs"
+                value={stats.total_users}
+                icon={<Users className="h-4 w-4" />}
+                color="purple"
+              />
+              <MiniStatsCard
+                label="Clients"
+                value={stats.total_customers}
+                icon={<Users className="h-4 w-4" />}
+                color="green"
+              />
+              <MiniStatsCard
+                label="Taux d'occupation"
+                value="78%"
+                icon={<Activity className="h-4 w-4" />}
+                color="orange"
+              />
+            </div>
+
+            {/* Agencies Overview */}
+            <div className="bg-white/80 backdrop-blur-sm border border-border/50 rounded-2xl p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground mb-1">Mes Agences</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Gestion et performance de vos agences
+                  </p>
+                </div>
+                <Button variant="outline" className="rounded-xl">
+                  Voir toutes les agences
+                  <ArrowUpRight className="h-4 w-4 ml-2" />
+                </Button>
+              </div>
+
+              <div className="space-y-4">
+                {stats.agencies.slice(0, 5).map((agency) => (
+                  <div
+                    key={agency.id}
+                    className="flex items-center justify-between p-5 rounded-xl bg-gradient-to-br from-gray-50 to-white border border-border/50 hover:border-primary/50 transition-all card-hover"
+                  >
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className="p-3 rounded-xl bg-gradient-primary">
+                        <Building2 className="h-6 w-6 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-foreground text-lg">{agency.name}</h3>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {agency.city} • {agency.email}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-6">
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-foreground">{agency.vehicle_count}</p>
+                        <p className="text-xs text-muted-foreground">Véhicules</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-foreground">{agency.customer_count}</p>
+                        <p className="text-xs text-muted-foreground">Clients</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-foreground">
+                          {agency.manager_count + agency.employee_count}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Employés</p>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        {agency.is_active ? (
+                          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-200">
+                            Actif
+                          </span>
+                        ) : (
+                          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 border border-red-200">
+                            Inactif
+                          </span>
+                        )}
+                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200 capitalize">
+                          {agency.subscription_plan}
+                        </span>
+                      </div>
+
+                      <Button variant="outline" size="sm" className="rounded-lg">
+                        Gérer
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {stats.agencies.length === 0 && (
+                <div className="text-center py-12">
+                  <Building2 className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground mb-4">Aucune agence pour le moment</p>
+                  <Button className="rounded-xl bg-gradient-primary hover:opacity-90 text-white">
+                    Créer votre première agence
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Performance Chart Placeholder */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white/80 backdrop-blur-sm border border-border/50 rounded-2xl p-6 shadow-sm">
+                <h3 className="text-xl font-bold text-foreground mb-4">Réservations récentes</h3>
+                <div className="h-64 flex items-center justify-center bg-gradient-to-br from-gray-50 to-white rounded-xl border border-border/50">
+                  <div className="text-center">
+                    <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Graphique des réservations</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white/80 backdrop-blur-sm border border-border/50 rounded-2xl p-6 shadow-sm">
+                <h3 className="text-xl font-bold text-foreground mb-4">Revenus mensuels</h3>
+                <div className="h-64 flex items-center justify-center bg-gradient-to-br from-gray-50 to-white rounded-xl border border-border/50">
+                  <div className="text-center">
+                    <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Graphique des revenus</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

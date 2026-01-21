@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Car } from 'lucide-react';
+import { Car, Mail, Lock, ArrowRight, Shield, Zap, Globe, Star } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -40,115 +40,236 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen w-full flex">
-      {/* Left Side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 xl:w-3/5 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjAzKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-40"></div>
-        
-        {/* Content */}
-        <div className="relative z-10 flex flex-col justify-center items-center w-full px-8 py-12 text-center">
-          <div className="mb-8">
-            <div className="inline-flex p-6 rounded-3xl bg-primary/20 border-2 border-primary/50 shadow-2xl shadow-primary/20">
-              <Car className="h-24 w-24 text-primary" />
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50 flex">
+      {/* Left Side - Hero Section */}
+      <div className="hidden lg:flex lg:w-1/2 xl:w-3/5 relative bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 p-12 flex-col justify-between overflow-hidden">
+        {/* Decorative Elements */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-20 left-20 w-72 h-72 bg-white rounded-full blur-3xl"></div>
+          <div className="absolute bottom-20 right-20 w-96 h-96 bg-blue-300 rounded-full blur-3xl"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-400 rounded-full blur-3xl"></div>
+        </div>
+
+        {/* Grid Pattern Overlay */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{
+          backgroundImage: `
+            linear-gradient(white 1px, transparent 1px),
+            linear-gradient(90deg, white 1px, transparent 1px)
+          `,
+          backgroundSize: '50px 50px'
+        }}></div>
+
+        <div className="relative z-10">
+          {/* Logo */}
+          <div className="flex items-center gap-3 mb-16">
+            <div className="p-3 bg-white/20 backdrop-blur-xl rounded-2xl border border-white/30">
+              <Car className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white">DriveFlow</h1>
+              <p className="text-sm text-blue-100">Car Rental Excellence</p>
             </div>
           </div>
-          
-          <h1 className="text-5xl font-bold text-white mb-4">
-            Car Rental ERP
-          </h1>
-          
-          <p className="text-xl text-slate-300 max-w-md mb-12">
-            Solution complète de gestion de location de véhicules
-          </p>
-          
-          <div className="grid grid-cols-1 gap-4 max-w-sm w-full">
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4 hover:bg-white/10 transition-colors">
-              <p className="text-white font-semibold mb-1">Gestion de Flotte</p>
-              <p className="text-slate-400 text-sm">Gérez vos véhicules efficacement</p>
+
+          {/* Hero Content */}
+          <div className="space-y-6 max-w-xl">
+            <h2 className="text-5xl xl:text-6xl font-bold text-white leading-tight">
+              La gestion automobile
+              <span className="block text-blue-200 mt-2">réinventée</span>
+            </h2>
+            <p className="text-xl text-blue-100 leading-relaxed">
+              Gérez l'intégralité de votre flotte avec une plateforme moderne, intuitive et puissante.
+            </p>
+
+            {/* Features List */}
+            <div className="grid grid-cols-2 gap-4 pt-8">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                  <Shield className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-white mb-1">100% Sécurisé</h4>
+                  <p className="text-sm text-blue-100">Vos données protégées</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                  <Zap className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-white mb-1">Ultra Rapide</h4>
+                  <p className="text-sm text-blue-100">Performances optimales</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                  <Globe className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-white mb-1">Multi-agences</h4>
+                  <p className="text-sm text-blue-100">Gestion centralisée</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                  <Star className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-white mb-1">Support 24/7</h4>
+                  <p className="text-sm text-blue-100">Assistance dédiée</p>
+                </div>
+              </div>
             </div>
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4 hover:bg-white/10 transition-colors">
-              <p className="text-white font-semibold mb-1">Réservations</p>
-              <p className="text-slate-400 text-sm">Suivez toutes vos locations</p>
+          </div>
+        </div>
+
+        {/* Stats Bar */}
+        <div className="relative z-10 flex items-center gap-8">
+          <div className="flex items-center gap-8 p-6 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20">
+            <div>
+              <div className="text-3xl font-bold text-white">500+</div>
+              <div className="text-sm text-blue-100">Véhicules</div>
             </div>
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4 hover:bg-white/10 transition-colors">
-              <p className="text-white font-semibold mb-1">Rapports & Analytics</p>
-              <p className="text-slate-400 text-sm">Analysez vos performances</p>
+            <div className="w-px h-12 bg-white/20"></div>
+            <div>
+              <div className="text-3xl font-bold text-white">10K+</div>
+              <div className="text-sm text-blue-100">Réservations</div>
+            </div>
+            <div className="w-px h-12 bg-white/20"></div>
+            <div>
+              <div className="text-3xl font-bold text-white">98%</div>
+              <div className="text-sm text-blue-100">Satisfaction</div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="w-full lg:w-1/2 xl:w-2/5 flex items-center justify-center bg-white dark:bg-slate-950 px-6 py-12">
-        <div className="w-full max-w-md">
+      <div className="w-full lg:w-1/2 xl:w-2/5 flex items-center justify-center p-8">
+        <div className="w-full max-w-md space-y-8">
           {/* Mobile Logo */}
-          <div className="lg:hidden flex justify-center mb-8">
-            <div className="p-4 rounded-full bg-primary/10 border-2 border-primary">
-              <Car className="h-12 w-12 text-primary" />
+          <div className="lg:hidden text-center mb-8">
+            <div className="inline-flex items-center gap-3 p-4 bg-white rounded-2xl shadow-lg border border-gray-100">
+              <div className="p-2 bg-gradient-primary rounded-xl">
+                <Car className="h-6 w-6 text-white" />
+              </div>
+              <h1 className="text-xl font-bold text-gray-900">DriveFlow</h1>
             </div>
           </div>
 
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
-              Connexion
+          {/* Form Header */}
+          <div className="text-center lg:text-left">
+            <h2 className="text-4xl font-bold text-gray-900 mb-3">
+              Bienvenue
             </h2>
-            <p className="text-slate-600 dark:text-slate-400">
-              Connectez-vous à votre compte pour continuer
+            <p className="text-gray-600 text-lg">
+              Connectez-vous à votre espace
             </p>
           </div>
 
+          {/* Error Alert */}
+          {error && (
+            <Alert variant="destructive" className="rounded-xl animate-scale-in">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-700 dark:text-slate-200 font-medium">
+              <Label htmlFor="email" className="text-sm font-medium text-gray-700">
                 Adresse email
               </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="exemple@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="h-12 text-base"
-              />
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="exemple@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="pl-12 h-14 rounded-xl border-2 border-gray-200 bg-white focus:border-blue-500 focus:ring-0 text-base text-gray-900 placeholder:text-gray-400"
+                  disabled={loading}
+                />
+              </div>
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-slate-700 dark:text-slate-200 font-medium">
-                Mot de passe
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="h-12 text-base"
-              />
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                  Mot de passe
+                </Label>
+                <button
+                  type="button"
+                  className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                >
+                  Mot de passe oublié ?
+                </button>
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="pl-12 h-14 rounded-xl border-2 border-gray-200 bg-white focus:border-blue-500 focus:ring-0 text-base text-gray-900"
+                  disabled={loading}
+                />
+              </div>
             </div>
-            
-            <Button 
-              type="submit" 
-              className="w-full bg-primary hover:bg-primary/90 text-white font-semibold h-12 text-base mt-6"
+
+            <Button
+              type="submit"
               disabled={loading}
+              className="w-full h-14 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold text-base shadow-lg shadow-blue-600/25 hover:shadow-xl hover:shadow-blue-600/40 transition-all duration-300 group"
             >
-              {loading ? 'Connexion en cours...' : 'Se connecter'}
+              {loading ? (
+                <span className="flex items-center justify-center gap-3">
+                  <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  Connexion en cours...
+                </span>
+              ) : (
+                <span className="flex items-center justify-center gap-3">
+                  Se connecter
+                  <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                </span>
+              )}
             </Button>
           </form>
-          
-          <div className="mt-8 text-center">
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Version 1.0.0 - Car Rental Management
-            </p>
+
+          {/* Demo Credentials */}
+          <div className="pt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200"></div>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-slate-50 px-3 text-gray-500 font-medium">Comptes de démonstration</span>
+              </div>
+            </div>
+            
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl border border-blue-200">
+                <div className="text-xs font-semibold text-blue-900 mb-2">Super Admin</div>
+                <div className="text-xs text-blue-700 font-mono">admin@example.com</div>
+                <div className="text-xs text-blue-600 mt-1">password123</div>
+              </div>
+              <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-xl border border-purple-200">
+                <div className="text-xs font-semibold text-purple-900 mb-2">Propriétaire</div>
+                <div className="text-xs text-purple-700 font-mono">owner@example.com</div>
+                <div className="text-xs text-purple-600 mt-1">password123</div>
+              </div>
+            </div>
           </div>
+
+          {/* Footer */}
+          <p className="text-center text-sm text-gray-500 pt-4">
+            © 2026 DriveFlow - Tous droits réservés
+          </p>
         </div>
       </div>
     </div>

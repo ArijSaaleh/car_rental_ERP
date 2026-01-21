@@ -4,48 +4,71 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Better color palette with proper contrast */
+    --background: 0 0% 98%;
+    --foreground: 222 15% 15%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 222 15% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.5rem;
+    --popover-foreground: 222 15% 15%;
+    
+    /* Primary - Blue with good contrast */
+    --primary: 217 91% 50%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 217 91% 45%;
+    
+    /* Accent - Coral/Pink */
+    --accent: 346 77% 58%;
+    --accent-foreground: 0 0% 100%;
+    --accent-hover: 346 77% 52%;
+    
+    /* Secondary colors */
+    --secondary: 214 32% 91%;
+    --secondary-foreground: 222 15% 20%;
+    
+    /* Muted backgrounds */
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    
+    /* Borders and inputs */
+    --border: 214 32% 88%;
+    --input: 214 32% 91%;
+    --ring: 217 91% 50%;
+    
+    /* Success, warning, error */
+    --success: 142 71% 45%;
+    --warning: 38 92% 50%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Gold accent */
+    --gold: 45 93% 47%;
+    
+    --radius: 0.75rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 222 47% 11%;
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    --card: 222 47% 14%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+    --popover: 222 47% 14%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 217 91% 55%;
+    --accent: 346 77% 58%;
+    --accent-foreground: 0 0% 100%;
+    --accent-hover: 346 77% 52%;
+    --secondary: 217 33% 17%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --border: 217 33% 20%;
+    --input: 217 33% 17%;
+    --ring: 217 91% 60%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
   }
 }
 
@@ -55,11 +78,13 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     margin: 0;
     padding: 0;
     min-height: 100vh;
     width: 100%;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   
   html, body, #root {
@@ -68,16 +93,170 @@
   }
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+/* Typography improvements */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  letter-spacing: -0.025em;
 }
 
+h1 {
+  font-size: 2.5rem;
+  line-height: 1.2;
+}
+
+h2 {
+  font-size: 2rem;
+  line-height: 1.3;
+}
+
+h3 {
+  font-size: 1.5rem;
+  line-height: 1.4;
+}
+
+/* Smooth animations */
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.5s ease-out;
+  }
+  
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease-out;
+  }
+  
+  .glass-effect {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+  
+  .card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+  
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(217, 91%, 50%) 0%, hsl(217, 91%, 45%) 100%);
+  }
+  
+  .gradient-accent {
+    background: linear-gradient(135deg, hsl(346, 77%, 58%) 0%, hsl(346, 77%, 52%) 100%);
+  }
+  
+  .gradient-hero {
+    background: linear-gradient(135deg, hsl(217, 91%, 50%) 0%, hsl(202, 91%, 55%) 100%);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Global Table Styling */
+@layer components {
+  table {
+    @apply w-full;
+  }
+  
+  thead {
+    @apply bg-gradient-to-r from-primary/5 to-accent/5;
+  }
+  
+  thead tr {
+    @apply border-b border-border;
+  }
+  
+  thead th {
+    @apply px-6 py-4 text-left text-sm font-semibold text-foreground;
+  }
+  
+  tbody {
+    @apply divide-y divide-border/50 bg-white;
+  }
+  
+  tbody tr {
+    @apply transition-colors hover:bg-primary/5;
+  }
+  
+  tbody td {
+    @apply px-6 py-4 text-sm text-foreground;
+  }
+  
+  /* Card styling */
+  .card-modern {
+    @apply bg-white/90 backdrop-blur-sm border border-border/50 rounded-2xl shadow-sm;
+  }
+  
+  /* Button improvements */
+  button {
+    @apply transition-all duration-200;
+  }
+  
+  button:not(:disabled):hover {
+    @apply transform;
+  }
+  
+  /* Badge improvements */
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border;
+  }
+  
+  .badge-success {
+    @apply bg-green-100 text-green-700 border-green-200;
+  }
+  
+  .badge-warning {
+    @apply bg-amber-100 text-amber-700 border-amber-200;
+  }
+  
+  .badge-error {
+    @apply bg-red-100 text-red-700 border-red-200;
+  }
+  
+  .badge-info {
+    @apply bg-blue-100 text-blue-700 border-blue-200;
+  }
+  
+  .badge-default {
+    @apply bg-gray-100 text-gray-700 border-gray-200;
+  }
+}
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
   font-weight: 500;
   font-family: inherit;
   background-color: #1a1a1a;
