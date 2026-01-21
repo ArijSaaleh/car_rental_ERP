@@ -79,7 +79,9 @@ export default function AdminDashboard() {
         total_vehicles: response.data.total_vehicles,
         total_customers: response.data.total_customers,
         total_bookings: response.data.total_bookings,
-        total_revenue: response.data.total_revenue,
+        total_revenue: typeof response.data.total_revenue === 'string' 
+          ? parseFloat(response.data.total_revenue) 
+          : response.data.total_revenue,
       });
       setAgencies(response.data.agencies || []);
     } catch (err) {

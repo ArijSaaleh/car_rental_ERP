@@ -30,9 +30,9 @@ class AgencyOnboardingRequest(BaseModel):
 
 
 class AgencyOnboardingResponse(BaseModel):
-    agency_id: str
+    agency_id: UUID
     agency_name: str
-    owner_id: str
+    owner_id: UUID
     owner_email: str
     subscription_plan: str
     message: str
@@ -73,7 +73,7 @@ class PlatformStats(BaseModel):
 
 
 class AgencyHealthStatus(BaseModel):
-    agency_id: str
+    agency_id: UUID
     agency_name: str
     is_active: bool
     subscription_plan: str
@@ -87,14 +87,14 @@ class AgencyHealthStatus(BaseModel):
 
 # Subscription Management
 class SubscriptionChangeRequest(BaseModel):
-    agency_id: str
+    agency_id: UUID
     new_plan: SubscriptionPlan
     reason: Optional[str] = None
     effective_date: Optional[datetime] = None
 
 
 class SubscriptionChangeResponse(BaseModel):
-    agency_id: str
+    agency_id: UUID
     previous_plan: str
     new_plan: str
     changed_at: datetime
@@ -104,7 +104,7 @@ class SubscriptionChangeResponse(BaseModel):
 
 # Bulk Operations
 class BulkAgencyOperation(BaseModel):
-    agency_ids: List[str]
+    agency_ids: List[UUID]
     action: str  # deactivate, activate, notify
     reason: Optional[str] = None
 
@@ -118,8 +118,8 @@ class BulkOperationResult(BaseModel):
 
 # Audit Log
 class AuditLogEntry(BaseModel):
-    id: str
-    admin_id: str
+    id: UUID
+    admin_id: UUID
     admin_email: str
     action: str
     resource_type: str
@@ -144,7 +144,7 @@ class AuditLogFilter(BaseModel):
 
 # Revenue Report
 class RevenueByAgency(BaseModel):
-    agency_id: str
+    agency_id: UUID
     agency_name: str
     total_revenue: float
     total_bookings: int
@@ -162,7 +162,7 @@ class PlatformRevenueReport(BaseModel):
 
 # User Management
 class CreateAgencyOwner(BaseModel):
-    agency_id: str
+    agency_id: UUID
     email: EmailStr
     full_name: str
     phone: str
@@ -170,7 +170,7 @@ class CreateAgencyOwner(BaseModel):
 
 
 class UserManagementAction(BaseModel):
-    user_id: str
+    user_id: UUID
     action: str  # reset_password, deactivate, activate, delete
     new_password: Optional[str] = None
     reason: Optional[str] = None

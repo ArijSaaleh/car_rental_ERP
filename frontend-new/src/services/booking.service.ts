@@ -1,9 +1,15 @@
 import api from './api';
-import type { Booking } from '../types';
+import type { Booking, BookingCreate, BookingUpdate } from '../types';
 
 export const bookingService = {
-  async getAll(): Promise<Booking[]> {
-    const response = await api.get<Booking[]>('/bookings');
+  async getAll(agencyId?: string | number, status?: string, vehicleId?: number, customerId?: number): Promise<Booking[]> {
+    const params = new URLSearchParams();
+    if (agencyId) params.append('agency_id', agencyId.toString());
+    if (status) params.append('status', status);
+    if (vehicleId) params.append('vehicle_id', vehicleId.toString());
+    if (customerId) params.append('customer_id', customerId.toString());
+    
+    const response = await api.get<Booking[]>(`/bookings?${params.toString()}`);
     return response.data;
   },
 
@@ -12,22 +18,162 @@ export const bookingService = {
     return response.data;
   },
 
-  async create(booking: Omit<Booking, 'id' | 'created_at'>): Promise<Booking> {
+  async create(booking: BookingCreate): Promise<Booking> {
     const response = await api.post<Booking>('/bookings', booking);
     return response.data;
   },
 
-  async update(id: number, booking: Partial<Booking>): Promise<Booking> {
+  async update(id: number, booking: BookingUpdate): Promise<Booking> {
     const response = await api.put<Booking>(`/bookings/${id}`, booking);
     return response.data;
   },
 
-  async delete(id: number): Promise<void> {
-    await api.delete(`/bookings/${id}`);
+  async cancel(id: number, reason?: string): Promise<void> {
+    await api.delete(`/bookings/${id}`, { data: { cancellation_reason: reason } });
   },
 
-  async updateStatus(id: number, statut: string): Promise<Booking> {
-    const response = await api.put<Booking>(`/bookings/${id}`, { statut });
+  async confirm(id: number): Promise<Booking> {
+    const response = await api.post<Booking>(`/bookings/${id}/confirm`);
+    return response.data;
+  },
+
+  async startRental(id: number, initialMileage: number, initialFuelLevel: string): Promise<Booking> {
+    const response = await api.post<Booking>(`/bookings/${id}/start`, null, {
+      params: { initial_mileage: initialMileage, initial_fuel_level: initialFuelLevel },
+    });
+    return response.data;
+  },
+
+  async completeRental(id: number, finalMileage: number, finalFuelLevel: string): Promise<Booking> {
+    const response = await api.post<Booking>(`/bookings/${id}/complete`, null, {
+      params: { final_mileage: finalMileage, final_fuel_level: finalFuelLevel },
+    });
+    return response.data;
+  },
+
+  async recordPayment(
+    id: number,
+    amount: number,
+    paymentMethod: string,
+    paymentType: string = 'rental',
+    reference?: string,
+    notes?: string
+  ): Promise<any> {
+    const response = await api.post(`/bookings/${id}/payment`, null, {
+      params: {
+        amount,
+        payment_method: paymentMethod,
+        payment_type: paymentType,
+        reference,
+        notes,
+      },
+    });
+    return response.data;
+  },
+
+  async getPaymentSummary(id: number): Promise<any> {
+    const response = await api.get(`/bookings/${id}/payment-summary`);
+    return response.data;
+  },
+
+  async checkAvailability(vehicleId: number, startDate: string, endDate: string): Promise<{
+    available: boolean;
+    conflicts?: any[];
+    pricing?: any;
+  }> {
+    const response = await api.post('/bookings/check-availability', {
+      vehicle_id: vehicleId,
+      start_date: startDate,
+      end_date: endDate,
+    });
+    return response.data;
+  },
+
+  async getAvailableVehicles(startDate: string, endDate: string, filters?: {
+    brand?: string;
+    fuel_type?: string;
+    transmission?: string;
+    min_seats?: number;
+  }): Promise<any[]> {
+    const params = new URLSearchParams({
+      start_date: startDate,
+      end_date: endDate,
+    });
+    
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) params.append(key, value.toString());
+      });
+    }
+    
+    const response = await api.get(`/bookings/available-vehicles?${params.toString()}`);
+    return response.data;
+  },
+
+  async getVehicleCalendar(vehicleId: number, startDate: string, endDate: string): Promise<{
+    vehicle_id: number;
+    events: any[];
+  }> {
+    const response = await api.get(`/bookings/vehicle/${vehicleId}/calendar`, {
+      params: { start_date: startDate, end_date: endDate },
+    });
+    return response.data;
+  },
+
+  async confirm(bookingId: number): Promise<Booking> {
+    const response = await api.post<Booking>(`/bookings/${bookingId}/confirm`);
+    return response.data;
+  },
+
+  async startRental(bookingId: number, initialMileage: number, initialFuelLevel: string): Promise<Booking> {
+    const response = await api.post<Booking>(`/bookings/${bookingId}/start`, {
+      initial_mileage: initialMileage,
+      initial_fuel_level: initialFuelLevel,
+    });
+    return response.data;
+  },
+
+  async completeRental(bookingId: number, finalMileage: number, finalFuelLevel: string): Promise<Booking> {
+    const response = await api.post<Booking>(`/bookings/${bookingId}/complete`, {
+      final_mileage: finalMileage,
+      final_fuel_level: finalFuelLevel,
+    });
+    return response.data;
+  },
+
+  async recordPayment(
+    bookingId: number,
+    amount: number,
+    paymentMethod: string,
+    paymentType: string,
+    reference?: string,
+    notes?: string
+  ): Promise<any> {
+    const response = await api.post(`/bookings/${bookingId}/payment`, null, {
+      params: {
+        amount,
+        payment_method: paymentMethod,
+        payment_type: paymentType,
+        reference,
+        notes,
+      },
+    });
+    return response.data;
+  },
+
+  async getPaymentSummary(bookingId: number): Promise<{
+    booking_id: number;
+    total_amount: number;
+    paid_amount: number;
+    remaining_amount: number;
+    deposit_amount: number;
+    payment_status: string;
+    timbre_fiscal: number;
+    tax_amount: number;
+  }> {
+    const response = await api.get(`/bookings/${bookingId}/payment-summary`);
     return response.data;
   },
 };
+
+

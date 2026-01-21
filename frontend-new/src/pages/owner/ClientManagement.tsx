@@ -54,6 +54,17 @@ interface RentalHistory {
   created_at: string;
 }
 
+// Helper functions to normalize data from API
+const normalizeClient = (client: any): Client => ({
+  ...client,
+  total_revenue: typeof client.total_revenue === 'string' ? parseFloat(client.total_revenue) : client.total_revenue,
+});
+
+const normalizeRentalHistory = (rental: any): RentalHistory => ({
+  ...rental,
+  total_amount: typeof rental.total_amount === 'string' ? parseFloat(rental.total_amount) : rental.total_amount,
+});
+
 export default function ClientManagement() {
   const [clients, setClients] = useState<Client[]>([]);
   const [filteredClients, setFilteredClients] = useState<Client[]>([]);
@@ -85,8 +96,9 @@ export default function ClientManagement() {
     setLoading(true);
     try {
       const response = await api.get('/proprietaire/clients');
-      setClients(response.data);
-      setFilteredClients(response.data);
+      const normalizedClients = response.data.map(normalizeClient);
+      setClients(normalizedClients);
+      setFilteredClients(normalizedClients);
     } catch (err) {
       setError(extractErrorMessage(err));
     } finally {
@@ -98,7 +110,8 @@ export default function ClientManagement() {
     setLoading(true);
     try {
       const response = await api.get(`/proprietaire/clients/${clientId}/rentals`);
-      setRentalHistory(response.data);
+      const normalizedHistory = response.data.map(normalizeRentalHistory);
+      setRentalHistory(normalizedHistory);
       setHistoryDialogOpen(true);
     } catch (err) {
       setError(extractErrorMessage(err));

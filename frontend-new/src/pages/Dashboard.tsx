@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { vehicleService } from '../services/vehicle.service';
 import { bookingService } from '../services/booking.service';
 import { customerService } from '../services/customer.service';
+import { authService } from '../services/auth.service';
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
@@ -20,10 +21,13 @@ export default function Dashboard() {
 
   const loadStats = async () => {
     try {
+      const user = authService.getCurrentUserFromStorage();
+      const agencyId = user?.agency_id;
+
       const [vehicles, bookings, customers] = await Promise.all([
-        vehicleService.getAll(),
-        bookingService.getAll(),
-        customerService.getAll(),
+        vehicleService.getAll(agencyId),
+        bookingService.getAll(agencyId),
+        customerService.getAll(agencyId),
       ]);
 
       setStats({

@@ -3,6 +3,7 @@ Customer schemas for API validation
 """
 from datetime import datetime, date
 from typing import Optional
+from uuid import UUID
 from pydantic import BaseModel, EmailStr, Field
 
 
@@ -78,7 +79,7 @@ class CustomerUpdate(BaseModel):
 class CustomerResponse(CustomerBase):
     """Schema for customer response"""
     id: int
-    agency_id: str
+    agency_id: UUID
     is_active: bool
     is_blacklisted: bool
     blacklist_reason: Optional[str] = None

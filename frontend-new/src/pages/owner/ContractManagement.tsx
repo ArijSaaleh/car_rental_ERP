@@ -37,6 +37,12 @@ interface Contract {
   status: string;
 }
 
+// Helper function to normalize contract data from API
+const normalizeContract = (contract: any): Contract => ({
+  ...contract,
+  total_amount: typeof contract.total_amount === 'string' ? parseFloat(contract.total_amount) : contract.total_amount,
+});
+
 export default function ContractManagement() {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [filteredContracts, setFilteredContracts] = useState<Contract[]>([]);
@@ -84,8 +90,9 @@ export default function ContractManagement() {
     setLoading(true);
     try {
       const response = await api.get('/proprietaire/contracts');
-      setContracts(response.data);
-      setFilteredContracts(response.data);
+      const normalizedContracts = response.data.map(normalizeContract);
+      setContracts(normalizedContracts);
+      setFilteredContracts(normalizedContracts);
     } catch (err) {
       setError(extractErrorMessage(err));
     } finally {

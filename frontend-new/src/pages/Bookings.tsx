@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Search, Edit, Trash2 } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Eye } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent, CardHeader } from '../components/ui/card';
@@ -29,11 +29,24 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { Alert, AlertDescription } from '../components/ui/alert';
+import { BookingDetails } from '../components/BookingDetails';
 import { bookingService } from '../services/booking.service';
 import { vehicleService } from '../services/vehicle.service';
 import { customerService } from '../services/customer.service';
-import type { Booking } from '../types';
+import type { Booking, BookingCreate, BookingUpdate } from '../types';
 import { extractErrorMessage } from '../utils/errorHandler';
+
+// Helper function to normalize booking data from API
+const normalizeBooking = (booking: any): Booking => ({
+  ...booking,
+  daily_rate: typeof booking.daily_rate === 'string' ? parseFloat(booking.daily_rate) : booking.daily_rate,
+  duration_days: typeof booking.duration_days === 'string' ? parseInt(booking.duration_days) : booking.duration_days,
+  subtotal: typeof booking.subtotal === 'string' ? parseFloat(booking.subtotal) : booking.subtotal,
+  tax_amount: typeof booking.tax_amount === 'string' ? parseFloat(booking.tax_amount) : booking.tax_amount,
+  timbre_fiscal: typeof booking.timbre_fiscal === 'string' ? parseFloat(booking.timbre_fiscal) : booking.timbre_fiscal,
+  total_amount: typeof booking.total_amount === 'string' ? parseFloat(booking.total_amount) : booking.total_amount,
+  deposit_amount: typeof booking.deposit_amount === 'string' ? parseFloat(booking.deposit_amount) : booking.deposit_amount,
+});
 
 export default function Bookings() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -43,23 +56,17 @@ export default function Bookings() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [error, setError] = useState('');
-  const [formData, setFormData] = useState<{
-    client_id: string;
-    vehicule_id: string;
-    date_debut: string;
-    date_fin: string;
-    prix_total: number;
-    statut: 'en_attente' | 'confirmee' | 'en_cours' | 'terminee' | 'annulee';
-  }>({
-    client_id: '',
-    vehicule_id: '',
-    date_debut: '',
-    date_fin: '',
-    prix_total: 0,
-    statut: 'en_attente',
+  const [formData, setFormData] = useState<BookingCreate>({
+    customer_id: 0,
+    vehicle_id: 0,
+    start_date: '',
+    end_date: '',
+    fuel_policy: 'full_to_full',
+    notes: '',
   });
 
   useEffect(() => {
@@ -69,9 +76,11 @@ export default function Bookings() {
   useEffect(() => {
     const filtered = bookings.filter(
       (booking) =>
-        booking.client?.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        booking.vehicule?.marque.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        booking.statut.toLowerCase().includes(searchTerm.toLowerCase())
+        booking.customer?.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        booking.customer?.prenom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        booking.vehicle?.marque?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        booking.booking_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        booking.status.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredBookings(filtered);
   }, [searchTerm, bookings]);
@@ -83,8 +92,9 @@ export default function Bookings() {
         vehicleService.getAll(),
         customerService.getAll(),
       ]);
-      setBookings(bookingsData);
-      setFilteredBookings(bookingsData);
+      const normalizedBookings = bookingsData.map(normalizeBooking);
+      setBookings(normalizedBookings);
+      setFilteredBookings(normalizedBookings);
       setVehicles(vehiclesData);
       setCustomers(customersData);
     } catch (err) {
@@ -98,22 +108,22 @@ export default function Bookings() {
     if (booking) {
       setSelectedBooking(booking);
       setFormData({
-        client_id: booking.client_id.toString(),
-        vehicule_id: booking.vehicule_id.toString(),
-        date_debut: booking.date_debut.split('T')[0],
-        date_fin: booking.date_fin.split('T')[0],
-        prix_total: booking.prix_total,
-        statut: booking.statut as typeof formData.statut,
+        customer_id: booking.customer_id,
+        vehicle_id: booking.vehicle_id,
+        start_date: booking.start_date.split('T')[0],
+        end_date: booking.end_date.split('T')[0],
+        fuel_policy: booking.fuel_policy || 'full_to_full',
+        notes: booking.notes || '',
       });
     } else {
       setSelectedBooking(null);
       setFormData({
-        client_id: '',
-        vehicule_id: '',
-        date_debut: '',
-        date_fin: '',
-        prix_total: 0,
-        statut: 'en_attente',
+        customer_id: 0,
+        vehicle_id: 0,
+        start_date: '',
+        end_date: '',
+        fuel_policy: 'full_to_full',
+        notes: '',
       });
     }
     setError('');
@@ -123,13 +133,45 @@ export default function Bookings() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // Validate required fields
+    if (!formData.customer_id || formData.customer_id === 0) {
+      setError('Veuillez sélectionner un client');
+      return;
+    }
+    if (!formData.vehicle_id || formData.vehicle_id === 0) {
+      setError('Veuillez sélectionner un véhicule');
+      return;
+    }
+    if (!formData.start_date) {
+      setError('Veuillez sélectionner une date de début');
+      return;
+    }
+    if (!formData.end_date) {
+      setError('Veuillez sélectionner une date de fin');
+      return;
+    }
+
+    // Validate dates
+    const startDate = new Date(formData.start_date);
+    const endDate = new Date(formData.end_date);
+    if (endDate <= startDate) {
+      setError('La date de fin doit être après la date de début');
+      return;
+    }
+
     setLoading(true);
 
     try {
       if (selectedBooking) {
-        await bookingService.update(selectedBooking.id, formData as any);
+        const updateData: BookingUpdate = {
+          start_date: formData.start_date,
+          end_date: formData.end_date,
+          notes: formData.notes,
+        };
+        await bookingService.update(selectedBooking.id, updateData);
       } else {
-        await bookingService.create(formData as any);
+        await bookingService.create(formData);
       }
       await loadData();
       setDialogOpen(false);
@@ -145,7 +187,7 @@ export default function Bookings() {
     setLoading(true);
 
     try {
-      await bookingService.delete(selectedBooking.id);
+      await bookingService.cancel(selectedBooking.id);
       await loadData();
       setDeleteDialogOpen(false);
       setSelectedBooking(null);
@@ -156,24 +198,24 @@ export default function Bookings() {
     }
   };
 
-  const getStatusBadge = (statut: string) => {
+  const getStatusBadge = (status: string) => {
     const variants: Record<string, string> = {
-      en_attente: 'bg-yellow-100 text-yellow-800',
-      confirmee: 'bg-blue-100 text-blue-800',
-      en_cours: 'bg-green-100 text-green-800',
-      terminee: 'bg-gray-100 text-gray-800',
-      annulee: 'bg-red-100 text-red-800',
+      pending: 'bg-yellow-100 text-yellow-800',
+      confirmed: 'bg-blue-100 text-blue-800',
+      in_progress: 'bg-green-100 text-green-800',
+      completed: 'bg-gray-100 text-gray-800',
+      cancelled: 'bg-red-100 text-red-800',
     };
     const labels: Record<string, string> = {
-      en_attente: 'En attente',
-      confirmee: 'Confirmée',
-      en_cours: 'En cours',
-      terminee: 'Terminée',
-      annulee: 'Annulée',
+      pending: 'En attente',
+      confirmed: 'Confirmée',
+      in_progress: 'En cours',
+      completed: 'Terminée',
+      cancelled: 'Annulée',
     };
     return (
-      <Badge className={variants[statut] || 'bg-gray-100 text-gray-800'}>
-        {labels[statut] || statut}
+      <Badge className={variants[status] || 'bg-gray-100 text-gray-800'}>
+        {labels[status] || status}
       </Badge>
     );
   };
@@ -222,6 +264,7 @@ export default function Bookings() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>N° Réservation</TableHead>
                   <TableHead>Client</TableHead>
                   <TableHead>Véhicule</TableHead>
                   <TableHead>Date Début</TableHead>
@@ -234,25 +277,37 @@ export default function Bookings() {
               <TableBody>
                 {filteredBookings.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-slate-500">
+                    <TableCell colSpan={8} className="text-center py-8 text-slate-500">
                       Aucune réservation trouvée
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredBookings.map((booking) => (
                     <TableRow key={booking.id}>
+                      <TableCell className="font-medium">{booking.booking_number}</TableCell>
                       <TableCell>
-                        {booking.client?.nom} {booking.client?.prenom}
+                        {booking.customer?.prenom} {booking.customer?.nom}
                       </TableCell>
                       <TableCell>
-                        {booking.vehicule?.marque} {booking.vehicule?.modele}
+                        {booking.vehicle?.marque} {booking.vehicle?.modele}
                       </TableCell>
-                      <TableCell>{new Date(booking.date_debut).toLocaleDateString()}</TableCell>
-                      <TableCell>{new Date(booking.date_fin).toLocaleDateString()}</TableCell>
-                      <TableCell>{booking.prix_total} DT</TableCell>
-                      <TableCell>{getStatusBadge(booking.statut)}</TableCell>
+                      <TableCell>{new Date(booking.start_date).toLocaleDateString()}</TableCell>
+                      <TableCell>{new Date(booking.end_date).toLocaleDateString()}</TableCell>
+                      <TableCell>{booking.total_amount.toFixed(3)} DT</TableCell>
+                      <TableCell>{getStatusBadge(booking.status)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setSelectedBooking(booking);
+                              setDetailsOpen(true);
+                            }}
+                            title="Voir les détails"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -302,11 +357,11 @@ export default function Bookings() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="client_id">Client</Label>
+                <Label htmlFor="customer_id">Client *</Label>
                 <Select
-                  value={formData.client_id}
+                  value={formData.customer_id > 0 ? formData.customer_id.toString() : ''}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, client_id: value })
+                    setFormData({ ...formData, customer_id: parseInt(value) })
                   }
                 >
                   <SelectTrigger>
@@ -315,7 +370,7 @@ export default function Bookings() {
                   <SelectContent>
                     {customers.map((customer) => (
                       <SelectItem key={customer.id} value={customer.id.toString()}>
-                        {customer.nom} {customer.prenom}
+                        {customer.prenom} {customer.nom}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -323,11 +378,11 @@ export default function Bookings() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="vehicule_id">Véhicule</Label>
+                <Label htmlFor="vehicle_id">Véhicule *</Label>
                 <Select
-                  value={formData.vehicule_id}
+                  value={formData.vehicle_id > 0 ? formData.vehicle_id.toString() : ''}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, vehicule_id: value })
+                    setFormData({ ...formData, vehicle_id: parseInt(value) })
                   }
                 >
                   <SelectTrigger>
@@ -344,64 +399,60 @@ export default function Bookings() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="date_debut">Date de début</Label>
+                <Label htmlFor="start_date">Date de début</Label>
                 <Input
-                  id="date_debut"
+                  id="start_date"
                   type="date"
-                  value={formData.date_debut}
+                  value={formData.start_date}
                   onChange={(e) =>
-                    setFormData({ ...formData, date_debut: e.target.value })
+                    setFormData({ ...formData, start_date: e.target.value })
                   }
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="date_fin">Date de fin</Label>
+                <Label htmlFor="end_date">Date de fin</Label>
                 <Input
-                  id="date_fin"
+                  id="end_date"
                   type="date"
-                  value={formData.date_fin}
+                  value={formData.end_date}
                   onChange={(e) =>
-                    setFormData({ ...formData, date_fin: e.target.value })
+                    setFormData({ ...formData, end_date: e.target.value })
                   }
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="prix_total">Prix total (DT)</Label>
-                <Input
-                  id="prix_total"
-                  type="number"
-                  step="0.01"
-                  value={formData.prix_total}
-                  onChange={(e) =>
-                    setFormData({ ...formData, prix_total: parseFloat(e.target.value) })
-                  }
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="statut">Statut</Label>
+                <Label htmlFor="fuel_policy">Politique de carburant</Label>
                 <Select
-                  value={formData.statut}
-                  onValueChange={(value: any) =>
-                    setFormData({ ...formData, statut: value })
+                  value={formData.fuel_policy}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, fuel_policy: value })
                   }
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="en_attente">En attente</SelectItem>
-                    <SelectItem value="confirmee">Confirmée</SelectItem>
-                    <SelectItem value="en_cours">En cours</SelectItem>
-                    <SelectItem value="terminee">Terminée</SelectItem>
-                    <SelectItem value="annulee">Annulée</SelectItem>
+                    <SelectItem value="full_to_full">Plein à plein</SelectItem>
+                    <SelectItem value="same_to_same">Même niveau</SelectItem>
+                    <SelectItem value="prepaid">Prépayé</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="notes">Notes</Label>
+                <Input
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) =>
+                    setFormData({ ...formData, notes: e.target.value })
+                  }
+                  placeholder="Notes additionnelles..."
+                />
               </div>
             </div>
 
@@ -421,13 +472,26 @@ export default function Bookings() {
         </DialogContent>
       </Dialog>
 
+      {/* Booking Details Modal */}
+      {selectedBooking && (
+        <BookingDetails
+          booking={selectedBooking}
+          open={detailsOpen}
+          onClose={() => {
+            setDetailsOpen(false);
+            setSelectedBooking(null);
+          }}
+          onUpdate={loadData}
+        />
+      )}
+
       {/* Delete Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Confirmer la suppression</DialogTitle>
             <DialogDescription>
-              Êtes-vous sûr de vouloir supprimer cette réservation ?
+              Êtes-vous sûr de vouloir annuler cette réservation ?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -435,7 +499,7 @@ export default function Bookings() {
               Annuler
             </Button>
             <Button variant="destructive" onClick={handleDelete} disabled={loading}>
-              {loading ? 'Suppression...' : 'Supprimer'}
+              {loading ? 'Annulation...' : 'Annuler la réservation'}
             </Button>
           </DialogFooter>
         </DialogContent>

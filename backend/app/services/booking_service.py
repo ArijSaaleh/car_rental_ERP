@@ -3,6 +3,7 @@ Booking service with availability check and conflict detection
 """
 from datetime import date, datetime, timedelta
 from typing import List, Optional, Dict, Any
+from uuid import UUID
 from sqlalchemy import and_, or_, func
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
@@ -20,10 +21,10 @@ class BookingService:
     @staticmethod
     def check_vehicle_availability(
         db: Session,
-        vehicle_id: int,
+        vehicle_id: UUID,
         start_date: date,
         end_date: date,
-        agency_id: int,
+        agency_id: UUID,
         exclude_booking_id: Optional[int] = None
     ) -> bool:
         """
@@ -80,10 +81,10 @@ class BookingService:
     @staticmethod
     def get_conflicting_bookings(
         db: Session,
-        vehicle_id: int,
+        vehicle_id: UUID,
         start_date: date,
         end_date: date,
-        agency_id: int
+        agency_id: UUID
     ) -> List[Booking]:
         """
         Récupère toutes les réservations en conflit avec la période demandée
@@ -106,7 +107,7 @@ class BookingService:
     @staticmethod
     def get_available_vehicles(
         db: Session,
-        agency_id: int,
+        agency_id: UUID,
         start_date: date,
         end_date: date,
         filters: Optional[Dict[str, Any]] = None
@@ -143,7 +144,7 @@ class BookingService:
         available_vehicles = []
         for vehicle in all_vehicles:
             if BookingService.check_vehicle_availability(
-                db, vehicle.vehicle_id, start_date, end_date, agency_id
+                db, vehicle.id, start_date, end_date, agency_id
             ):
                 available_vehicles.append(vehicle)
         
@@ -152,10 +153,10 @@ class BookingService:
     @staticmethod
     def calculate_rental_price(
         db: Session,
-        vehicle_id: int,
+        vehicle_id: UUID,
         start_date: date,
         end_date: date,
-        agency_id: int,
+        agency_id: UUID,
         daily_rate: Optional[float] = None
     ) -> Dict[str, float]:
         """
@@ -201,27 +202,36 @@ class BookingService:
         }
     
     @staticmethod
-    def generate_booking_number(db: Session, agency_id: int) -> str:
+    def generate_booking_number(db: Session, agency_id: UUID) -> str:
         """
         Génère un numéro de réservation unique
         Format: RES-YYYYMMDD-XXXX
         """
         today = datetime.now().strftime("%Y%m%d")
         
-        # Compter les réservations du jour pour cette agence
-        count = db.query(func.count(Booking.id)).filter(
-            Booking.agency_id == agency_id,
-            func.date(Booking.created_at) == datetime.now().date()
-        ).scalar()
+        # Trouver le prochain numéro de séquence disponible
+        max_attempts = 1000
+        for attempt in range(1, max_attempts + 1):
+            sequence = str(attempt).zfill(4)
+            booking_number = f"RES-{today}-{sequence}"
+            
+            # Vérifier si ce numéro existe déjà
+            existing = db.query(Booking).filter(
+                Booking.booking_number == booking_number
+            ).first()
+            
+            if not existing:
+                return booking_number
         
-        sequence = str(count + 1).zfill(4)
-        return f"RES-{today}-{sequence}"
+        # Si on arrive ici après 1000 tentatives, utiliser un UUID
+        import uuid
+        return f"RES-{today}-{str(uuid.uuid4())[:8]}"
     
     @staticmethod
     def get_vehicle_calendar(
         db: Session,
-        vehicle_id: int,
-        agency_id: int,
+        vehicle_id: UUID,
+        agency_id: UUID,
         start_date: date,
         end_date: date
     ) -> List[Dict[str, Any]]:

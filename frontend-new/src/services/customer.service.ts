@@ -2,8 +2,9 @@ import api from './api';
 import type { Customer } from '../types';
 
 export const customerService = {
-  async getAll(): Promise<Customer[]> {
-    const response = await api.get<Customer[]>('/customers');
+  async getAll(agencyId?: string): Promise<Customer[]> {
+    const params = agencyId ? `?agency_id=${agencyId}` : '';
+    const response = await api.get<Customer[]>(`/customers${params}`);
     return response.data;
   },
 

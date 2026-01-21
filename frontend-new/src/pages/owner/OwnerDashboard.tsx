@@ -53,7 +53,13 @@ export default function OwnerDashboard() {
   const loadStatistics = async () => {
     try {
       const response = await api.get('/proprietaire/statistics');
-      setStats(response.data);
+      const normalizedData = {
+        ...response.data,
+        total_revenue: typeof response.data.total_revenue === 'string' 
+          ? parseFloat(response.data.total_revenue) 
+          : response.data.total_revenue,
+      };
+      setStats(normalizedData);
     } catch (err) {
       setError(extractErrorMessage(err));
     } finally {

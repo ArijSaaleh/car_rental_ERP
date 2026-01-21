@@ -3,12 +3,13 @@ Booking Pydantic schemas
 """
 from datetime import date, datetime
 from typing import Optional, List, Dict, Any
+from uuid import UUID
 from pydantic import BaseModel, Field, field_validator
 from decimal import Decimal
 
 
 class BookingCreate(BaseModel):
-    vehicle_id: int = Field(..., description="ID du véhicule")
+    vehicle_id: UUID = Field(..., description="ID du véhicule")
     customer_id: int = Field(..., description="ID du client")
     start_date: date = Field(..., description="Date de début de location")
     end_date: date = Field(..., description="Date de fin de location")
@@ -43,10 +44,10 @@ class BookingUpdate(BaseModel):
 class BookingResponse(BaseModel):
     id: int
     booking_number: str
-    agency_id: int
-    vehicle_id: int
+    agency_id: UUID
+    vehicle_id: UUID
     customer_id: int
-    created_by_user_id: int
+    created_by_user_id: UUID
     start_date: date
     end_date: date
     pickup_datetime: Optional[datetime] = None
@@ -77,14 +78,14 @@ class BookingResponse(BaseModel):
 
 
 class VehicleAvailabilityRequest(BaseModel):
-    vehicle_id: int
+    vehicle_id: UUID
     start_date: date
     end_date: date
 
 
 class VehicleAvailabilityResponse(BaseModel):
     available: bool
-    vehicle_id: int
+    vehicle_id: UUID
     start_date: date
     end_date: date
     conflicts: List[Dict[str, Any]] = []

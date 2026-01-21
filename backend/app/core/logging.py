@@ -3,7 +3,7 @@ Structured logging configuration using structlog
 """
 import logging
 import structlog
-from pythonjsonlogger import jsonlogger
+# from pythonjsonlogger import jsonlogger  # Commented out - not used in current implementation
 
 from app.core.config import settings
 

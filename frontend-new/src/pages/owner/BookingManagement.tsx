@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Search, Edit, Trash2, Calendar, User, Car, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Calendar, User, Car, CheckCircle, XCircle, Clock, CheckCircle2, Play } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -88,6 +88,22 @@ interface BookingStats {
   cancelled: number;
 }
 
+// Helper function to normalize booking data from API
+const normalizeBooking = (booking: any): Booking => ({
+  ...booking,
+  daily_rate: typeof booking.daily_rate === 'string' ? parseFloat(booking.daily_rate) : booking.daily_rate,
+  duration_days: typeof booking.duration_days === 'string' ? parseInt(booking.duration_days) : booking.duration_days,
+  subtotal: typeof booking.subtotal === 'string' ? parseFloat(booking.subtotal) : booking.subtotal,
+  tax_amount: typeof booking.tax_amount === 'string' ? parseFloat(booking.tax_amount) : booking.tax_amount,
+  timbre_fiscal: typeof booking.timbre_fiscal === 'string' ? parseFloat(booking.timbre_fiscal) : booking.timbre_fiscal,
+  total_amount: typeof booking.total_amount === 'string' ? parseFloat(booking.total_amount) : booking.total_amount,
+  deposit_amount: typeof booking.deposit_amount === 'string' ? parseFloat(booking.deposit_amount) : booking.deposit_amount,
+  vehicle: booking.vehicle ? {
+    ...booking.vehicle,
+    daily_rate: typeof booking.vehicle.daily_rate === 'string' ? parseFloat(booking.vehicle.daily_rate) : booking.vehicle.daily_rate,
+  } : undefined,
+});
+
 export default function BookingManagement() {
   const [agencies, setAgencies] = useState<Agency[]>([]);
   const [selectedAgencyId, setSelectedAgencyId] = useState<string>('');
@@ -117,8 +133,6 @@ export default function BookingManagement() {
     end_date: '',
     daily_rate: 0,
     deposit_amount: 0,
-    mileage_limit: 200,
-    extra_mileage_rate: 0.5,
     fuel_policy: 'full_to_full',
     notes: '',
   });
@@ -156,10 +170,19 @@ export default function BookingManagement() {
         api.get(`/vehicles?agency_id=${selectedAgencyId}&page_size=100`),
       ]);
 
-      const bookingsList = Array.isArray(bookingsRes.data) ? bookingsRes.data : bookingsRes.data.bookings || [];
+      const rawBookings = Array.isArray(bookingsRes.data) ? bookingsRes.data : bookingsRes.data.bookings || [];
+      const bookingsList = rawBookings.map(normalizeBooking);
+      
       setBookings(bookingsList);
       setCustomers(customersRes.data.customers || customersRes.data || []);
-      setVehicles(vehiclesRes.data.vehicles || vehiclesRes.data || []);
+      
+      // Normalize vehicle data too
+      const rawVehicles = vehiclesRes.data.vehicles || vehiclesRes.data || [];
+      const normalizedVehicles = rawVehicles.map((v: any) => ({
+        ...v,
+        daily_rate: typeof v.daily_rate === 'string' ? parseFloat(v.daily_rate) : v.daily_rate,
+      }));
+      setVehicles(normalizedVehicles);
       
       calculateStats(bookingsList);
     } catch (err) {
@@ -205,8 +228,6 @@ export default function BookingManagement() {
         end_date: booking.end_date,
         daily_rate: booking.daily_rate,
         deposit_amount: booking.deposit_amount,
-        mileage_limit: 200,
-        extra_mileage_rate: 0.5,
         fuel_policy: 'full_to_full',
         notes: booking.notes || '',
       });
@@ -219,8 +240,6 @@ export default function BookingManagement() {
         end_date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
         daily_rate: 0,
         deposit_amount: 500,
-        mileage_limit: 200,
-        extra_mileage_rate: 0.5,
         fuel_policy: 'full_to_full',
         notes: '',
       });
@@ -241,8 +260,6 @@ export default function BookingManagement() {
         end_date: formData.end_date,
         daily_rate: formData.daily_rate || null,
         deposit_amount: formData.deposit_amount,
-        mileage_limit: formData.mileage_limit,
-        extra_mileage_rate: formData.extra_mileage_rate,
         fuel_policy: formData.fuel_policy,
         notes: formData.notes || null,
       };
@@ -277,6 +294,65 @@ export default function BookingManagement() {
       setError(extractErrorMessage(err));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleConfirmBooking = async (bookingId: number) => {
+    setLoading(true);
+    try {
+      await api.post(`/bookings/${bookingId}/confirm`);
+      setSuccess('Réservation confirmée avec succès');
+      await loadData();
+    } catch (err) {
+      setError(extractErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStartRental = async (bookingId: number) => {
+    const initialMileage = prompt('Kilométrage initial:');
+    const fuelLevel = prompt('Niveau carburant (full/three_quarters/half/quarter/empty):');
+    
+    if (initialMileage && fuelLevel) {
+      setLoading(true);
+      try {
+        await api.post(`/bookings/${bookingId}/start`, null, {
+          params: {
+            initial_mileage: parseInt(initialMileage),
+            initial_fuel_level: fuelLevel
+          }
+        });
+        setSuccess('Location démarrée avec succès');
+        await loadData();
+      } catch (err) {
+        setError(extractErrorMessage(err));
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleCompleteRental = async (bookingId: number) => {
+    const finalMileage = prompt('Kilométrage final:');
+    const fuelLevel = prompt('Niveau carburant (full/three_quarters/half/quarter/empty):');
+    
+    if (finalMileage && fuelLevel) {
+      setLoading(true);
+      try {
+        await api.post(`/bookings/${bookingId}/complete`, null, {
+          params: {
+            final_mileage: parseInt(finalMileage),
+            final_fuel_level: fuelLevel
+          }
+        });
+        setSuccess('Location terminée avec succès');
+        await loadData();
+      } catch (err) {
+        setError(extractErrorMessage(err));
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -542,6 +618,42 @@ export default function BookingManagement() {
                           <TableCell>{getPaymentBadge(booking.payment_status)}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
+                              {booking.status === 'pending' && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleConfirmBooking(booking.id)}
+                                  className="text-green-600 hover:text-green-700"
+                                  title="Confirmer"
+                                >
+                                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                                  Confirmer
+                                </Button>
+                              )}
+                              {booking.status === 'confirmed' && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleStartRental(booking.id)}
+                                  className="text-blue-600 hover:text-blue-700"
+                                  title="Démarrer"
+                                >
+                                  <Play className="h-4 w-4 mr-1" />
+                                  Démarrer
+                                </Button>
+                              )}
+                              {booking.status === 'in_progress' && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleCompleteRental(booking.id)}
+                                  className="text-purple-600 hover:text-purple-700"
+                                  title="Terminer"
+                                >
+                                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                                  Terminer
+                                </Button>
+                              )}
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -550,17 +662,19 @@ export default function BookingManagement() {
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  setSelectedBooking(booking);
-                                  setDeleteDialogOpen(true);
-                                }}
-                                title="Supprimer"
-                              >
-                                <Trash2 className="h-4 w-4 text-red-600" />
-                              </Button>
+                              {(booking.status === 'pending' || booking.status === 'confirmed') && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    setSelectedBooking(booking);
+                                    setDeleteDialogOpen(true);
+                                  }}
+                                  title="Annuler"
+                                >
+                                  <Trash2 className="h-4 w-4 text-red-600" />
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -701,29 +815,8 @@ export default function BookingManagement() {
               {/* Conditions */}
               <div>
                 <h3 className="text-sm font-semibold mb-3 text-slate-700">Conditions de location</h3>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="mileage_limit">Limite kilométrique (km/jour)</Label>
-                    <Input
-                      id="mileage_limit"
-                      type="number"
-                      value={formData.mileage_limit}
-                      onChange={(e) => setFormData({ ...formData, mileage_limit: parseInt(e.target.value) || 200 })}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="extra_mileage_rate">Tarif km supplémentaire (DT/km)</Label>
-                    <Input
-                      id="extra_mileage_rate"
-                      type="number"
-                      step="0.001"
-                      value={formData.extra_mileage_rate}
-                      onChange={(e) => setFormData({ ...formData, extra_mileage_rate: parseFloat(e.target.value) || 0.5 })}
-                    />
-                  </div>
-
-                  <div className="space-y-2 col-span-2">
                     <Label htmlFor="fuel_policy">Politique carburant</Label>
                     <Select
                       value={formData.fuel_policy}

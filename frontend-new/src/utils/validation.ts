@@ -88,22 +88,37 @@ export const customerSchema = z.object({
 
 // Booking schemas
 export const bookingSchema = z.object({
-  vehicle_id: z.string()
-    .uuid('ID véhicule invalide'),
-  customer_id: z.number()
-    .int()
-    .positive(),
+  customer_id: z.number().int().positive('Veuillez sélectionner un client'),
+  vehicle_id: z.number().int().positive('Veuillez sélectionner un véhicule'),
   start_date: z.string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Format de date invalide'),
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Format de date invalide')
+    .refine((date) => {
+      const selectedDate = new Date(date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return selectedDate >= today;
+    }, 'La date de début doit être dans le futur ou aujourd\'hui'),
   end_date: z.string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Format de date invalide'),
-  pickup_location: z.string()
-    .min(1, 'Lieu de prise en charge requis'),
-  return_location: z.string()
-    .min(1, 'Lieu de retour requis'),
-  notes: z.string().optional(),
-}).refine((data) => new Date(data.end_date) > new Date(data.start_date), {
+  fuel_policy: z.enum(['full_to_full', 'same_to_same', 'prepaid']).optional(),
+  notes: z.string().max(500, 'Les notes ne doivent pas dépasser 500 caractères').optional(),
+  deposit_amount: z.number().nonnegative('Le montant de la caution doit être positif').optional(),
+  mileage_limit: z.number().int().positive('La limite de kilométrage doit être positive').optional(),
+  extra_mileage_rate: z.number().positive('Le tarif par km supplémentaire doit être positif').optional(),
+}).refine((data) => {
+  const start = new Date(data.start_date);
+  const end = new Date(data.end_date);
+  return end > start;
+}, {
   message: 'La date de fin doit être après la date de début',
+  path: ['end_date'],
+}).refine((data) => {
+  const start = new Date(data.start_date);
+  const end = new Date(data.end_date);
+  const diffDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+  return diffDays <= 365;
+}, {
+  message: 'La durée de location ne peut pas dépasser 1 an',
   path: ['end_date'],
 });
 
