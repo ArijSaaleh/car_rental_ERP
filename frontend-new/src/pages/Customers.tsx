@@ -21,11 +21,13 @@ import {
 } from '../components/ui/dialog';
 import { Label } from '../components/ui/label';
 import { Alert, AlertDescription } from '../components/ui/alert';
+import { useToast } from '../hooks/use-toast';
 import { customerService } from '../services/customer.service';
 import type { Customer } from '../types';
 import { extractErrorMessage } from '../utils/errorHandler';
 
 export default function Customers() {
+  const { toast } = useToast();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,8 +115,18 @@ export default function Customers() {
     try {
       if (selectedCustomer) {
         await customerService.update(selectedCustomer.id, formData);
+        toast({
+          title: "Client mis à jour",
+          description: "Le client a été modifié avec succès.",
+          variant: "success",
+        });
       } else {
         await customerService.create(formData as any);
+        toast({
+          title: "Client créé",
+          description: "Le nouveau client a été ajouté avec succès.",
+          variant: "success",
+        });
       }
       await loadCustomers();
       setDialogOpen(false);
@@ -131,6 +143,11 @@ export default function Customers() {
 
     try {
       await customerService.delete(selectedCustomer.id);
+      toast({
+        title: "Client supprimé",
+        description: "Le client a été supprimé avec succès.",
+        variant: "success",
+      });
       await loadCustomers();
       setDeleteDialogOpen(false);
       setSelectedCustomer(null);
@@ -260,7 +277,7 @@ export default function Customers() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>
               {selectedCustomer ? 'Modifier le client' : 'Ajouter un client'}

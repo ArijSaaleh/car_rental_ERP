@@ -17,6 +17,7 @@ class AgencyBase(BaseModel):
     phone: str = Field(..., min_length=1, max_length=20)
     address: str = Field(..., min_length=1, max_length=500)
     city: str = Field(..., min_length=1, max_length=100)
+    postal_code: Optional[str] = Field(None, max_length=20)
     country: str = Field(default="Tunisia", max_length=100)
 
 
@@ -34,6 +35,7 @@ class AgencyUpdate(BaseModel):
     phone: Optional[str] = Field(None, min_length=1, max_length=20)
     address: Optional[str] = Field(None, min_length=1, max_length=500)
     city: Optional[str] = Field(None, min_length=1, max_length=100)
+    postal_code: Optional[str] = Field(None, max_length=20)
     country: Optional[str] = Field(None, max_length=100)
     subscription_plan: Optional[SubscriptionPlan] = None
     is_active: Optional[bool] = None
@@ -42,6 +44,7 @@ class AgencyUpdate(BaseModel):
 class AgencyResponse(AgencyBase):
     """Schema for agency response"""
     id: UUID
+    owner_id: Optional[UUID] = None
     parent_agency_id: Optional[UUID] = None
     subscription_plan: SubscriptionPlan
     subscription_start_date: datetime

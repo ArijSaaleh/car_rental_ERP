@@ -162,7 +162,7 @@ export function BookingDetails({ booking, open, onClose, onUpdate }: BookingDeta
   return (
     <>
       <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent>
           <DialogHeader>
             <div className="flex items-start justify-between">
               <div>

@@ -366,7 +366,7 @@ export default function ClientManagement() {
 
       {/* Rental History Dialog */}
       <Dialog open={historyDialogOpen} onOpenChange={setHistoryDialogOpen}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>
               Historique de Location - {selectedClient?.first_name} {selectedClient?.last_name}

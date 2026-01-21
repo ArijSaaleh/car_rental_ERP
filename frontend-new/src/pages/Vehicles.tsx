@@ -29,11 +29,13 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { Alert, AlertDescription } from '../components/ui/alert';
+import { useToast } from '../hooks/use-toast';
 import { vehicleService } from '../services/vehicle.service';
 import type { Vehicle } from '../types';
 import { extractErrorMessage } from '../utils/errorHandler';
 
 export default function Vehicles() {
+  const { toast } = useToast();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
@@ -130,8 +132,18 @@ export default function Vehicles() {
     try {
       if (selectedVehicle) {
         await vehicleService.update(selectedVehicle.id, formData);
+        toast({
+          title: "Véhicule mis à jour",
+          description: "Le véhicule a été mis à jour avec succès.",
+          variant: "success",
+        });
       } else {
         await vehicleService.create(formData as any);
+        toast({
+          title: "Véhicule créé",
+          description: "Le nouveau véhicule a été ajouté avec succès.",
+          variant: "success",
+        });
       }
       await loadVehicles();
       setDialogOpen(false);
@@ -148,6 +160,11 @@ export default function Vehicles() {
 
     try {
       await vehicleService.delete(selectedVehicle.id);
+      toast({
+        title: "Véhicule supprimé",
+        description: "Le véhicule a été supprimé avec succès.",
+        variant: "success",
+      });
       await loadVehicles();
       setDeleteDialogOpen(false);
       setSelectedVehicle(null);
@@ -280,7 +297,7 @@ export default function Vehicles() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>
               {selectedVehicle ? 'Modifier le véhicule' : 'Ajouter un véhicule'}

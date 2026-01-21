@@ -17,6 +17,26 @@ from app.middleware.feature_flags import FeatureFlags
 router = APIRouter(prefix="/agency", tags=["Agency Management"])
 
 
+@router.get("/", response_model=List[AgencyResponse])
+async def get_agencies(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all agencies owned by the current user (PROPRIETAIRE only)
+    
+    Returns: List of agencies where current user is the owner
+    """
+    if current_user.role != UserRole.PROPRIETAIRE:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Seuls les propriétaires peuvent accéder à cette ressource"
+        )
+    
+    agencies = db.query(Agency).filter(Agency.owner_id == current_user.id).all()
+    return agencies
+
+
 @router.get("/me", response_model=AgencyWithFeatures)
 async def get_my_agency(
     current_user: User = Depends(get_current_user),

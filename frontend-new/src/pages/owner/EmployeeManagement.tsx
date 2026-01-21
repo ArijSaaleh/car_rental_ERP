@@ -460,7 +460,7 @@ export default function EmployeeManagement() {
 
       {/* Add/Edit Employee Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>
               {selectedEmployee ? 'Modifier l\'employé' : 'Nouvel employé'}

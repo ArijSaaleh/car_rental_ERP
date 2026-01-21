@@ -29,12 +29,14 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { Alert, AlertDescription } from '../components/ui/alert';
+import { useToast } from '../hooks/use-toast';
 import { paymentService } from '../services/payment.service';
 import { contractService } from '../services/contract.service';
 import type { Payment } from '../types';
 import { extractErrorMessage } from '../utils/errorHandler';
 
 export default function Payments() {
+  const { toast } = useToast();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [filteredPayments, setFilteredPayments] = useState<Payment[]>([]);
   const [contracts, setContracts] = useState<any[]>([]);
@@ -120,8 +122,18 @@ export default function Payments() {
     try {
       if (selectedPayment) {
         await paymentService.update(selectedPayment.id, formData as any);
+        toast({
+          title: "Paiement mis à jour",
+          description: "Le paiement a été modifié avec succès.",
+          variant: "success",
+        });
       } else {
         await paymentService.create(formData as any);
+        toast({
+          title: "Paiement enregistré",
+          description: "Le nouveau paiement a été ajouté avec succès.",
+          variant: "success",
+        });
       }
       await loadData();
       setDialogOpen(false);
@@ -138,6 +150,11 @@ export default function Payments() {
 
     try {
       await paymentService.delete(selectedPayment.id);
+      toast({
+        title: "Paiement supprimé",
+        description: "Le paiement a été supprimé avec succès.",
+        variant: "success",
+      });
       await loadData();
       setDeleteDialogOpen(false);
       setSelectedPayment(null);
@@ -296,7 +313,7 @@ export default function Payments() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>
               {selectedPayment ? 'Modifier le paiement' : 'Nouveau paiement'}

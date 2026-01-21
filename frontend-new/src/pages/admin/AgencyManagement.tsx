@@ -30,6 +30,8 @@ import {
 } from '../../components/ui/select';
 import { RadioGroup, RadioGroupItem } from '../../components/ui/radio-group';
 import { Alert, AlertDescription } from '../../components/ui/alert';
+import { useToast } from '../../hooks/use-toast';
+import { LocationSelectors } from '../../components/LocationSelectors';
 import api from '../../services/api';
 import { extractErrorMessage } from '../../utils/errorHandler';
 
@@ -63,6 +65,7 @@ interface User {
 }
 
 export default function AgencyManagement() {
+  const { toast } = useToast();
   const [agencies, setAgencies] = useState<Agency[]>([]);
   const [filteredAgencies, setFilteredAgencies] = useState<Agency[]>([]);
   const [proprietaires, setProprietaires] = useState<User[]>([]);
@@ -79,6 +82,7 @@ export default function AgencyManagement() {
     email: '',
     phone: '',
     address: '',
+    governorate: '',
     city: '',
     postal_code: '',
     country: 'Tunisia',
@@ -136,6 +140,7 @@ export default function AgencyManagement() {
         email: agency.email,
         phone: agency.phone,
         address: agency.address,
+        governorate: '',
         city: agency.city,
         postal_code: agency.postal_code || '',
         country: agency.country,
@@ -158,6 +163,7 @@ export default function AgencyManagement() {
         email: '',
         phone: '',
         address: '',
+        governorate: '',
         city: '',
         postal_code: '',
         country: 'Tunisia',
@@ -188,6 +194,11 @@ export default function AgencyManagement() {
           proprietaire_id: formData.proprietaire_id || null,
         };
         await api.put(`/admin/agencies/${selectedAgency.id}`, payload);
+        toast({
+          title: "Agence mise à jour",
+          description: "L'agence a été mise à jour avec succès.",
+          variant: "success",
+        });
       } else {
         // Create new agency with onboarding
         if (formData.create_new_owner) {
@@ -210,6 +221,11 @@ export default function AgencyManagement() {
           };
           
           await api.post('/admin/agencies/onboard', payload);
+          toast({
+            title: "Agence créée",
+            description: "Nouvelle agence et propriétaire créés avec succès.",
+            variant: "success",
+          });
         } else {
           // Associate with existing owner
           const selectedOwner = proprietaires.find(
@@ -240,6 +256,11 @@ export default function AgencyManagement() {
           };
           
           await api.post('/admin/agencies/onboard', payload);
+          toast({
+            title: "Agence créée",
+            description: "Nouvelle agence associée au propriétaire existant.",
+            variant: "success",
+          });
         }
       }
       await loadAgencies();
@@ -257,6 +278,11 @@ export default function AgencyManagement() {
 
     try {
       await api.delete(`/admin/agencies/${selectedAgency.id}`);
+      toast({
+        title: "Agence supprimée",
+        description: "L'agence a été supprimée avec succès.",
+        variant: "success",
+      });
       await loadAgencies();
       setDeleteDialogOpen(false);
       setSelectedAgency(null);
@@ -289,27 +315,27 @@ export default function AgencyManagement() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="p-6 lg:p-8 space-y-8 animate-fade-in">
+      <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-3xl font-bold text-slate-900 dark:text-white">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
             Gestion des Agences
-          </h2>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">
+          </h1>
+          <p className="text-lg text-gray-600">
             Administrer toutes les agences de la plateforme
           </p>
         </div>
-        <Button onClick={() => handleOpenDialog()} className="gap-2">
+        <Button onClick={() => handleOpenDialog()} className="gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg shadow-blue-500/30">
           <Plus className="h-4 w-4" />
           Créer une agence
         </Button>
       </div>
 
-      <Card>
+      <Card className="bg-white border-gray-200 shadow-lg">
         <CardHeader>
           <div className="flex items-center gap-4">
             <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Rechercher par nom, email ou ville..."
                 value={searchTerm}
@@ -401,7 +427,7 @@ export default function AgencyManagement() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>
               {selectedAgency ? "Modifier l'agence" : 'Créer une agence'}
@@ -632,13 +658,13 @@ export default function AgencyManagement() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="city">Ville *</Label>
-                <Input
-                  id="city"
-                  value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  required
+              <div className="col-span-2">
+                <LocationSelectors
+                  governorate={formData.governorate}
+                  city={formData.city}
+                  onGovernorateChange={(value) => setFormData({ ...formData, governorate: value })}
+                  onCityChange={(value) => setFormData({ ...formData, city: value })}
+                  disabled={loading}
                 />
               </div>
 

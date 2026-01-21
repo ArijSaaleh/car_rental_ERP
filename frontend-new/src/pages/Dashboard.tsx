@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Car, Users, Calendar, TrendingUp } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Car, Users, Calendar, TrendingUp, BarChart3, DollarSign, Activity, Sparkles } from 'lucide-react';
+import { StatsCard, MiniStatsCard } from '../components/StatsCard';
+import { Alert, AlertDescription } from '../components/ui/alert';
+import { Button } from '../components/ui/button';
 import { vehicleService } from '../services/vehicle.service';
 import { bookingService } from '../services/booking.service';
 import { customerService } from '../services/customer.service';
+import { agencyService } from '../services/agency.service';
 import { authService } from '../services/auth.service';
+import { extractErrorMessage } from '../utils/errorHandler';
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
@@ -14,6 +18,7 @@ export default function Dashboard() {
     totalCustomers: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     loadStats();
@@ -22,7 +27,30 @@ export default function Dashboard() {
   const loadStats = async () => {
     try {
       const user = authService.getCurrentUserFromStorage();
-      const agencyId = user?.agency_id;
+      let agencyId = user?.agency_id;
+
+      // If owner without direct agency_id, load their main agency
+      if (!agencyId && user?.role === 'proprietaire') {
+        try {
+          const agencies = await agencyService.getAll();
+          // Filter main agencies (those without parent_agency_id)
+          const mainAgencies = agencies.filter((a: any) => !a.parent_agency_id);
+          if (mainAgencies.length > 0) {
+            agencyId = mainAgencies[0].id;
+          } else if (agencies.length > 0) {
+            // Fallback to first agency if no main agency found
+            agencyId = agencies[0].id;
+          }
+        } catch (err) {
+          console.error('Failed to load agencies:', err);
+        }
+      }
+
+      if (!agencyId) {
+        setError('Aucune agence trouvée. Veuillez créer une agence ou vous reconnecter.');
+        setLoading(false);
+        return;
+      }
 
       const [vehicles, bookings, customers] = await Promise.all([
         vehicleService.getAll(agencyId),
@@ -32,12 +60,12 @@ export default function Dashboard() {
 
       setStats({
         totalVehicles: vehicles.length,
-        availableVehicles: vehicles.filter((v) => v.statut === 'disponible').length,
+        availableVehicles: vehicles.filter((v) => v.status === 'disponible').length,
         totalBookings: bookings.length,
         totalCustomers: customers.length,
       });
-    } catch (error) {
-      console.error('Error loading stats:', error);
+    } catch (err) {
+      setError(extractErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -76,59 +104,134 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg text-slate-600">Chargement...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-slate-100">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement des données...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold text-slate-900 dark:text-white">
-          Tableau de bord
-        </h2>
-        <p className="text-slate-600 dark:text-slate-400 mt-1">
-          Vue d'ensemble de votre activité
-        </p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100">
+      <div className="p-6 lg:p-8 space-y-8 animate-fade-in">
+        {/* Header */}
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              Tableau de bord
+            </h1>
+            <p className="text-lg text-gray-600">
+              Vue d'ensemble de votre activité
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" className="rounded-xl border-gray-200 hover:bg-gray-100">
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Rapports
+            </Button>
+            <Button className="rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg shadow-blue-500/30">
+              <Sparkles className="h-4 w-4 mr-2" />
+              Nouvelle Réservation
+            </Button>
+          </div>
+        </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statCards.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={stat.title}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                  {stat.title}
-                </CardTitle>
-                <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                  <Icon className={`h-5 w-5 ${stat.color}`} />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-slate-900 dark:text-white">
-                  {stat.value}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+        {error && (
+          <Alert variant="destructive" className="animate-scale-in">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-      {/* Welcome Card */}
-      <Card className="bg-gradient-to-br from-primary to-primary/80 text-white border-0">
-        <CardHeader>
-          <CardTitle className="text-2xl">Bienvenue sur Car Rental ERP</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-white/90">
-            Gérez efficacement votre flotte de véhicules, vos réservations et vos clients
-            depuis cette interface moderne et intuitive.
-          </p>
-        </CardContent>
-      </Card>
+        {/* Main Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatsCard
+            title="Total Véhicules"
+            value={stats.totalVehicles}
+            icon={<Car className="h-6 w-6" />}
+            trend={{ value: 12, label: "vs mois dernier" }}
+            variant="primary"
+          />
+          
+          <StatsCard
+            title="Véhicules Disponibles"
+            value={stats.availableVehicles}
+            icon={<TrendingUp className="h-6 w-6" />}
+            trend={{ value: 8.5, label: "vs mois dernier" }}
+            variant="success"
+          />
+          
+          <StatsCard
+            title="Réservations"
+            value={stats.totalBookings}
+            icon={<Calendar className="h-6 w-6" />}
+            trend={{ value: -2.4, label: "vs mois dernier" }}
+            variant="accent"
+          />
+          
+          <StatsCard
+            title="Clients"
+            value={stats.totalCustomers}
+            icon={<Users className="h-6 w-6" />}
+            trend={{ value: 5.1, label: "vs mois dernier" }}
+            variant="warning"
+          />
+        </div>
+
+        {/* Mini Stats Row */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <MiniStatsCard
+            label="Véhicules actifs"
+            value={stats.availableVehicles}
+            icon={<Activity className="h-4 w-4" />}
+            color="green"
+          />
+          <MiniStatsCard
+            label="En maintenance"
+            value={stats.totalVehicles - stats.availableVehicles}
+            icon={<Car className="h-4 w-4" />}
+            color="orange"
+          />
+          <MiniStatsCard
+            label="Clients actifs"
+            value={stats.totalCustomers}
+            icon={<Users className="h-4 w-4" />}
+            color="blue"
+          />
+          <MiniStatsCard
+            label="Taux d'occupation"
+            value="85%"
+            icon={<TrendingUp className="h-4 w-4" />}
+            color="purple"
+          />
+        </div>
+
+      
+
+        {/* Performance Charts Placeholder */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-lg">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Réservations récentes</h3>
+            <div className="h-64 flex items-center justify-center bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200">
+              <div className="text-center">
+                <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-600">Graphique des réservations</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-lg">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Activité de la flotte</h3>
+            <div className="h-64 flex items-center justify-center bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200">
+              <div className="text-center">
+                <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-600">Graphique d'activité</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

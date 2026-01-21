@@ -87,12 +87,12 @@ export default function SystemSettings() {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="p-6 lg:p-8 space-y-8 max-w-6xl animate-fade-in">
       <div>
-        <h2 className="text-3xl font-bold text-slate-900 dark:text-white">
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">
           Paramètres Système
-        </h2>
-        <p className="text-slate-600 dark:text-slate-400 mt-1">
+        </h1>
+        <p className="text-lg text-gray-600">
           Configuration globale de la plateforme
         </p>
       </div>
@@ -112,10 +112,10 @@ export default function SystemSettings() {
       )}
 
       {/* General Settings */}
-      <Card>
+      <Card className="bg-white border-gray-200 shadow-lg">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Globe className="h-5 w-5 text-primary" />
+            <Globe className="h-5 w-5 text-blue-600" />
             <CardTitle>Paramètres Généraux</CardTitle>
           </div>
           <CardDescription>Configuration de base de l'application</CardDescription>
@@ -140,7 +140,7 @@ export default function SystemSettings() {
             </div>
           </div>
           <div className="flex justify-end">
-            <Button onClick={() => handleSave('general')} disabled={loading}>
+            <Button onClick={() => handleSave('general')} disabled={loading} className="rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg shadow-blue-500/30">
               <Save className="h-4 w-4 mr-2" />
               Enregistrer
             </Button>
@@ -149,10 +149,10 @@ export default function SystemSettings() {
       </Card>
 
       {/* Email Settings */}
-      <Card>
+      <Card className="bg-white border-gray-200 shadow-lg">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Mail className="h-5 w-5 text-primary" />
+            <Mail className="h-5 w-5 text-blue-600" />
             <CardTitle>Configuration Email (SMTP)</CardTitle>
           </div>
           <CardDescription>Paramètres d'envoi d'emails</CardDescription>
@@ -213,7 +213,7 @@ export default function SystemSettings() {
             </div>
           </div>
           <div className="flex justify-end">
-            <Button onClick={() => handleSave('email')} disabled={loading}>
+            <Button onClick={() => handleSave('email')} disabled={loading} className="rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg shadow-blue-500/30">
               <Save className="h-4 w-4 mr-2" />
               Enregistrer
             </Button>
@@ -222,10 +222,10 @@ export default function SystemSettings() {
       </Card>
 
       {/* Database Settings */}
-      <Card>
+      <Card className="bg-white border-gray-200 shadow-lg">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Database className="h-5 w-5 text-primary" />
+            <Database className="h-5 w-5 text-blue-600" />
             <CardTitle>Sauvegardes Base de Données</CardTitle>
           </div>
           <CardDescription>Configuration des sauvegardes automatiques</CardDescription>
@@ -268,7 +268,7 @@ export default function SystemSettings() {
               <Database className="h-4 w-4 mr-2" />
               Créer une sauvegarde maintenant
             </Button>
-            <Button onClick={() => handleSave('database')} disabled={loading}>
+            <Button onClick={() => handleSave('database')} disabled={loading} className="rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg shadow-blue-500/30">
               <Save className="h-4 w-4 mr-2" />
               Enregistrer
             </Button>
@@ -277,10 +277,10 @@ export default function SystemSettings() {
       </Card>
 
       {/* Security Settings */}
-      <Card>
+      <Card className="bg-white border-gray-200 shadow-lg">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary" />
+            <Shield className="h-5 w-5 text-blue-600" />
             <CardTitle>Sécurité</CardTitle>
           </div>
           <CardDescription>Paramètres de sécurité et authentification</CardDescription>
@@ -324,7 +324,7 @@ export default function SystemSettings() {
             </div>
           </div>
           <div className="flex justify-end">
-            <Button onClick={() => handleSave('security')} disabled={loading}>
+            <Button onClick={() => handleSave('security')} disabled={loading} className="rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg shadow-blue-500/30">
               <Save className="h-4 w-4 mr-2" />
               Enregistrer
             </Button>
@@ -333,10 +333,10 @@ export default function SystemSettings() {
       </Card>
 
       {/* API Settings */}
-      <Card>
+      <Card className="bg-white border-gray-200 shadow-lg">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Server className="h-5 w-5 text-primary" />
+            <Server className="h-5 w-5 text-blue-600" />
             <CardTitle>Configuration API</CardTitle>
           </div>
           <CardDescription>Limites et paramètres API</CardDescription>
@@ -369,7 +369,7 @@ export default function SystemSettings() {
             </div>
           </div>
           <div className="flex justify-end">
-            <Button onClick={() => handleSave('api')} disabled={loading}>
+            <Button onClick={() => handleSave('api')} disabled={loading} className="rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg shadow-blue-500/30">
               <Save className="h-4 w-4 mr-2" />
               Enregistrer
             </Button>
@@ -378,10 +378,10 @@ export default function SystemSettings() {
       </Card>
 
       {/* Notifications */}
-      <Card>
+      <Card className="bg-white border-gray-200 shadow-lg">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Bell className="h-5 w-5 text-primary" />
+            <Bell className="h-5 w-5 text-blue-600" />
             <CardTitle>Notifications</CardTitle>
           </div>
           <CardDescription>Activer/désactiver les notifications</CardDescription>
@@ -424,7 +424,7 @@ export default function SystemSettings() {
             </div>
           </div>
           <div className="flex justify-end">
-            <Button onClick={() => handleSave('notifications')} disabled={loading}>
+            <Button onClick={() => handleSave('notifications')} disabled={loading} className="rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg shadow-blue-500/30">
               <Save className="h-4 w-4 mr-2" />
               Enregistrer
             </Button>

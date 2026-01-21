@@ -12,57 +12,81 @@ export interface User {
 }
 
 export interface Agency {
-  id: number;
-  nom: string;
-  adresse: string;
-  telephone: string;
+  id: string;
+  owner_id?: string;
+  parent_agency_id?: string;
+  name: string;
+  legal_name: string;
+  tax_id: string;
   email: string;
-  proprietaire_id: number;
-  proprietaire?: User;
+  phone: string;
+  address: string;
+  city: string;
+  postal_code?: string;
+  country: string;
+  subscription_plan: 'basique' | 'standard' | 'premium' | 'entreprise';
+  subscription_start_date: string;
+  subscription_end_date?: string;
   is_active: boolean;
   created_at: string;
 }
 
 export interface Vehicle {
-  id: number;
-  agence_id: number;
-  agence?: Agency;
-  matricule: string;
-  marque: string;
-  modele: string;
-  annee: number;
-  couleur: string;
-  type_carburant: string;
-  kilometrage: number;
-  prix_journalier: number;
-  statut: 'disponible' | 'loue' | 'maintenance';
-  image_url?: string;
+  id: string;
+  agency_id: string;
+  license_plate: string;
+  vin?: string;
+  brand: string;
+  model: string;
+  year: number;
+  color?: string;
+  fuel_type: 'essence' | 'diesel' | 'hybride' | 'electrique';
+  transmission: 'manuelle' | 'automatique';
+  seats: number;
+  doors: number;
+  mileage: number;
+  status: 'disponible' | 'loue' | 'maintenance' | 'hors_service';
+  registration_number?: string;
+  insurance_policy?: string;
+  insurance_expiry?: string;
+  technical_control_expiry?: string;
+  daily_rate?: number;
+  notes?: string;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface Customer {
   id: number;
-  agence_id: number;
-  agence?: Agency;
-  nom: string;
-  prenom: string;
-  cin: string;
+  agency_id: string;
+  customer_type?: 'individual' | 'company';
+  first_name: string;
+  last_name: string;
   email: string;
-  telephone: string;
-  adresse: string;
-  date_naissance: string;
-  num_permis: string;
-  date_permis: string;
+  phone: string;
+  cin_number?: string;
+  cin_issue_date?: string;
+  cin_expiry_date?: string;
+  date_of_birth?: string;
+  place_of_birth?: string;
+  license_number: string;
+  license_issue_date?: string;
+  license_expiry_date?: string;
+  license_category?: string;
+  address?: string;
+  city?: string;
+  postal_code?: string;
+  country?: string;
   created_at: string;
 }
 
 export interface Booking {
   id: number;
   booking_number: string;
-  agency_id: number;
-  vehicle_id: number;
+  agency_id: string;
+  vehicle_id: string;
   customer_id: number;
-  created_by_user_id: number;
+  created_by_user_id: string;
   start_date: string;
   end_date: string;
   pickup_datetime?: string;

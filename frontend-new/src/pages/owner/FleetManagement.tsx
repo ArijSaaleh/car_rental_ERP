@@ -640,7 +640,7 @@ export default function FleetManagement() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>
               {selectedVehicle ? 'Modifier le véhicule' : 'Nouveau véhicule'}

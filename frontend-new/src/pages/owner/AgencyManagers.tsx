@@ -329,7 +329,7 @@ export default function AgencyManagers() {
 
       {/* Add Manager Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Nouveau Gestionnaire</DialogTitle>
             <DialogDescription>

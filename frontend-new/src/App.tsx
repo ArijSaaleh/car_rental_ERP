@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Suspense, lazy } from 'react';
 import ErrorBoundary from './components/ErrorBoundary';
 import { authService } from './services/auth.service';
+import { Toaster } from './components/ui/toaster';
 
 // Eager load critical components
 import Login from './pages/Login';
@@ -105,6 +106,7 @@ function App() {
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
       </Routes>
         </Suspense>
+        <Toaster />
       </BrowserRouter>
     </ErrorBoundary>
   );

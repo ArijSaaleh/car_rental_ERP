@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { Alert, AlertDescription } from '../components/ui/alert';
+import { useToast } from '../hooks/use-toast';
 import { BookingDetails } from '../components/BookingDetails';
 import { bookingService } from '../services/booking.service';
 import { vehicleService } from '../services/vehicle.service';
@@ -49,6 +50,7 @@ const normalizeBooking = (booking: any): Booking => ({
 });
 
 export default function Bookings() {
+  const { toast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [filteredBookings, setFilteredBookings] = useState<Booking[]>([]);
   const [vehicles, setVehicles] = useState<any[]>([]);
@@ -170,8 +172,18 @@ export default function Bookings() {
           notes: formData.notes,
         };
         await bookingService.update(selectedBooking.id, updateData);
+        toast({
+          title: "Réservation mise à jour",
+          description: "La réservation a été modifiée avec succès.",
+          variant: "success",
+        });
       } else {
         await bookingService.create(formData);
+        toast({
+          title: "Réservation créée",
+          description: "La nouvelle réservation a été ajoutée avec succès.",
+          variant: "success",
+        });
       }
       await loadData();
       setDialogOpen(false);
@@ -338,7 +350,7 @@ export default function Bookings() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>
               {selectedBooking ? 'Modifier la réservation' : 'Nouvelle réservation'}

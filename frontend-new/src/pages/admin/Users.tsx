@@ -29,7 +29,9 @@ import {
   SelectValue,
 } from '../../components/ui/select';
 import { Alert, AlertDescription } from '../../components/ui/alert';
+import { useToast } from '../../hooks/use-toast';
 import api from '../../services/api';
+import { cn } from '../../lib/utils';
 
 interface User {
   id: string;
@@ -48,6 +50,7 @@ interface Agency {
 }
 
 export default function Users() {
+  const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [agencies, setAgencies] = useState<Agency[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
@@ -57,6 +60,9 @@ export default function Users() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
   const [formData, setFormData] = useState({
     email: '',
     full_name: '',
@@ -79,6 +85,7 @@ export default function Users() {
         user.role.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredUsers(filtered);
+    setCurrentPage(1); // Reset to first page when search changes
   }, [searchTerm, users]);
 
   const loadData = async () => {
@@ -145,9 +152,19 @@ export default function Users() {
           payload.password = formData.password;
         }
         await api.put(`/admin/users/${selectedUser.id}`, payload);
+        toast({
+          title: "Utilisateur mis à jour",
+          description: "L'utilisateur a été mis à jour avec succès.",
+          variant: "success",
+        });
       } else {
         payload.password = formData.password;
         await api.post('/admin/users/create', payload);
+        toast({
+          title: "Utilisateur créé",
+          description: "Le nouvel utilisateur a été créé avec succès.",
+          variant: "success",
+        });
       }
       await loadData();
       setDialogOpen(false);
@@ -161,14 +178,31 @@ export default function Users() {
   const handleDelete = async () => {
     if (!selectedUser) return;
     setLoading(true);
+    setError('');
 
     try {
       await api.delete(`/admin/users/${selectedUser.id}`);
+      toast({
+        title: "Utilisateur supprimé",
+        description: "L'utilisateur a été supprimé avec succès.",
+        variant: "success",
+      });
       await loadData();
       setDeleteDialogOpen(false);
       setSelectedUser(null);
+      setSuccess('Utilisateur supprimé avec succès');
+      setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Erreur lors de la suppression');
+      const errorMessage = err.response?.data?.detail || 'Erreur lors de la suppression';
+      toast({
+        title: "Erreur de suppression",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      setDeleteDialogOpen(false);
+      setSelectedUser(null);
+      setError(errorMessage);
+      setTimeout(() => setError(''), 5000);
     } finally {
       setLoading(false);
     }
@@ -209,77 +243,91 @@ export default function Users() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="p-6 lg:p-8 space-y-8 animate-fade-in">
+      <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-3xl font-bold text-slate-900 dark:text-white">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
             Gestion des Utilisateurs
-          </h2>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">
+          </h1>
+          <p className="text-lg text-gray-600">
             Gérez tous les utilisateurs de la plateforme
           </p>
         </div>
-        <Button onClick={() => handleOpenDialog()} className="gap-2">
+        <Button onClick={() => handleOpenDialog()} className="gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg shadow-blue-500/30">
           <Plus className="h-4 w-4" />
           Nouvel utilisateur
         </Button>
       </div>
 
+      {/* Success Alert */}
+      {success && (
+        <Alert className="bg-green-50 border-green-200">
+          <AlertDescription className="text-green-800">{success}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Error Alert */}
+      {error && (
+        <Alert className="bg-red-50 border-red-200">
+          <AlertDescription className="text-red-800">{error}</AlertDescription>
+        </Alert>
+      )}
+
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card className="bg-white border-gray-200 shadow-lg">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-slate-600">
+            <CardTitle className="text-sm font-medium text-gray-600">
               Total Utilisateurs
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{users.length}</div>
+            <div className="text-2xl font-bold text-gray-900">{users.length}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white border-gray-200 shadow-lg">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-slate-600">
+            <CardTitle className="text-sm font-medium text-gray-600">
               Super Admins
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-gray-900">
               {users.filter((u) => u.role === 'super_admin').length}
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white border-gray-200 shadow-lg">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-slate-600">
+            <CardTitle className="text-sm font-medium text-gray-600">
               Propriétaires
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-gray-900">
               {users.filter((u) => u.role === 'proprietaire').length}
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white border-gray-200 shadow-lg">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-slate-600">
+            <CardTitle className="text-sm font-medium text-gray-600">
               Employés
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-gray-900">
               {users.filter((u) => u.role === 'employee').length}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
+      <Card className="bg-white border-gray-200 shadow-lg">
         <CardHeader>
           <div className="flex items-center gap-4">
             <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Rechercher par nom, email ou rôle..."
                 value={searchTerm}
@@ -310,7 +358,9 @@ export default function Users() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredUsers.map((user) => (
+                  filteredUsers
+                    .slice((currentPage - 1) * pageSize, currentPage * pageSize)
+                    .map((user) => (
                     <TableRow key={user.id}>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -358,12 +408,62 @@ export default function Users() {
               </TableBody>
             </Table>
           </div>
+          
+          {/* Pagination */}
+          {filteredUsers.length > pageSize && (
+            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
+              <div className="text-sm text-gray-600">
+                Affichage de {((currentPage - 1) * pageSize) + 1} à{' '}
+                {Math.min(currentPage * pageSize, filteredUsers.length)} sur{' '}
+                {filteredUsers.length} résultats
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="rounded-lg"
+                >
+                  Précédent
+                </Button>
+                
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.ceil(filteredUsers.length / pageSize) }, (_, i) => i + 1).map((page) => (
+                    <Button
+                      key={page}
+                      variant={page === currentPage ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => setCurrentPage(page)}
+                      className={cn(
+                        "rounded-lg",
+                        page === currentPage && "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30"
+                      )}
+                    >
+                      {page}
+                    </Button>
+                  ))}
+                </div>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === Math.ceil(filteredUsers.length / pageSize)}
+                  className="rounded-lg"
+                >
+                  Suivant
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>
               {selectedUser ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur'}

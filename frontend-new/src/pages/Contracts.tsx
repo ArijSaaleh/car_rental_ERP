@@ -29,12 +29,14 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { Alert, AlertDescription } from '../components/ui/alert';
+import { useToast } from '../hooks/use-toast';
 import { contractService } from '../services/contract.service';
 import { bookingService } from '../services/booking.service';
 import type { Contract } from '../types';
 import { extractErrorMessage } from '../utils/errorHandler';
 
 export default function Contracts() {
+  const { toast } = useToast();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [filteredContracts, setFilteredContracts] = useState<Contract[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
@@ -137,8 +139,18 @@ export default function Contracts() {
     try {
       if (selectedContract) {
         await contractService.update(selectedContract.id, formData as any);
+        toast({
+          title: "Contrat mis à jour",
+          description: "Le contrat a été modifié avec succès.",
+          variant: "success",
+        });
       } else {
         await contractService.create(formData as any);
+        toast({
+          title: "Contrat créé",
+          description: "Le nouveau contrat a été généré avec succès.",
+          variant: "success",
+        });
       }
       await loadData();
       setDialogOpen(false);
@@ -155,6 +167,11 @@ export default function Contracts() {
 
     try {
       await contractService.delete(selectedContract.id);
+      toast({
+        title: "Contrat supprimé",
+        description: "Le contrat a été supprimé avec succès.",
+        variant: "success",
+      });
       await loadData();
       setDeleteDialogOpen(false);
       setSelectedContract(null);
@@ -307,7 +324,7 @@ export default function Contracts() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>
               {selectedContract ? 'Modifier le contrat' : 'Nouveau contrat'}

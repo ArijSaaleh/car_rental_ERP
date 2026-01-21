@@ -6,8 +6,7 @@ import {
   Users, 
   Calendar, 
   FileText, 
-  Settings, 
-  LogOut,
+  Settings,
   ChevronRight,
   Building2,
   UserCircle,
@@ -27,13 +26,13 @@ interface NavItem {
   badge?: string;
 }
 
-interface ModernSidebarProps {
+interface SidebarProps {
   userRole?: 'super_admin' | 'proprietaire' | 'client';
-  userName?: string;
-  onLogout?: () => void;
+  isCollapsed?: boolean;
+  onToggle?: () => void;
 }
 
-export function ModernSidebar({ userRole = 'proprietaire', userName = 'User', onLogout }: ModernSidebarProps) {
+export function Sidebar({ userRole = 'proprietaire', isCollapsed = false, onToggle }: SidebarProps) {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -72,38 +71,33 @@ export function ModernSidebar({ userRole = 'proprietaire', userName = 'User', on
   const SidebarContent = () => (
     <>
       {/* Logo Section */}
-      <div className="px-6 py-6 border-b border-border/50">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-gradient-primary">
-            <Car className="h-6 w-6 text-white" />
+      <div className={cn("py-6 border-b border-white/10", isCollapsed ? "px-3" : "px-6")}>
+        <button 
+          onClick={onToggle}
+          className={cn(
+            "flex items-center group w-full hover:opacity-80 transition-opacity bg-transparent border-none",
+            isCollapsed ? "justify-center" : "gap-3 text-left"
+          )}
+        >
+          <div className="relative">
+            <div className="absolute inset-0 bg-blue-500 blur-xl opacity-50"></div>
+            <div className="relative p-2 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/50 group-hover:scale-105 transition-transform">
+              <Car className="h-6 w-6 text-white" />
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
-              DriveFlow
-            </h1>
-            <p className="text-xs text-muted-foreground">Car Rental</p>
-          </div>
-        </div>
-      </div>
-
-      {/* User Profile Section */}
-      <div className="px-6 py-6 border-b border-border/50">
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-br from-primary/5 to-accent/5 border border-border/50">
-          <div className="h-10 w-10 rounded-full bg-gradient-accent flex items-center justify-center text-white font-semibold">
-            {userName.charAt(0).toUpperCase()}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-foreground truncate">{userName}</p>
-            <p className="text-xs text-muted-foreground capitalize">
-              {userRole === 'super_admin' ? 'Administrateur' : 
-               userRole === 'proprietaire' ? 'Propriétaire' : 'Client'}
-            </p>
-          </div>
-        </div>
+          {!isCollapsed && (
+            <div>
+              <h1 className="text-xl font-bold text-white">
+                DriveFlow
+              </h1>
+              <p className="text-xs text-gray-400">Car Rental</p>
+            </div>
+          )}
+        </button>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-4 py-6 space-y-1">
+      <nav className={cn("flex-1 py-6 space-y-1 overflow-y-auto", isCollapsed ? "px-2" : "px-4")}>
         {navItems.map((item) => {
           const isActive = location.pathname === item.href || 
                           (item.href !== '/' && location.pathname.startsWith(item.href));
@@ -114,43 +108,35 @@ export function ModernSidebar({ userRole = 'proprietaire', userName = 'User', on
               to={item.href}
               onClick={() => setIsOpen(false)}
               className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative",
+                "flex items-center rounded-xl transition-all duration-200 group relative",
+                isCollapsed ? "px-3 py-3 justify-center" : "px-4 py-3 gap-3",
                 isActive
-                  ? "bg-gradient-primary text-white shadow-lg shadow-primary/25"
-                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30"
+                  : "text-gray-400 hover:bg-white/5 hover:text-white"
               )}
+              title={isCollapsed ? item.label : undefined}
             >
               <span className={cn(
-                "transition-transform duration-200",
-                isActive ? "scale-110" : "group-hover:scale-110"
+                "transition-all duration-200",
+                isActive ? "text-white scale-110" : "text-gray-400 group-hover:text-blue-400 group-hover:scale-110"
               )}>
                 {item.icon}
               </span>
-              <span className="font-medium flex-1">{item.label}</span>
-              {item.badge && (
-                <span className="px-2 py-0.5 rounded-full bg-accent text-white text-xs font-semibold">
+              {!isCollapsed && <span className="font-medium flex-1">{item.label}</span>}
+              {!isCollapsed && item.badge && (
+                <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-xs font-semibold">
                   {item.badge}
                 </span>
               )}
-              {isActive && (
-                <ChevronRight className="h-4 w-4 ml-auto" />
+              {!isCollapsed && isActive && (
+                <ChevronRight className="h-4 w-4 ml-auto text-white" />
               )}
             </Link>
           );
         })}
       </nav>
 
-      {/* Logout Button */}
-      <div className="px-4 py-6 border-t border-border/50">
-        <Button
-          variant="ghost"
-          onClick={onLogout}
-          className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10 rounded-xl"
-        >
-          <LogOut className="h-5 w-5 mr-3" />
-          Déconnexion
-        </Button>
-      </div>
+
     </>
   );
 
@@ -160,7 +146,7 @@ export function ModernSidebar({ userRole = 'proprietaire', userName = 'User', on
       <Button
         variant="ghost"
         size="icon"
-        className="lg:hidden fixed top-4 left-4 z-50 bg-white/90 backdrop-blur-sm shadow-lg rounded-xl"
+        className="lg:hidden fixed top-4 left-4 z-50 bg-gray-900 text-white shadow-lg rounded-xl hover:bg-gray-800"
         onClick={() => setIsOpen(!isOpen)}
       >
         {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -169,21 +155,24 @@ export function ModernSidebar({ userRole = 'proprietaire', userName = 'User', on
       {/* Mobile Overlay */}
       {isOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40 animate-fade-in"
+          className="lg:hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-40 animate-fade-in"
           onClick={() => setIsOpen(false)}
         />
       )}
 
       {/* Sidebar - Desktop */}
-      <aside className="hidden lg:flex w-72 bg-white/90 backdrop-blur-xl border-r border-border/50 flex-col">
+      <aside className={cn(
+        "hidden lg:flex bg-gray-900 border-r border-white/10 flex-col transition-all duration-300",
+        isCollapsed ? "w-20" : "w-72"
+      )}>
         <SidebarContent />
       </aside>
 
       {/* Sidebar - Mobile */}
       <aside
         className={cn(
-          "lg:hidden fixed left-0 top-0 bottom-0 w-72 bg-white/95 backdrop-blur-xl border-r border-border/50 flex-col z-40 transition-transform duration-300",
-          isOpen ? "translate-x-0" : "-translate-x-full"
+          "lg:hidden fixed left-0 top-0 bottom-0 w-72 bg-gray-900 border-r border-white/10 flex-col z-40 transition-transform duration-300",
+          isOpen ? "translate-x-0 flex" : "-translate-x-full"
         )}
       >
         <SidebarContent />
