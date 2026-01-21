@@ -49,13 +49,13 @@ export function Sidebar({ userRole = 'proprietaire', isCollapsed = false, onTogg
     
     if (userRole === 'proprietaire') {
       return [
-        { label: 'Tableau de bord', href: '/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
+        { label: 'Tableau de bord', href: '/owner/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
         { label: 'Mes Agences', href: '/owner/agencies', icon: <Building2 className="h-5 w-5" /> },
-        { label: 'Flotte', href: '/owner/fleet', icon: <Car className="h-5 w-5" /> },
+        { label: 'Flotte', href: '/owner/vehicles', icon: <Car className="h-5 w-5" /> },
         { label: 'Réservations', href: '/owner/bookings', icon: <Calendar className="h-5 w-5" /> },
         { label: 'Clients', href: '/owner/clients', icon: <Users className="h-5 w-5" /> },
         { label: 'Contrats', href: '/owner/contracts', icon: <FileText className="h-5 w-5" /> },
-        { label: 'Paiements', href: '/payments', icon: <CreditCard className="h-5 w-5" /> },
+        { label: 'Paiements', href: '/owner/payments', icon: <CreditCard className="h-5 w-5" /> },
       ];
     }
     
@@ -162,7 +162,7 @@ export function Sidebar({ userRole = 'proprietaire', isCollapsed = false, onTogg
 
       {/* Sidebar - Desktop */}
       <aside className={cn(
-        "hidden lg:flex bg-gray-900 border-r border-white/10 flex-col transition-all duration-300",
+        "hidden lg:flex bg-gray-900 border-r border-white/10 flex-col transition-all duration-300 h-full",
         isCollapsed ? "w-20" : "w-72"
       )}>
         <SidebarContent />
@@ -171,7 +171,7 @@ export function Sidebar({ userRole = 'proprietaire', isCollapsed = false, onTogg
       {/* Sidebar - Mobile */}
       <aside
         className={cn(
-          "lg:hidden fixed left-0 top-0 bottom-0 w-72 bg-gray-900 border-r border-white/10 flex-col z-40 transition-transform duration-300",
+          "lg:hidden fixed left-0 top-0 bottom-0 h-full w-72 bg-gray-900 border-r border-white/10 flex-col z-40 transition-transform duration-300",
           isOpen ? "translate-x-0 flex" : "-translate-x-full"
         )}
       >

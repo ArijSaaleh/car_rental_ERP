@@ -101,6 +101,7 @@ function App() {
           <Route path="clients" element={<ClientManagement />} />
           <Route path="bookings" element={<BookingManagement />} />
           <Route path="contracts" element={<ContractManagement />} />
+          <Route path="payments" element={<Payments />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />

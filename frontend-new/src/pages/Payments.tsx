@@ -258,8 +258,7 @@ export default function Payments() {
                         <div className="font-medium">{payment.reference}</div>
                       </TableCell>
                       <TableCell>
-                        {payment.contrat?.reservation?.client?.nom}{' '}
-                        {payment.contrat?.reservation?.client?.prenom}
+                        -
                       </TableCell>
                       <TableCell>
                         <span className="capitalize">

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Building2, Users, Car, Calendar, TrendingUp, DollarSign, BarChart3, Activity, ArrowUpRight, Sparkles } from 'lucide-react';
-import { StatsCard, MiniStatsCard } from '../../components/StatsCard';
+import { Building2, Users, Car, TrendingUp, DollarSign, ArrowUpRight, Sparkles, AlertCircle, ChevronDown, ChevronRight, MapPin, Phone, Mail, Calendar as CalendarIcon, CreditCard } from 'lucide-react';
+import { StatsCard } from '../../components/StatsCard';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { Button } from '../../components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import api from '../../services/api';
 import { extractErrorMessage } from '../../utils/errorHandler';
 import { agencyService } from '../../services/agency.service';
@@ -14,11 +15,12 @@ interface AgencyListItem {
   email: string;
   phone: string;
   city: string;
+  address: string;
+  postal_code?: string;
   subscription_plan: string;
   is_active: boolean;
   created_at: string;
-  manager_count: number;
-  employee_count: number;
+  parent_agency_id: string | null;
   vehicle_count: number;
   customer_count: number;
 }
@@ -26,7 +28,6 @@ interface AgencyListItem {
 interface MultiAgencyStats {
   total_agencies: number;
   active_agencies: number;
-  total_users: number;
   total_vehicles: number;
   total_customers: number;
   total_bookings: number;
@@ -38,14 +39,31 @@ export default function OwnerDashboard() {
   const [stats, setStats] = useState<MultiAgencyStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [expandedAgencies, setExpandedAgencies] = useState<Set<string>>(new Set());
+  const [selectedAgency, setSelectedAgency] = useState<AgencyListItem | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     loadStatistics();
   }, []);
 
+  const toggleAgency = (agencyId: string) => {
+    const newExpanded = new Set(expandedAgencies);
+    if (newExpanded.has(agencyId)) {
+      newExpanded.delete(agencyId);
+    } else {
+      newExpanded.add(agencyId);
+    }
+    setExpandedAgencies(newExpanded);
+  };
+
+  const openAgencyDetails = (agency: AgencyListItem) => {
+    setSelectedAgency(agency);
+    setIsModalOpen(true);
+  };
+
   const loadStatistics = async () => {
     try {
-      // Get all agencies owned by this owner
       const agencies = await agencyService.getAll();
       
       if (agencies.length === 0) {
@@ -54,16 +72,14 @@ export default function OwnerDashboard() {
         return;
       }
 
-      // Aggregate statistics from all agencies
       let totalVehicles = 0;
       let totalCustomers = 0;
       let totalBookings = 0;
       let totalRevenue = 0;
       const agencyList: AgencyListItem[] = [];
 
-      for (const agency of agencies) {
+      await Promise.all(agencies.map(async (agency) => {
         try {
-          // Get stats for each agency
           const [vehiclesRes, customersRes, bookingsRes] = await Promise.all([
             api.get(`/vehicles?agency_id=${agency.id}`),
             api.get(`/customers?agency_id=${agency.id}`),
@@ -78,9 +94,8 @@ export default function OwnerDashboard() {
           totalCustomers += customers.length;
           totalBookings += bookings.length;
           
-          // Calculate revenue from bookings
           const agencyRevenue = bookings.reduce((sum: number, booking: any) => {
-            return sum + (parseFloat(booking.total_price) || 0);
+            return sum + (parseFloat(booking.total_amount) || 0);
           }, 0);
           totalRevenue += agencyRevenue;
 
@@ -91,31 +106,29 @@ export default function OwnerDashboard() {
             email: agency.email,
             phone: agency.phone,
             city: agency.city,
-            subscription_plan: agency.subscription_plan || 'basic',
+            address: agency.address || '',
+            postal_code: agency.postal_code,
+            subscription_plan: agency.subscription_plan || 'basique',
             is_active: agency.is_active !== false,
             created_at: agency.created_at,
-            manager_count: 0, // Could be enhanced later
-            employee_count: 0, // Could be enhanced later
+            parent_agency_id: agency.parent_agency_id || null,
             vehicle_count: vehicles.length,
             customer_count: customers.length,
           });
         } catch (agencyError) {
           console.error(`Error loading stats for agency ${agency.id}:`, agencyError);
         }
-      }
+      }));
 
-      const normalizedData: MultiAgencyStats = {
+      setStats({
         total_agencies: agencies.length,
         active_agencies: agencies.filter((a: any) => a.is_active !== false).length,
-        total_users: 0, // Could be enhanced later
         total_vehicles: totalVehicles,
         total_customers: totalCustomers,
         total_bookings: totalBookings,
         total_revenue: totalRevenue,
         agencies: agencyList,
-      };
-
-      setStats(normalizedData);
+      });
     } catch (err) {
       setError(extractErrorMessage(err));
     } finally {
@@ -136,208 +149,379 @@ export default function OwnerDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100">
-      <div className="p-6 lg:p-8 space-y-8 animate-fade-in">
+      <div className="p-6 lg:p-8 space-y-8">
         {/* Header */}
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">
-              Tableau de bord
+            <h1 className="text-3xl font-bold text-gray-900">
+              Vue d'ensemble Multi-Agences
             </h1>
-            <p className="text-lg text-gray-600">
-              Vue d'ensemble de votre activité
+            <p className="text-gray-600 mt-1">
+              Gestion centralisée de toutes vos agences
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" className="rounded-xl border-gray-200 hover:bg-gray-100">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Rapports
-            </Button>
-            <Button className="rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg shadow-blue-500/30">
-              <Sparkles className="h-4 w-4 mr-2" />
-              Nouvelle Agence
-            </Button>
-          </div>
+          <Button className="rounded-xl gradient-primary text-white shadow-lg">
+            <Sparkles className="h-4 w-4 mr-2" />
+            Nouvelle Agence
+          </Button>
         </div>
 
         {error && (
-          <Alert variant="destructive" className="animate-scale-in">
-            <AlertDescription>{error}</AlertDescription>
+          <Alert variant="destructive" className="border-red-200 bg-red-50">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="text-red-800">{error}</AlertDescription>
           </Alert>
         )}
 
         {stats && (
           <>
-            {/* Main Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Main Stats Grid */}
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
               <StatsCard
-                title="Agences Actives"
-                value={stats.active_agencies}
+                title="Agences"
+                value={stats.total_agencies}
                 icon={<Building2 className="h-6 w-6" />}
-                trend={{ value: 12, label: "vs mois dernier" }}
+                trend={{ value: 0, label: `${stats.active_agencies} actives` }}
                 variant="primary"
+                className="hover:shadow-xl transition-shadow duration-300"
               />
-              
               <StatsCard
-                title="Revenus Totaux"
-                value={`${stats.total_revenue.toLocaleString('fr-FR')}DT`}
-                icon={<DollarSign className="h-6 w-6" />}
-                trend={{ value: 8.5, label: "vs mois dernier" }}
-                variant="success"
-              />
-              
-              <StatsCard
-                title="Réservations"
-                value={stats.total_bookings}
-                icon={<Calendar className="h-6 w-6" />}
-                trend={{ value: -3.2, label: "vs mois dernier" }}
-                variant="accent"
-              />
-              
-              <StatsCard
-                title="Flotte Totale"
+                title="Véhicules"
                 value={stats.total_vehicles}
                 icon={<Car className="h-6 w-6" />}
-                trend={{ value: 5.1, label: "vs mois dernier" }}
-                variant="warning"
+                trend={{ value: 0, label: "Toutes agences" }}
+                variant="success"
+                className="hover:shadow-xl transition-shadow duration-300"
               />
-            </div>
-
-            {/* Mini Stats Row */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <MiniStatsCard
-                label="Total Agences"
-                value={stats.total_agencies}
-                icon={<Building2 className="h-4 w-4" />}
-                color="blue"
-              />
-              <MiniStatsCard
-                label="Utilisateurs"
-                value={stats.total_users}
-                icon={<Users className="h-4 w-4" />}
-                color="purple"
-              />
-              <MiniStatsCard
-                label="Clients"
+              <StatsCard
+                title="Clients"
                 value={stats.total_customers}
-                icon={<Users className="h-4 w-4" />}
-                color="green"
+                icon={<Users className="h-6 w-6" />}
+                trend={{ value: 0, label: "Total réseau" }}
+                variant="accent"
+                className="hover:shadow-xl transition-shadow duration-300"
               />
-              <MiniStatsCard
-                label="Taux d'occupation"
-                value="78%"
-                icon={<Activity className="h-4 w-4" />}
-                color="orange"
+              <StatsCard
+                title="Revenus"
+                value={`${stats.total_revenue.toLocaleString('fr-TN')} TND`}
+                icon={<DollarSign className="h-6 w-6" />}
+                trend={{ value: 0, label: `${stats.total_bookings} réservations` }}
+                variant="warning"
+                className="hover:shadow-xl transition-shadow duration-300"
               />
             </div>
 
-            {/* Agencies Overview */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Mes Agences</h2>
-                  <p className="text-sm text-gray-600">
-                    Gestion et performance de vos agences
-                  </p>
+            {/* Quick Metrics */}
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="bg-white rounded-xl p-4 border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Revenus Moyens</span>
+                  <TrendingUp className="h-4 w-4 text-green-600" />
                 </div>
-                <Button variant="outline" className="rounded-xl border-gray-200 hover:bg-gray-100">
-                  Voir toutes les agences
-                  <ArrowUpRight className="h-4 w-4 ml-2" />
-                </Button>
+                <p className="text-2xl font-bold text-gray-900 mt-2">
+                  {stats.total_bookings > 0 
+                    ? Math.round(stats.total_revenue / stats.total_bookings).toLocaleString('fr-TN')
+                    : 0} TND
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Par réservation</p>
               </div>
+              
+              <div className="bg-white rounded-xl p-4 border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Véhicules/Agence</span>
+                  <Car className="h-4 w-4 text-blue-600" />
+                </div>
+                <p className="text-2xl font-bold text-gray-900 mt-2">
+                  {stats.total_agencies > 0 
+                    ? Math.round(stats.total_vehicles / stats.total_agencies)
+                    : 0}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Moyenne</p>
+              </div>
+              
+              <div className="bg-white rounded-xl p-4 border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Clients/Agence</span>
+                  <Users className="h-4 w-4 text-purple-600" />
+                </div>
+                <p className="text-2xl font-bold text-gray-900 mt-2">
+                  {stats.total_agencies > 0 
+                    ? Math.round(stats.total_customers / stats.total_agencies)
+                    : 0}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Moyenne</p>
+              </div>
+            </div>
 
-              <div className="bg-white border border-gray-200 rounded-2xl shadow-lg overflow-hidden">
-                <div className="space-y-1 divide-y divide-gray-100">
-                  {stats.agencies.slice(0, 5).map((agency) => (
-                    <div
-                      key={agency.id}
-                      className="flex items-center justify-between p-6 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-indigo-50/50 transition-all duration-200"
-                    >
-                      <div className="flex items-center gap-4 flex-1">
-                        <div className="p-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 shadow-md shadow-blue-500/30">
-                          <Building2 className="h-6 w-6 text-white" />
+            {/* Agencies Hierarchical List */}
+            <div className="bg-white rounded-xl shadow-lg border border-gray-200">
+              <div className="p-6 border-b border-gray-200">
+                <h2 className="text-xl font-bold text-gray-900">Vos Agences</h2>
+                <p className="text-sm text-gray-600 mt-1">{stats.agencies.length} agence(s) enregistrée(s)</p>
+              </div>
+              
+              <div className="divide-y divide-gray-200">
+                {stats.agencies
+                  .filter(agency => !agency.parent_agency_id)
+                  .map((mainAgency) => {
+                    const branches = stats.agencies.filter(a => a.parent_agency_id === mainAgency.id);
+                    const isExpanded = expandedAgencies.has(mainAgency.id);
+                    
+                    return (
+                      <div key={mainAgency.id} className="transition-colors">
+                        {/* Main Agency */}
+                        <div className="p-6 hover:bg-gray-50">
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex items-start gap-3 flex-1">
+                              {branches.length > 0 && (
+                                <button
+                                  onClick={() => toggleAgency(mainAgency.id)}
+                                  className="mt-1 text-gray-400 hover:text-gray-600 transition-colors"
+                                >
+                                  {isExpanded ? (
+                                    <ChevronDown className="h-5 w-5" />
+                                  ) : (
+                                    <ChevronRight className="h-5 w-5" />
+                                  )}
+                                </button>
+                              )}
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <Building2 className="h-5 w-5 text-blue-600" />
+                                  <h3 className="text-lg font-semibold text-gray-900">{mainAgency.name}</h3>
+                                  <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                                    Principale
+                                  </span>
+                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                    mainAgency.is_active 
+                                      ? 'bg-green-100 text-green-700' 
+                                      : 'bg-red-100 text-red-700'
+                                  }`}>
+                                    {mainAgency.is_active ? 'Active' : 'Inactive'}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-600">{mainAgency.legal_name}</p>
+                              </div>
+                            </div>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="rounded-lg"
+                              onClick={() => openAgencyDetails(mainAgency)}
+                            >
+                              <ArrowUpRight className="h-4 w-4 mr-1" />
+                              Détails
+                            </Button>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3 ml-8">
+                            <div>
+                              <p className="text-xs text-gray-500">Ville</p>
+                              <p className="text-sm font-medium text-gray-900">{mainAgency.city}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Véhicules</p>
+                              <p className="text-sm font-medium text-gray-900">{mainAgency.vehicle_count}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Clients</p>
+                              <p className="text-sm font-medium text-gray-900">{mainAgency.customer_count}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Branches</p>
+                              <p className="text-sm font-medium text-gray-900">{branches.length}</p>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-gray-900 text-lg">{agency.name}</h3>
-                          <p className="text-sm text-gray-600 truncate">
-                            {agency.city} • {agency.email}
-                          </p>
-                        </div>
-                      </div>
 
-                    <div className="flex items-center gap-6">
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-gray-900">{agency.vehicle_count}</p>
-                        <p className="text-xs text-gray-600">Véhicules</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-gray-900">{agency.customer_count}</p>
-                        <p className="text-xs text-gray-600">Clients</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-gray-900">
-                          {agency.manager_count + agency.employee_count}
-                        </p>
-                        <p className="text-xs text-gray-600">Employés</p>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        {agency.is_active ? (
-                          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200">
-                            Actif
-                          </span>
-                        ) : (
-                          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
-                            Inactif
-                          </span>
+                        {/* Branch Agencies */}
+                        {isExpanded && branches.length > 0 && (
+                          <div className="bg-gray-50 border-t border-gray-200">
+                            {branches.map((branch) => (
+                              <div key={branch.id} className="p-6 pl-16 border-b border-gray-200 last:border-b-0 hover:bg-gray-100 transition-colors">
+                                <div className="flex items-start justify-between mb-3">
+                                  <div className="flex items-start gap-3 flex-1">
+                                    <Building2 className="h-4 w-4 text-gray-400 mt-1" />
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-3 mb-1">
+                                        <h4 className="text-base font-semibold text-gray-900">{branch.name}</h4>
+                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                          branch.is_active 
+                                            ? 'bg-green-100 text-green-700' 
+                                            : 'bg-red-100 text-red-700'
+                                        }`}>
+                                          {branch.is_active ? 'Active' : 'Inactive'}
+                                        </span>
+                                      </div>
+                                      <p className="text-sm text-gray-600">{branch.city}</p>
+                                    </div>
+                                  </div>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="rounded-lg"
+                                    onClick={() => openAgencyDetails(branch)}
+                                  >
+                                    <ArrowUpRight className="h-4 w-4 mr-1" />
+                                    Détails
+                                  </Button>
+                                </div>
+                                
+                                <div className="grid grid-cols-3 gap-4">
+                                  <div>
+                                    <p className="text-xs text-gray-500">Véhicules</p>
+                                    <p className="text-sm font-medium text-gray-900">{branch.vehicle_count}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-gray-500">Clients</p>
+                                    <p className="text-sm font-medium text-gray-900">{branch.customer_count}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-gray-500">Abonnement</p>
+                                    <p className="text-sm font-medium text-gray-900 capitalize">{branch.subscription_plan}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         )}
-                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 capitalize">
-                          {agency.subscription_plan}
-                        </span>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+
+            {/* Agency Details Modal */}
+            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+              <DialogContent className="max-w-3xl">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold text-gray-900">
+                    Détails de l'agence
+                  </DialogTitle>
+                </DialogHeader>
+                
+                {selectedAgency && (
+                  <div className="space-y-6">
+                    {/* Header Info */}
+                    <div className="flex items-start gap-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                      <div className="p-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600">
+                        <Building2 className="h-8 w-8 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-xl font-bold text-gray-900">{selectedAgency.name}</h3>
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            selectedAgency.is_active 
+                              ? 'bg-green-100 text-green-700' 
+                              : 'bg-red-100 text-red-700'
+                          }`}>
+                            {selectedAgency.is_active ? 'Active' : 'Inactive'}
+                          </span>
+                          {!selectedAgency.parent_agency_id && (
+                            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                              Principale
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600">{selectedAgency.legal_name}</p>
+                      </div>
+                    </div>
+
+                    {/* Details Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <h4 className="font-semibold text-gray-900 text-sm uppercase tracking-wide">Informations de contact</h4>
+                        
+                        <div className="flex items-start gap-3">
+                          <Mail className="h-5 w-5 text-gray-400 mt-0.5" />
+                          <div>
+                            <p className="text-xs text-gray-500">Email</p>
+                            <p className="text-sm font-medium text-gray-900">{selectedAgency.email}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-start gap-3">
+                          <Phone className="h-5 w-5 text-gray-400 mt-0.5" />
+                          <div>
+                            <p className="text-xs text-gray-500">Téléphone</p>
+                            <p className="text-sm font-medium text-gray-900">{selectedAgency.phone}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-start gap-3">
+                          <MapPin className="h-5 w-5 text-gray-400 mt-0.5" />
+                          <div>
+                            <p className="text-xs text-gray-500">Adresse</p>
+                            <p className="text-sm font-medium text-gray-900">{selectedAgency.address}</p>
+                            <p className="text-sm text-gray-600">{selectedAgency.city} {selectedAgency.postal_code || ''}</p>
+                          </div>
+                        </div>
                       </div>
 
-                      <Button variant="outline" size="sm" className="rounded-lg hover:bg-gray-50">
-                        Gérer
+                      <div className="space-y-4">
+                        <h4 className="font-semibold text-gray-900 text-sm uppercase tracking-wide">Statistiques</h4>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Car className="h-4 w-4 text-blue-600" />
+                              <p className="text-xs text-gray-600">Véhicules</p>
+                            </div>
+                            <p className="text-2xl font-bold text-gray-900">{selectedAgency.vehicle_count}</p>
+                          </div>
+                          
+                          <div className="p-4 bg-purple-50 rounded-lg border border-purple-100">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Users className="h-4 w-4 text-purple-600" />
+                              <p className="text-xs text-gray-600">Clients</p>
+                            </div>
+                            <p className="text-2xl font-bold text-gray-900">{selectedAgency.customer_count}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-start gap-3">
+                          <CreditCard className="h-5 w-5 text-gray-400 mt-0.5" />
+                          <div>
+                            <p className="text-xs text-gray-500">Abonnement</p>
+                            <p className="text-sm font-medium text-gray-900 capitalize">{selectedAgency.subscription_plan}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-start gap-3">
+                          <CalendarIcon className="h-5 w-5 text-gray-400 mt-0.5" />
+                          <div>
+                            <p className="text-xs text-gray-500">Date de création</p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {new Date(selectedAgency.created_at).toLocaleDateString('fr-FR', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric'
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsModalOpen(false)}
+                      >
+                        Fermer
+                      </Button>
+                      <Button
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        onClick={() => window.location.href = `/owner/agencies/${selectedAgency.id}/edit`}
+                      >
+                        Modifier l'agence
                       </Button>
                     </div>
                   </div>
-                ))}
-              </div>
-
-              {stats.agencies.length === 0 && (
-                <div className="bg-white border border-gray-200 rounded-2xl shadow-lg p-12">
-                  <div className="text-center">
-                    <Building2 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600 mb-4">Aucune agence pour le moment</p>
-                    <Button className="rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg shadow-blue-500/30">
-                      Créer votre première agence
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Performance Chart Placeholder */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-lg">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Réservations récentes</h3>
-                <div className="h-64 flex items-center justify-center bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200">
-                  <div className="text-center">
-                    <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-600">Graphique des réservations</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-lg">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Revenus mensuels</h3>
-                <div className="h-64 flex items-center justify-center bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200">
-                  <div className="text-center">
-                    <TrendingUp className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-600">Graphique des revenus</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+                )}
+              </DialogContent>
+            </Dialog>
           </>
         )}
       </div>

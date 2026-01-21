@@ -29,7 +29,7 @@ export default function Login() {
       if (user.role === 'super_admin') {
         navigate('/admin/dashboard');
       } else if (user.role === 'proprietaire') {
-        navigate('/dashboard');
+        navigate('/owner/dashboard');
       } else {
         navigate('/dashboard');
       }
