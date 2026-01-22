@@ -28,7 +28,7 @@ const OwnerDashboard = lazy(() => import('./pages/owner/OwnerDashboard'));
 const MyAgencies = lazy(() => import('./pages/owner/MyAgencies'));
 const AgencyManagers = lazy(() => import('./pages/owner/AgencyManagers'));
 const EmployeeManagement = lazy(() => import('./pages/owner/EmployeeManagement'));
-const FleetManagement = lazy(() => import('./pages/owner/FleetManagement'));
+const VehicleManagement = lazy(() => import('./pages/owner/VehicleManagement'));
 const ClientManagement = lazy(() => import('./pages/owner/ClientManagement'));
 const ContractManagement = lazy(() => import('./pages/owner/ContractManagement'));
 const BookingManagement = lazy(() => import('./pages/owner/BookingManagement'));
@@ -97,7 +97,7 @@ function App() {
           <Route path="agencies" element={<MyAgencies />} />
           <Route path="managers" element={<AgencyManagers />} />
           <Route path="employees" element={<EmployeeManagement />} />
-          <Route path="vehicles" element={<FleetManagement />} />
+          <Route path="vehicles" element={<VehicleManagement />} />
           <Route path="clients" element={<ClientManagement />} />
           <Route path="bookings" element={<BookingManagement />} />
           <Route path="contracts" element={<ContractManagement />} />

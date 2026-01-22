@@ -78,9 +78,9 @@ export default function Bookings() {
   useEffect(() => {
     const filtered = bookings.filter(
       (booking) =>
-        booking.customer?.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        booking.customer?.prenom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        booking.vehicle?.marque?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        booking.customer?.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        booking.customer?.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        booking.vehicle?.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         booking.booking_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         booking.status.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -111,7 +111,7 @@ export default function Bookings() {
       setSelectedBooking(booking);
       setFormData({
         customer_id: booking.customer_id,
-        vehicle_id: booking.vehicle_id,
+        vehicle_id: booking.vehicle_id as any,
         start_date: booking.start_date.split('T')[0],
         end_date: booking.end_date.split('T')[0],
         fuel_policy: booking.fuel_policy || 'full_to_full',
@@ -298,10 +298,10 @@ export default function Bookings() {
                     <TableRow key={booking.id}>
                       <TableCell className="font-medium">{booking.booking_number}</TableCell>
                       <TableCell>
-                        {booking.customer?.prenom} {booking.customer?.nom}
+                        {booking.customer?.first_name} {booking.customer?.last_name}
                       </TableCell>
                       <TableCell>
-                        {booking.vehicle?.marque} {booking.vehicle?.modele}
+                        {booking.vehicle?.brand} {booking.vehicle?.model}
                       </TableCell>
                       <TableCell>{new Date(booking.start_date).toLocaleDateString()}</TableCell>
                       <TableCell>{new Date(booking.end_date).toLocaleDateString()}</TableCell>

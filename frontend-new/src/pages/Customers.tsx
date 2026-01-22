@@ -55,10 +55,10 @@ export default function Customers() {
   useEffect(() => {
     const filtered = customers.filter(
       (customer) =>
-        customer.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.prenom.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.cin.toLowerCase().includes(searchTerm.toLowerCase())
+        customer.cin_number?.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredCustomers(filtered);
   }, [searchTerm, customers]);
@@ -79,15 +79,15 @@ export default function Customers() {
     if (customer) {
       setSelectedCustomer(customer);
       setFormData({
-        nom: customer.nom,
-        prenom: customer.prenom,
-        cin: customer.cin,
+        nom: customer.last_name,
+        prenom: customer.first_name,
+        cin: customer.cin_number || '',
         email: customer.email,
-        telephone: customer.telephone,
-        adresse: customer.adresse,
-        date_naissance: customer.date_naissance.split('T')[0],
-        num_permis: customer.num_permis,
-        date_permis: customer.date_permis.split('T')[0],
+        telephone: customer.phone,
+        adresse: customer.address || '',
+        date_naissance: customer.date_of_birth?.split('T')[0] || '',
+        num_permis: customer.license_number,
+        date_permis: customer.license_issue_date?.split('T')[0] || '',
       });
     } else {
       setSelectedCustomer(null);
@@ -224,24 +224,24 @@ export default function Customers() {
                           <User className="h-4 w-4 text-slate-400" />
                           <div>
                             <div className="font-medium">
-                              {customer.nom} {customer.prenom}
+                              {customer.first_name} {customer.last_name}
                             </div>
                             <div className="text-sm text-slate-500">{customer.email}</div>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>{customer.cin}</TableCell>
+                      <TableCell>{customer.cin_number || '-'}</TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          <div>{customer.telephone}</div>
-                          <div className="text-slate-500">{customer.adresse}</div>
+                          <div>{customer.phone}</div>
+                          <div className="text-slate-500">{customer.address || '-'}</div>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          <div>{customer.num_permis}</div>
+                          <div>{customer.license_number}</div>
                           <div className="text-slate-500">
-                            Délivré: {new Date(customer.date_permis).toLocaleDateString()}
+                            Délivré: {customer.license_issue_date ? new Date(customer.license_issue_date).toLocaleDateString() : '-'}
                           </div>
                         </div>
                       </TableCell>

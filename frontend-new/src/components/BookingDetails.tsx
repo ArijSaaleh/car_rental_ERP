@@ -189,7 +189,7 @@ export function BookingDetails({ booking, open, onClose, onUpdate }: BookingDeta
                 <div>
                   <p className="text-sm text-slate-500">Nom</p>
                   <p className="font-medium">
-                    {booking.customer?.prenom} {booking.customer?.nom}
+                    {booking.customer?.first_name} {booking.customer?.last_name}
                   </p>
                 </div>
                 {booking.customer?.email && (
@@ -198,16 +198,16 @@ export function BookingDetails({ booking, open, onClose, onUpdate }: BookingDeta
                     <p className="text-sm">{booking.customer.email}</p>
                   </div>
                 )}
-                {booking.customer?.telephone && (
+                {booking.customer?.phone && (
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-slate-400" />
-                    <p className="text-sm">{booking.customer.telephone}</p>
+                    <p className="text-sm">{booking.customer.phone}</p>
                   </div>
                 )}
-                {booking.customer?.cin && (
+                {booking.customer?.cin_number && (
                   <div>
                     <p className="text-sm text-slate-500">CIN</p>
-                    <p className="text-sm">{booking.customer.cin}</p>
+                    <p className="text-sm">{booking.customer.cin_number}</p>
                   </div>
                 )}
               </CardContent>
@@ -225,16 +225,16 @@ export function BookingDetails({ booking, open, onClose, onUpdate }: BookingDeta
                 <div>
                   <p className="text-sm text-slate-500">Modèle</p>
                   <p className="font-medium">
-                    {booking.vehicle?.marque} {booking.vehicle?.modele}
+                    {booking.vehicle?.brand} {booking.vehicle?.model}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-500">Matricule</p>
-                  <p className="text-sm">{booking.vehicle?.matricule}</p>
+                  <p className="text-sm">{booking.vehicle?.license_plate}</p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-500">Année</p>
-                  <p className="text-sm">{booking.vehicle?.annee}</p>
+                  <p className="text-sm">{booking.vehicle?.year}</p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-500">Tarif journalier</p>

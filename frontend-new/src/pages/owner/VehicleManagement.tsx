@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Search, Edit, Trash2, Car, Filter } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Car as CarIcon, Filter } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -31,6 +31,8 @@ import {
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import api from '../../services/api';
 import { extractErrorMessage } from '../../utils/errorHandler';
+import { CAR_BRANDS, CAR_MODELS, CAR_COLORS, FUEL_TYPES, VEHICLE_STATUS } from '../../constants/vehicles';
+import { agencyService } from '../../services/agency.service';
 
 interface Agency {
   id: string;
@@ -50,6 +52,8 @@ interface Vehicle {
   status: string;
   daily_rate?: number;
   agency_id: string;
+  insurance_expiry?: string;
+  registration_expiry?: string;
 }
 
 export default function VehicleManagement() {
@@ -59,22 +63,26 @@ export default function VehicleManagement() {
   const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [brandFilter, setBrandFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [error, setError] = useState('');
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     license_plate: '',
     brand: '',
     model: '',
     year: new Date().getFullYear(),
     color: '',
-    fuel_type: 'ESSENCE',
-    transmission: 'MANUELLE',
+    fuel_type: '',
+    transmission: 'automatique',
     mileage: 0,
-    status: 'DISPONIBLE',
+    status: 'disponible',
     daily_rate: 0,
+    insurance_expiry: '',
+    registration_expiry: '',
   });
 
   useEffect(() => {
@@ -84,73 +92,95 @@ export default function VehicleManagement() {
   useEffect(() => {
     if (selectedAgencyId) {
       loadVehicles();
-    } else {
-      setVehicles([]);
-      setFilteredVehicles([]);
     }
   }, [selectedAgencyId]);
 
   useEffect(() => {
-    let filtered = vehicles.filter(
-      (v) =>
-        v.license_plate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        v.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        v.model.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    filterVehicles();
+  }, [vehicles, searchTerm, brandFilter, statusFilter]);
 
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter((v) => v.status === statusFilter);
+  useEffect(() => {
+    if (formData.brand) {
+      const models = CAR_MODELS[formData.brand] || [];
+      setAvailableModels(models);
+      if (!models.includes(formData.model)) {
+        setFormData(prev => ({ ...prev, model: '' }));
+      }
+    } else {
+      setAvailableModels([]);
     }
-
-    setFilteredVehicles(filtered);
-  }, [searchTerm, statusFilter, vehicles]);
+  }, [formData.brand]);
 
   const loadAgencies = async () => {
     try {
-      const response = await api.get('/proprietaire/agencies');
-      setAgencies(response.data);
-      if (response.data.length > 0) {
-        setSelectedAgencyId(response.data[0].id);
+      const data = await agencyService.getAll();
+      console.log('Agencies loaded:', data);
+      setAgencies(data);
+      if (data.length > 0) {
+        setSelectedAgencyId(data[0].id);
       }
     } catch (err) {
+      console.error('Error loading agencies:', err);
+      setError(extractErrorMessage(err));
+    }
+  };
+
+  const loadVehicles = async () => {
+    if (!selectedAgencyId) return;
+    
+    try {
+      setLoading(true);
+      const response = await api.get(`/vehicles?agency_id=${selectedAgencyId}`);
+      console.log('Vehicles loaded:', response.data);
+      const vehiclesList = response.data.vehicles || (Array.isArray(response.data) ? response.data : []);
+      console.log('Vehicles list:', vehiclesList);
+      setVehicles(vehiclesList);
+    } catch (err) {
+      console.error('Error loading vehicles:', err);
       setError(extractErrorMessage(err));
     } finally {
       setLoading(false);
     }
   };
 
-  const loadVehicles = async () => {
-    if (!selectedAgencyId) return;
+  const filterVehicles = () => {
+    let filtered = vehicles;
 
-    setLoading(true);
-    try {
-      const response = await api.get(`/vehicles?agency_id=${selectedAgencyId}`);
-      const vehiclesList = Array.isArray(response.data) ? response.data : [];
-      setVehicles(vehiclesList);
-      setFilteredVehicles(vehiclesList);
-    } catch (err) {
-      setError(extractErrorMessage(err));
-      setVehicles([]);
-      setFilteredVehicles([]);
-    } finally {
-      setLoading(false);
+    if (searchTerm) {
+      filtered = filtered.filter(v =>
+        v.license_plate?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        v.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        v.model?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
     }
+
+    if (brandFilter !== 'all') {
+      filtered = filtered.filter(v => v.brand === brandFilter);
+    }
+
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(v => v.status === statusFilter);
+    }
+
+    setFilteredVehicles(filtered);
   };
 
   const handleOpenDialog = (vehicle?: Vehicle) => {
     if (vehicle) {
       setSelectedVehicle(vehicle);
       setFormData({
-        license_plate: vehicle.license_plate,
-        brand: vehicle.brand,
-        model: vehicle.model,
-        year: vehicle.year,
+        license_plate: vehicle.license_plate || '',
+        brand: vehicle.brand || '',
+        model: vehicle.model || '',
+        year: vehicle.year || new Date().getFullYear(),
         color: vehicle.color || '',
-        fuel_type: vehicle.fuel_type,
-        transmission: vehicle.transmission,
-        mileage: vehicle.mileage,
-        status: vehicle.status,
+        fuel_type: vehicle.fuel_type || '',
+        transmission: vehicle.transmission || 'automatique',
+        mileage: vehicle.mileage || 0,
+        status: vehicle.status || 'disponible',
         daily_rate: vehicle.daily_rate || 0,
+        insurance_expiry: vehicle.insurance_expiry || '',
+        registration_expiry: vehicle.registration_expiry || '',
       });
     } else {
       setSelectedVehicle(null);
@@ -160,10 +190,13 @@ export default function VehicleManagement() {
         model: '',
         year: new Date().getFullYear(),
         color: '',
-        fuel_type: 'essence',
-        transmission: 'manuel',
+        fuel_type: '',
+        transmission: 'automatique',
         mileage: 0,
+        status: 'disponible',
         daily_rate: 0,
+        insurance_expiry: '',
+        registration_expiry: '',
       });
     }
     setError('');
@@ -212,21 +245,19 @@ export default function VehicleManagement() {
   };
 
   const getStatusBadge = (status: string) => {
-    const colors: Record<string, string> = {
-      disponible: 'bg-green-100 text-green-700',
-      loue: 'bg-blue-100 text-blue-700',
-      maintenance: 'bg-yellow-100 text-yellow-700',
-      hors_service: 'bg-red-100 text-red-700',
+    const statusConfig = VEHICLE_STATUS.find(s => s.value === status);
+    if (!statusConfig) return <Badge>{status}</Badge>;
+    
+    const colorClasses: Record<string, string> = {
+      green: 'bg-green-100 text-green-700 border-green-200',
+      blue: 'bg-blue-100 text-blue-700 border-blue-200',
+      orange: 'bg-orange-100 text-orange-700 border-orange-200',
+      red: 'bg-red-100 text-red-700 border-red-200',
     };
-    const labels: Record<string, string> = {
-      disponible: 'Disponible',
-      loue: 'Loué',
-      maintenance: 'Maintenance',
-      hors_service: 'Hors Service',
-    };
+    
     return (
-      <Badge className={colors[status] || 'bg-gray-100 text-gray-700'}>
-        {labels[status] || status}
+      <Badge className={colorClasses[statusConfig.color]}>
+        {statusConfig.label}
       </Badge>
     );
   };
@@ -242,73 +273,50 @@ export default function VehicleManagement() {
 
   const stats = getVehicleStats();
 
+  if (loading && vehicles.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg text-slate-600">Chargement...</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-8 space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Gestion de la Flotte</h1>
-          <p className="text-slate-600 mt-2">
-            Gérez tous les véhicules de vos agences
-          </p>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-3 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl shadow-lg">
+              <CarIcon className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-900 to-indigo-900 bg-clip-text text-transparent">
+                Gestion de Flotte
+              </h1>
+              <p className="text-slate-600 mt-1">Gérez tous vos véhicules multi-agences</p>
+            </div>
+          </div>
         </div>
-        <Button onClick={() => handleOpenDialog()} className="gap-2" disabled={!selectedAgencyId}>
-          <Plus className="h-5 w-5" />
-          Nouveau Véhicule
+        <Button
+          onClick={() => handleOpenDialog()}
+          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+        >
+          <Plus className="h-5 w-5 mr-2" />
+          Ajouter un Véhicule
         </Button>
       </div>
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-slate-600">Total</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-slate-600">Disponibles</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.disponible}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-slate-600">Loués</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{stats.loue}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-slate-600">Maintenance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{stats.maintenance}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filtres</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Agency Selector */}
+      <Card className="border-0 shadow-xl bg-white/70 backdrop-blur-sm">
+        <CardContent className="p-6">
+          <div className="flex items-center gap-4">
+            <Label className="text-sm font-medium text-slate-700 whitespace-nowrap">
+              Agence:
+            </Label>
             <Select value={selectedAgencyId} onValueChange={setSelectedAgencyId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionner une agence" />
+              <SelectTrigger className="w-64">
+                <SelectValue placeholder="Sélectionnez une agence" />
               </SelectTrigger>
               <SelectContent>
                 {agencies.map((agency) => (
@@ -318,129 +326,224 @@ export default function VehicleManagement() {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+        </CardContent>
+      </Card>
 
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <SelectValue />
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="border-0 shadow-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+          <CardHeader className="pb-3 relative z-10">
+            <CardTitle className="text-sm font-medium text-blue-100">Total Véhicules</CardTitle>
+          </CardHeader>
+          <CardContent className="relative z-10">
+            <div className="text-4xl font-bold">{stats.total}</div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-xl bg-gradient-to-br from-green-500 to-green-600 text-white overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+          <CardHeader className="pb-3 relative z-10">
+            <CardTitle className="text-sm font-medium text-green-100">Disponibles</CardTitle>
+          </CardHeader>
+          <CardContent className="relative z-10">
+            <div className="text-4xl font-bold">{stats.disponible}</div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+          <CardHeader className="pb-3 relative z-10">
+            <CardTitle className="text-sm font-medium text-purple-100">Loués</CardTitle>
+          </CardHeader>
+          <CardContent className="relative z-10">
+            <div className="text-4xl font-bold">{stats.loue}</div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-xl bg-gradient-to-br from-orange-500 to-orange-600 text-white overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+          <CardHeader className="pb-3 relative z-10">
+            <CardTitle className="text-sm font-medium text-orange-100">En Maintenance</CardTitle>
+          </CardHeader>
+          <CardContent className="relative z-10">
+            <div className="text-4xl font-bold">{stats.maintenance}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Search and Filters */}
+      <Card className="border-0 shadow-xl bg-white/70 backdrop-blur-sm">
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
+              <Input
+                placeholder="Rechercher (plaque, marque, modèle)..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-white border-slate-200 focus:border-blue-400 focus:ring-blue-400"
+              />
+            </div>
+            
+            <Select value={brandFilter} onValueChange={setBrandFilter}>
+              <SelectTrigger className="bg-white border-slate-200">
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Filtrer par marque" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous les statuts</SelectItem>
-                <SelectItem value="DISPONIBLE">Disponible</SelectItem>
-                <SelectItem value="LOUE">Loué</SelectItem>
-                <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
-                <SelectItem value="HORS_SERVICE">Hors Service</SelectItem>
+                <SelectItem value="all">Toutes les marques</SelectItem>
+                {CAR_BRANDS.map((brand) => (
+                  <SelectItem key={brand} value={brand}>
+                    {brand}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
-              <Input
-                placeholder="Rechercher..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="bg-white border-slate-200">
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Filtrer par statut" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les statuts</SelectItem>
+                {VEHICLE_STATUS.map((status) => (
+                  <SelectItem key={status.value} value={status.value}>
+                    {status.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
 
       {/* Vehicles Table */}
-      {selectedAgencyId && (
-        <Card>
-          <CardContent className="pt-6">
+      <Card className="border-0 shadow-xl bg-white/70 backdrop-blur-sm">
+        <CardContent className="p-0">
+          {filteredVehicles.length === 0 ? (
+            <div className="p-12 text-center">
+              <CarIcon className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+              <p className="text-lg text-slate-600">Aucun véhicule trouvé</p>
+              <p className="text-sm text-slate-400 mt-2">
+                {vehicles.length === 0 
+                  ? "Ajoutez votre premier véhicule pour commencer"
+                  : "Essayez de modifier vos filtres de recherche"
+                }
+              </p>
+            </div>
+          ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Plaque</TableHead>
-                    <TableHead>Véhicule</TableHead>
-                    <TableHead>Année</TableHead>
-                    <TableHead>Carburant</TableHead>
-                    <TableHead>Kilométrage</TableHead>
-                    <TableHead>Tarif/Jour</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                  <TableRow className="bg-slate-50 border-b-2 border-slate-200">
+                    <TableHead className="font-semibold text-slate-700">Plaque</TableHead>
+                    <TableHead className="font-semibold text-slate-700">Marque</TableHead>
+                    <TableHead className="font-semibold text-slate-700">Modèle</TableHead>
+                    <TableHead className="font-semibold text-slate-700">Année</TableHead>
+                    <TableHead className="font-semibold text-slate-700">Couleur</TableHead>
+                    <TableHead className="font-semibold text-slate-700">Carburant</TableHead>
+                    <TableHead className="font-semibold text-slate-700">Kilométrage</TableHead>
+                    <TableHead className="font-semibold text-slate-700">Statut</TableHead>
+                    <TableHead className="font-semibold text-slate-700">Prix/jour</TableHead>
+                    <TableHead className="font-semibold text-slate-700 text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredVehicles.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-slate-500">
-                        Aucun véhicule trouvé
+                  {filteredVehicles.map((vehicle, index) => (
+                    <TableRow 
+                      key={vehicle.id}
+                      className={`
+                        hover:bg-blue-50/50 transition-colors
+                        ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}
+                      `}
+                    >
+                      <TableCell className="font-medium text-slate-900">
+                        {vehicle.license_plate}
+                      </TableCell>
+                      <TableCell className="text-slate-700">{vehicle.brand}</TableCell>
+                      <TableCell className="text-slate-700">{vehicle.model}</TableCell>
+                      <TableCell className="text-slate-700">{vehicle.year}</TableCell>
+                      <TableCell>
+                        {vehicle.color && (
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-4 h-4 rounded-full border border-slate-300"
+                              style={{
+                                backgroundColor: CAR_COLORS.find(c => c.value === vehicle.color)?.hex || '#999'
+                              }}
+                            />
+                            <span className="text-slate-700">
+                              {CAR_COLORS.find(c => c.value === vehicle.color)?.label || vehicle.color}
+                            </span>
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-slate-700">
+                        {FUEL_TYPES.find(f => f.value === vehicle.fuel_type)?.label || vehicle.fuel_type}
+                      </TableCell>
+                      <TableCell className="text-slate-700">
+                        {vehicle.mileage?.toLocaleString()} km
+                      </TableCell>
+                      <TableCell>
+                        {getStatusBadge(vehicle.status)}
+                      </TableCell>
+                      <TableCell className="font-medium text-slate-900">
+                        {vehicle.daily_rate} DT
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleOpenDialog(vehicle)}
+                            className="hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedVehicle(vehicle);
+                              setDeleteDialogOpen(true);
+                            }}
+                            className="hover:bg-red-50 hover:text-red-700 hover:border-red-300"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
-                  ) : (
-                    filteredVehicles.map((vehicle) => (
-                      <TableRow key={vehicle.id}>
-                        <TableCell className="font-mono font-medium">
-                          {vehicle.license_plate}
-                        </TableCell>
-                        <TableCell>
-                        <div className="flex items-center gap-2">
-                            <Car className="h-5 w-5 text-slate-400" />
-                            <div>
-                              <div className="font-medium">{vehicle.brand} {vehicle.model}</div>
-                              {vehicle.color && (
-                                <div className="text-xs text-slate-500">{vehicle.color}</div>
-                              )}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>{vehicle.year}</TableCell>
-                        <TableCell className="capitalize">{vehicle.fuel_type}</TableCell>
-                        <TableCell>{vehicle.mileage.toLocaleString()} km</TableCell>
-                        <TableCell>
-                          {vehicle.daily_rate ? `${vehicle.daily_rate} DT` : '-'}
-                        </TableCell>
-                        <TableCell>{getStatusBadge(vehicle.status)}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                            onClick={() => handleOpenDialog(vehicle)}
-                              >
-                              <Edit className="h-5 w-5" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                setSelectedVehicle(vehicle);
-                                setDeleteDialogOpen(true);
-                              }}
-                            >
-                              <Trash2 className="h-5 w-5 text-red-600" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
+                  ))}
                 </TableBody>
               </Table>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {selectedVehicle ? 'Modifier le véhicule' : 'Nouveau véhicule'}
+            <DialogTitle className="text-2xl font-bold text-slate-900">
+              {selectedVehicle ? 'Modifier le véhicule' : 'Ajouter un véhicule'}
             </DialogTitle>
+            <DialogDescription>
+              Remplissez les informations du véhicule
+            </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit}>
-            {error && (
-              <Alert variant="destructive" className="mb-4">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="license_plate">Plaque d'immatriculation *</Label>
@@ -449,30 +552,46 @@ export default function VehicleManagement() {
                   value={formData.license_plate}
                   onChange={(e) => setFormData({ ...formData, license_plate: e.target.value })}
                   required
-                  placeholder="123 TU 4567"
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="brand">Marque *</Label>
-                <Input
-                  id="brand"
+                <Select
                   value={formData.brand}
-                  onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-                  required
-                  placeholder="Renault, Peugeot..."
-                />
+                  onValueChange={(value) => setFormData({ ...formData, brand: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner une marque" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CAR_BRANDS.map((brand) => (
+                      <SelectItem key={brand} value={brand}>
+                        {brand}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="model">Modèle *</Label>
-                <Input
-                  id="model"
+                <Select
                   value={formData.model}
-                  onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                  required
-                  placeholder="Clio, 208..."
-                />
+                  onValueChange={(value) => setFormData({ ...formData, model: value })}
+                  disabled={!formData.brand}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un modèle" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableModels.map((model) => (
+                      <SelectItem key={model} value={model}>
+                        {model}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
@@ -483,35 +602,51 @@ export default function VehicleManagement() {
                   value={formData.year}
                   onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) })}
                   required
-                  min="1990"
+                  min="1900"
                   max={new Date().getFullYear() + 1}
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="color">Couleur</Label>
-                <Input
-                  id="color"
+                <Select
                   value={formData.color}
-                  onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                  placeholder="Blanc, Noir..."
-                />
+                  onValueChange={(value) => setFormData({ ...formData, color: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner une couleur" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CAR_COLORS.map((color) => (
+                      <SelectItem key={color.value} value={color.value}>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-4 h-4 rounded-full border border-slate-300"
+                            style={{ backgroundColor: color.hex }}
+                          />
+                          {color.label}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="fuel_type">Carburant *</Label>
+                <Label htmlFor="fuel_type">Type de carburant *</Label>
                 <Select
                   value={formData.fuel_type}
                   onValueChange={(value) => setFormData({ ...formData, fuel_type: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Sélectionner" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ESSENCE">Essence</SelectItem>
-                    <SelectItem value="DIESEL">Diesel</SelectItem>
-                    <SelectItem value="ELECTRIQUE">Électrique</SelectItem>
-                    <SelectItem value="HYBRIDE">Hybride</SelectItem>
+                    {FUEL_TYPES.map((fuel) => (
+                      <SelectItem key={fuel.value} value={fuel.value}>
+                        {fuel.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -526,20 +661,19 @@ export default function VehicleManagement() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="MANUELLE">Manuelle</SelectItem>
-                    <SelectItem value="AUTOMATIQUE">Automatique</SelectItem>
+                    <SelectItem value="automatique">Automatique</SelectItem>
+                    <SelectItem value="manuelle">Manuelle</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="mileage">Kilométrage *</Label>
+                <Label htmlFor="mileage">Kilométrage</Label>
                 <Input
                   id="mileage"
                   type="number"
                   value={formData.mileage}
-                  onChange={(e) => setFormData({ ...formData, mileage: parseInt(e.target.value) })}
-                  required
+                  onChange={(e) => setFormData({ ...formData, mileage: parseInt(e.target.value) || 0 })}
                   min="0"
                 />
               </div>
@@ -554,33 +688,50 @@ export default function VehicleManagement() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="DISPONIBLE">Disponible</SelectItem>
-                    <SelectItem value="LOUE">Loué</SelectItem>
-                    <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
-                    <SelectItem value="HORS_SERVICE">Hors Service</SelectItem>
+                    {VEHICLE_STATUS.map((status) => (
+                      <SelectItem key={status.value} value={status.value}>
+                        {status.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="space-y-2 col-span-2">
-                <Label htmlFor="daily_rate">Tarif Journalier (DT)</Label>
+              <div className="space-y-2">
+                <Label htmlFor="daily_rate">Prix par jour (DT)</Label>
                 <Input
                   id="daily_rate"
                   type="number"
                   value={formData.daily_rate}
-                  onChange={(e) => setFormData({ ...formData, daily_rate: parseFloat(e.target.value) })}
+                  onChange={(e) => setFormData({ ...formData, daily_rate: parseFloat(e.target.value) || 0 })}
                   min="0"
                   step="0.01"
                 />
               </div>
             </div>
 
-            <DialogFooter className="mt-6">
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setDialogOpen(false)}
+                disabled={loading}
+              >
                 Annuler
               </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? 'Enregistrement...' : selectedVehicle ? 'Modifier' : 'Créer'}
+              <Button
+                type="submit"
+                disabled={loading}
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Enregistrement...
+                  </>
+                ) : (
+                  selectedVehicle ? 'Modifier' : 'Ajouter'
+                )}
               </Button>
             </DialogFooter>
           </form>
@@ -593,15 +744,33 @@ export default function VehicleManagement() {
           <DialogHeader>
             <DialogTitle>Confirmer la suppression</DialogTitle>
             <DialogDescription>
-              Êtes-vous sûr de vouloir supprimer le véhicule "{selectedVehicle?.license_plate}" ?
+              Êtes-vous sûr de vouloir supprimer ce véhicule ? Cette action est irréversible.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={loading}
+            >
               Annuler
             </Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={loading}>
-              {loading ? 'Suppression...' : 'Supprimer'}
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Suppression...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Supprimer
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

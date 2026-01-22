@@ -86,9 +86,15 @@ export default function OwnerDashboard() {
             api.get(`/bookings?agency_id=${agency.id}`)
           ]);
 
-          const vehicles = Array.isArray(vehiclesRes.data) ? vehiclesRes.data : [];
-          const customers = Array.isArray(customersRes.data) ? customersRes.data : [];
-          const bookings = Array.isArray(bookingsRes.data) ? bookingsRes.data : [];
+          const vehicles = vehiclesRes.data.vehicles || (Array.isArray(vehiclesRes.data) ? vehiclesRes.data : []);
+          const customers = customersRes.data.customers || (Array.isArray(customersRes.data) ? customersRes.data : []);
+          const bookings = bookingsRes.data.bookings || (Array.isArray(bookingsRes.data) ? bookingsRes.data : []);
+
+          console.log(`Agency ${agency.name}:`, {
+            vehicles: vehicles.length,
+            customers: customers.length,
+            bookings: bookings.length
+          });
 
           totalVehicles += vehicles.length;
           totalCustomers += customers.length;

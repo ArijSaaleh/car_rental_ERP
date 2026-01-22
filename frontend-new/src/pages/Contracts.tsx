@@ -75,9 +75,7 @@ export default function Contracts() {
   useEffect(() => {
     const filtered = contracts.filter(
       (contract) =>
-        contract.reservation?.client?.nom
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
+        contract.numero_contrat?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         contract.statut.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredContracts(filtered);
@@ -272,12 +270,10 @@ export default function Contracts() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {contract.reservation?.client?.nom}{' '}
-                        {contract.reservation?.client?.prenom}
+                        {contract.numero_contrat || '-'}
                       </TableCell>
                       <TableCell>
-                        {contract.reservation?.vehicule?.marque}{' '}
-                        {contract.reservation?.vehicule?.modele}
+                        {contract.reservation?.vehicle?.brand || '-'} {contract.reservation?.vehicle?.model || ''}
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
