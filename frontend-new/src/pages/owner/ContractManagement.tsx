@@ -16,34 +16,56 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '../../components/ui/dialog';
-import { Label } from '../../components/ui/label';
 import { Alert, AlertDescription } from '../../components/ui/alert';
-import { Textarea } from '../../components/ui/textarea';
 import api from '../../services/api';
 import { extractErrorMessage } from '../../utils/errorHandler';
 
+interface Agency {
+  id: string;
+  name: string;
+}
+
 interface Contract {
+  id: number;
+  contract_number: string;
   booking_id: number;
-  booking_number: string;
-  customer_name: string;
-  vehicle_info: string;
-  start_date: string;
-  end_date: string;
-  total_amount: number;
+  booking_number?: string;
+  customer_name?: string;
+  vehicle_info?: string;
+  start_date?: string;
+  end_date?: string;
+  total_amount?: number;
   status: string;
+  agency_id: string;
+  terms_and_conditions?: string;
+  special_clauses?: any;
+  created_at?: string;
 }
 
 // Helper function to normalize contract data from API
 const normalizeContract = (contract: any): Contract => ({
-  ...contract,
-  total_amount: typeof contract.total_amount === 'string' ? parseFloat(contract.total_amount) : contract.total_amount,
+  id: contract.id,
+  contract_number: contract.contract_number,
+  booking_id: contract.booking_id,
+  booking_number: contract.booking_number || contract.contract_number,
+  customer_name: contract.customer_name || 'N/A',
+  vehicle_info: contract.vehicle_info || 'N/A',
+  start_date: contract.start_date,
+  end_date: contract.end_date,
+  total_amount: contract.total_amount ? (typeof contract.total_amount === 'string' ? parseFloat(contract.total_amount) : contract.total_amount) : 0,
+  status: contract.status,
+  agency_id: contract.agency_id,
+  terms_and_conditions: contract.terms_and_conditions,
+  special_clauses: contract.special_clauses,
+  created_at: contract.created_at,
 });
 
 export default function ContractManagement() {
+  const [agencies, setAgencies] = useState<Agency[]>([]);
+  const [selectedAgencyId, setSelectedAgencyId] = useState<string>('');
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [filteredContracts, setFilteredContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,30 +73,16 @@ export default function ContractManagement() {
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [error, setError] = useState('');
-  const [formData, setFormData] = useState({
-    lessor_name: '',
-    lessor_address: '',
-    lessor_tax_id: '',
-    lessor_registry: '',
-    lessor_representative: '',
-    vehicle_brand: '',
-    vehicle_model: '',
-    vehicle_license_plate: '',
-    vehicle_vin: '',
-    vehicle_year: new Date().getFullYear(),
-    vehicle_mileage: 0,
-    daily_rate: 0,
-    deposit_amount: 0,
-    mileage_limit: 0,
-    extra_mileage_rate: 0,
-    insurance_policy: '',
-    insurance_coverage: '',
-    special_conditions: '',
-  });
 
   useEffect(() => {
-    loadContracts();
+    loadAgencies();
   }, []);
+
+  useEffect(() => {
+    if (selectedAgencyId) {
+      loadContracts();
+    }
+  }, [selectedAgencyId]);
 
   useEffect(() => {
     const filtered = contracts.filter(
@@ -86,72 +94,68 @@ export default function ContractManagement() {
     setFilteredContracts(filtered);
   }, [searchTerm, contracts]);
 
+  const loadAgencies = async () => {
+    try {
+      const response = await api.get('/proprietaire/agencies');
+      setAgencies(response.data);
+      if (response.data.length > 0) {
+        setSelectedAgencyId(response.data[0].id);
+      }
+    } catch (err) {
+      setError(extractErrorMessage(err));
+    }
+  };
+
   const loadContracts = async () => {
+    if (!selectedAgencyId) return;
+    
     setLoading(true);
     try {
-      const response = await api.get('/proprietaire/contracts');
+      console.log('📋 Loading contracts for agency:', selectedAgencyId);
+      const response = await api.get('/contracts/', {
+        params: { agency_id: selectedAgencyId }
+      });
+      console.log('✅ Contracts loaded:', response.data.length);
       const normalizedContracts = response.data.map(normalizeContract);
       setContracts(normalizedContracts);
       setFilteredContracts(normalizedContracts);
-    } catch (err) {
+    } catch (err: any) {
+      console.error('❌ Failed to load contracts:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+        agency_id: selectedAgencyId
+      });
       setError(extractErrorMessage(err));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleOpenDialog = (contract: Contract) => {
+  const handleViewContract = (contract: Contract) => {
     setSelectedContract(contract);
-    setFormData({
-      lessor_name: '',
-      lessor_address: '',
-      lessor_tax_id: '',
-      lessor_registry: '',
-      lessor_representative: '',
-      vehicle_brand: '',
-      vehicle_model: '',
-      vehicle_license_plate: '',
-      vehicle_vin: '',
-      vehicle_year: new Date().getFullYear(),
-      vehicle_mileage: 0,
-      daily_rate: 0,
-      deposit_amount: 0,
-      mileage_limit: 300,
-      extra_mileage_rate: 0.5,
-      insurance_policy: '',
-      insurance_coverage: 'Tous risques',
-      special_conditions: '',
-    });
     setError('');
     setDialogOpen(true);
   };
 
-  const handleGeneratePDF = async () => {
-    if (!selectedContract) return;
-
+  const handleDownloadPDF = async (contract: Contract) => {
     setLoading(true);
     setError('');
 
     try {
-      const payload = {
-        booking_id: selectedContract.booking_id,
-        ...formData,
-      };
-
-      const response = await api.post('/proprietaire/contracts/generate-pdf', payload, {
+      const response = await api.get(`/contracts/${contract.id}/pdf`, {
+        params: { agency_id: selectedAgencyId },
         responseType: 'blob',
       });
 
-      // Create download link
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `Contrat_${selectedContract.booking_number}_${new Date().toISOString().split('T')[0]}.pdf`);
+      link.setAttribute('download', `Contrat_${contract.contract_number}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
-
-      setDialogOpen(false);
+      window.URL.revokeObjectURL(url);
     } catch (err) {
       setError(extractErrorMessage(err));
     } finally {
@@ -180,8 +184,19 @@ export default function ContractManagement() {
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Gestion des Contrats</h1>
           <p className="text-slate-600 mt-2">
-            Générez des contrats de location conformes à la loi tunisienne
+            Consultez et téléchargez les contrats de location
           </p>
+        </div>
+        <div className="flex gap-2">
+          <select
+            value={selectedAgencyId}
+            onChange={(e) => setSelectedAgencyId(e.target.value)}
+            className="border rounded-md px-3 py-2"
+          >
+            {agencies.map(agency => (
+              <option key={agency.id} value={agency.id}>{agency.name}</option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -280,18 +295,28 @@ export default function ContractManagement() {
                         {new Date(contract.end_date).toLocaleDateString('fr-FR')}
                       </TableCell>
                       <TableCell className="font-semibold">
-                        {contract.total_amount.toFixed(2)} DT
+                        {contract.total_amount ? contract.total_amount.toFixed(2) : '0.00'} DT
                       </TableCell>
                       <TableCell>{getStatusBadge(contract.status)}</TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleOpenDialog(contract)}
-                          title="Générer le contrat PDF"
-                        >
-                          <Download className="h-4 w-4 text-blue-600" />
-                        </Button>
+                        <div className="flex gap-2 justify-end">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleViewContract(contract)}
+                            title="Voir les détails"
+                          >
+                            <Eye className="h-4 w-4 text-slate-600" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDownloadPDF(contract)}
+                            title="Télécharger le PDF"
+                          >
+                            <Download className="h-4 w-4 text-blue-600" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -302,13 +327,13 @@ export default function ContractManagement() {
         </CardContent>
       </Card>
 
-      {/* Generate Contract Dialog */}
+      {/* View Contract Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Générer Contrat de Location</DialogTitle>
+            <DialogTitle>Détails du Contrat</DialogTitle>
             <DialogDescription>
-              Réservation: {selectedContract?.booking_number} | Client: {selectedContract?.customer_name}
+              Contrat N°: {selectedContract?.contract_number}
             </DialogDescription>
           </DialogHeader>
 
@@ -318,220 +343,57 @@ export default function ContractManagement() {
             </Alert>
           )}
 
-          <div className="space-y-6">
-            {/* Lessor Information */}
+          {selectedContract && (
             <div className="space-y-4">
-              <h3 className="font-semibold text-lg border-b pb-2">Informations du Bailleur (Agence)</h3>
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="lessor_name">Raison Sociale *</Label>
-                  <Input
-                    id="lessor_name"
-                    value={formData.lessor_name}
-                    onChange={(e) => setFormData({ ...formData, lessor_name: e.target.value })}
-                    required
-                  />
+                <div>
+                  <p className="text-sm text-slate-600">Numéro de Réservation</p>
+                  <p className="font-semibold">{selectedContract.booking_number}</p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lessor_tax_id">Matricule Fiscal *</Label>
-                  <Input
-                    id="lessor_tax_id"
-                    value={formData.lessor_tax_id}
-                    onChange={(e) => setFormData({ ...formData, lessor_tax_id: e.target.value })}
-                    required
-                  />
+                <div>
+                  <p className="text-sm text-slate-600">Statut</p>
+                  {getStatusBadge(selectedContract.status)}
                 </div>
-                <div className="space-y-2 col-span-2">
-                  <Label htmlFor="lessor_address">Adresse *</Label>
-                  <Input
-                    id="lessor_address"
-                    value={formData.lessor_address}
-                    onChange={(e) => setFormData({ ...formData, lessor_address: e.target.value })}
-                    required
-                  />
+                <div>
+                  <p className="text-sm text-slate-600">Client</p>
+                  <p className="font-semibold">{selectedContract.customer_name}</p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lessor_registry">Registre de Commerce (RNE) *</Label>
-                  <Input
-                    id="lessor_registry"
-                    value={formData.lessor_registry}
-                    onChange={(e) => setFormData({ ...formData, lessor_registry: e.target.value })}
-                    required
-                  />
+                <div>
+                  <p className="text-sm text-slate-600">Véhicule</p>
+                  <p className="font-semibold">{selectedContract.vehicle_info}</p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lessor_representative">Représentant Légal *</Label>
-                  <Input
-                    id="lessor_representative"
-                    value={formData.lessor_representative}
-                    onChange={(e) => setFormData({ ...formData, lessor_representative: e.target.value })}
-                    required
-                  />
+                <div>
+                  <p className="text-sm text-slate-600">Date de Début</p>
+                  <p className="font-semibold">
+                    {new Date(selectedContract.start_date).toLocaleDateString('fr-FR')}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-600">Date de Fin</p>
+                  <p className="font-semibold">
+                    {new Date(selectedContract.end_date).toLocaleDateString('fr-FR')}
+                  </p>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-sm text-slate-600">Montant Total</p>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {selectedContract.total_amount ? selectedContract.total_amount.toFixed(2) : '0.00'} DT
+                  </p>
                 </div>
               </div>
-            </div>
 
-            {/* Vehicle Information */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-lg border-b pb-2">Informations du Véhicule</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="vehicle_brand">Marque *</Label>
-                  <Input
-                    id="vehicle_brand"
-                    value={formData.vehicle_brand}
-                    onChange={(e) => setFormData({ ...formData, vehicle_brand: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="vehicle_model">Modèle *</Label>
-                  <Input
-                    id="vehicle_model"
-                    value={formData.vehicle_model}
-                    onChange={(e) => setFormData({ ...formData, vehicle_model: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="vehicle_license_plate">Immatriculation *</Label>
-                  <Input
-                    id="vehicle_license_plate"
-                    value={formData.vehicle_license_plate}
-                    onChange={(e) => setFormData({ ...formData, vehicle_license_plate: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="vehicle_vin">N° de Châssis (VIN) *</Label>
-                  <Input
-                    id="vehicle_vin"
-                    value={formData.vehicle_vin}
-                    onChange={(e) => setFormData({ ...formData, vehicle_vin: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="vehicle_year">Année *</Label>
-                  <Input
-                    id="vehicle_year"
-                    type="number"
-                    value={formData.vehicle_year}
-                    onChange={(e) => setFormData({ ...formData, vehicle_year: parseInt(e.target.value) })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="vehicle_mileage">Kilométrage *</Label>
-                  <Input
-                    id="vehicle_mileage"
-                    type="number"
-                    value={formData.vehicle_mileage}
-                    onChange={(e) => setFormData({ ...formData, vehicle_mileage: parseInt(e.target.value) })}
-                    required
-                  />
-                </div>
+              <div className="flex gap-2 pt-4">
+                <Button
+                  onClick={() => handleDownloadPDF(selectedContract)}
+                  className="w-full"
+                  disabled={loading}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  {loading ? 'Téléchargement...' : 'Télécharger le PDF'}
+                </Button>
               </div>
             </div>
-
-            {/* Financial Terms */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-lg border-b pb-2">Conditions Financières</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="daily_rate">Tarif Journalier (DT) *</Label>
-                  <Input
-                    id="daily_rate"
-                    type="number"
-                    step="0.001"
-                    value={formData.daily_rate}
-                    onChange={(e) => setFormData({ ...formData, daily_rate: parseFloat(e.target.value) })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="deposit_amount">Caution (DT) *</Label>
-                  <Input
-                    id="deposit_amount"
-                    type="number"
-                    step="0.001"
-                    value={formData.deposit_amount}
-                    onChange={(e) => setFormData({ ...formData, deposit_amount: parseFloat(e.target.value) })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="mileage_limit">Limite Kilométrage</Label>
-                  <Input
-                    id="mileage_limit"
-                    type="number"
-                    value={formData.mileage_limit}
-                    onChange={(e) => setFormData({ ...formData, mileage_limit: parseInt(e.target.value) })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="extra_mileage_rate">Tarif km Supplémentaire (DT)</Label>
-                  <Input
-                    id="extra_mileage_rate"
-                    type="number"
-                    step="0.001"
-                    value={formData.extra_mileage_rate}
-                    onChange={(e) => setFormData({ ...formData, extra_mileage_rate: parseFloat(e.target.value) })}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Insurance */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-lg border-b pb-2">Assurance</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="insurance_policy">N° Police d'Assurance *</Label>
-                  <Input
-                    id="insurance_policy"
-                    value={formData.insurance_policy}
-                    onChange={(e) => setFormData({ ...formData, insurance_policy: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="insurance_coverage">Couverture *</Label>
-                  <Input
-                    id="insurance_coverage"
-                    value={formData.insurance_coverage}
-                    onChange={(e) => setFormData({ ...formData, insurance_coverage: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Special Conditions */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-lg border-b pb-2">Conditions Particulières</h3>
-              <div className="space-y-2">
-                <Label htmlFor="special_conditions">Conditions Spéciales (Optionnel)</Label>
-                <Textarea
-                  id="special_conditions"
-                  value={formData.special_conditions}
-                  onChange={(e) => setFormData({ ...formData, special_conditions: e.target.value })}
-                  rows={4}
-                  placeholder="Ajoutez des conditions particulières si nécessaire..."
-                />
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Annuler
-            </Button>
-            <Button onClick={handleGeneratePDF} disabled={loading} className="gap-2">
-              <Download className="h-4 w-4" />
-              {loading ? 'Génération...' : 'Générer PDF'}
-            </Button>
-          </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
     </div>

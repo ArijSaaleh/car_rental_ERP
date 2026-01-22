@@ -81,6 +81,8 @@ export default function VehicleManagement() {
     mileage: 0,
     status: 'disponible',
     daily_rate: 0,
+    seats: undefined as number | undefined,
+    doors: undefined as number | undefined,
     insurance_expiry: '',
     registration_expiry: '',
   });
@@ -179,8 +181,10 @@ export default function VehicleManagement() {
         mileage: vehicle.mileage || 0,
         status: vehicle.status || 'disponible',
         daily_rate: vehicle.daily_rate || 0,
-        insurance_expiry: vehicle.insurance_expiry || '',
-        registration_expiry: vehicle.registration_expiry || '',
+        seats: (vehicle as any).seats || undefined,
+        doors: (vehicle as any).doors || undefined,
+        insurance_expiry: vehicle.insurance_expiry ? vehicle.insurance_expiry.split('T')[0] : '',
+        registration_expiry: vehicle.registration_expiry ? vehicle.registration_expiry.split('T')[0] : '',
       });
     } else {
       setSelectedVehicle(null);
@@ -195,6 +199,8 @@ export default function VehicleManagement() {
         mileage: 0,
         status: 'disponible',
         daily_rate: 0,
+        seats: undefined,
+        doors: undefined,
         insurance_expiry: '',
         registration_expiry: '',
       });
@@ -208,10 +214,22 @@ export default function VehicleManagement() {
     setError('');
     setLoading(true);
 
+    if (!selectedAgencyId) {
+      setError('Veuillez sélectionner une agence');
+      setLoading(false);
+      return;
+    }
+
     try {
       const payload = {
         ...formData,
         agency_id: selectedAgencyId,
+        // Convert dates to ISO datetime format or null
+        insurance_expiry: formData.insurance_expiry ? `${formData.insurance_expiry}T00:00:00` : null,
+        registration_expiry: formData.registration_expiry ? `${formData.registration_expiry}T00:00:00` : null,
+        // Remove undefined values
+        seats: formData.seats || null,
+        doors: formData.doors || null,
       };
 
       if (selectedVehicle) {
@@ -300,7 +318,8 @@ export default function VehicleManagement() {
         </div>
         <Button
           onClick={() => handleOpenDialog()}
-          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+          disabled={!selectedAgencyId}
+          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Plus className="h-5 w-5 mr-2" />
           Ajouter un Véhicule
@@ -614,18 +633,22 @@ export default function VehicleManagement() {
                   onValueChange={(value) => setFormData({ ...formData, color: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner une couleur" />
+                    <SelectValue placeholder="Sélectionner une couleur">
+                      {formData.color && (
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-4 h-4 rounded-full border border-slate-300"
+                            style={{ backgroundColor: CAR_COLORS.find(c => c.value === formData.color)?.hex }}
+                          />
+                          <span>{CAR_COLORS.find(c => c.value === formData.color)?.label}</span>
+                        </div>
+                      )}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {CAR_COLORS.map((color) => (
                       <SelectItem key={color.value} value={color.value}>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="w-4 h-4 rounded-full border border-slate-300"
-                            style={{ backgroundColor: color.hex }}
-                          />
-                          {color.label}
-                        </div>
+                        {color.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -706,6 +729,52 @@ export default function VehicleManagement() {
                   onChange={(e) => setFormData({ ...formData, daily_rate: parseFloat(e.target.value) || 0 })}
                   min="0"
                   step="0.01"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="seats">Nombre de sièges</Label>
+                <Input
+                  id="seats"
+                  type="number"
+                  value={formData.seats || ''}
+                  onChange={(e) => setFormData({ ...formData, seats: parseInt(e.target.value) || undefined })}
+                  min="2"
+                  max="9"
+                  placeholder="Ex: 5"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="doors">Nombre de portes</Label>
+                <Input
+                  id="doors"
+                  type="number"
+                  value={formData.doors || ''}
+                  onChange={(e) => setFormData({ ...formData, doors: parseInt(e.target.value) || undefined })}
+                  min="2"
+                  max="5"
+                  placeholder="Ex: 4"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="insurance_expiry">Date d'expiration de l'assurance</Label>
+                <Input
+                  id="insurance_expiry"
+                  type="date"
+                  value={formData.insurance_expiry}
+                  onChange={(e) => setFormData({ ...formData, insurance_expiry: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="registration_expiry">Date d'expiration de l'immatriculation</Label>
+                <Input
+                  id="registration_expiry"
+                  type="date"
+                  value={formData.registration_expiry}
+                  onChange={(e) => setFormData({ ...formData, registration_expiry: e.target.value })}
                 />
               </div>
             </div>

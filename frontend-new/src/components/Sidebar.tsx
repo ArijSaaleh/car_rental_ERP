@@ -13,7 +13,8 @@ import {
   CreditCard,
   BarChart3,
   Menu,
-  X
+  X,
+  PlusCircle
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Button } from './ui/button';
@@ -50,6 +51,7 @@ export function Sidebar({ userRole = 'proprietaire', isCollapsed = false, onTogg
     if (userRole === 'proprietaire') {
       return [
         { label: 'Tableau de bord', href: '/owner/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
+        { label: 'Nouvelle Location', href: '/owner/new-rental', icon: <PlusCircle className="h-5 w-5" />, badge: 'NEW' },
         { label: 'Mes Agences', href: '/owner/agencies', icon: <Building2 className="h-5 w-5" /> },
         { label: 'Flotte', href: '/owner/vehicles', icon: <Car className="h-5 w-5" /> },
         { label: 'Réservations', href: '/owner/bookings', icon: <Calendar className="h-5 w-5" /> },

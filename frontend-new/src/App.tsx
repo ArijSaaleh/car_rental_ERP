@@ -32,6 +32,7 @@ const VehicleManagement = lazy(() => import('./pages/owner/VehicleManagement'));
 const ClientManagement = lazy(() => import('./pages/owner/ClientManagement'));
 const ContractManagement = lazy(() => import('./pages/owner/ContractManagement'));
 const BookingManagement = lazy(() => import('./pages/owner/BookingManagement'));
+const RentalWorkflow = lazy(() => import('./pages/owner/RentalWorkflow'));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -100,6 +101,7 @@ function App() {
           <Route path="vehicles" element={<VehicleManagement />} />
           <Route path="clients" element={<ClientManagement />} />
           <Route path="bookings" element={<BookingManagement />} />
+          <Route path="new-rental" element={<RentalWorkflow />} />
           <Route path="contracts" element={<ContractManagement />} />
           <Route path="payments" element={<Payments />} />
         </Route>

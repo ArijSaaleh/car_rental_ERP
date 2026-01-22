@@ -50,18 +50,18 @@ export const CAR_MODELS: Record<string, string[]> = {
 
 // Couleurs disponibles
 export const CAR_COLORS = [
-  { value: 'blanc', label: 'Blanc' },
-  { value: 'noir', label: 'Noir' },
-  { value: 'gris', label: 'Gris' },
-  { value: 'argent', label: 'Argent' },
-  { value: 'bleu', label: 'Bleu' },
-  { value: 'rouge', label: 'Rouge' },
-  { value: 'vert', label: 'Vert' },
-  { value: 'jaune', label: 'Jaune' },
-  { value: 'orange', label: 'Orange' },
-  { value: 'marron', label: 'Marron' },
-  { value: 'beige', label: 'Beige' },
-  { value: 'violet', label: 'Violet' },
+  { value: 'blanc', label: 'Blanc', hex: '#FFFFFF' },
+  { value: 'noir', label: 'Noir', hex: '#000000' },
+  { value: 'gris', label: 'Gris', hex: '#808080' },
+  { value: 'argent', label: 'Argent', hex: '#C0C0C0' },
+  { value: 'bleu', label: 'Bleu', hex: '#0066CC' },
+  { value: 'rouge', label: 'Rouge', hex: '#DC143C' },
+  { value: 'vert', label: 'Vert', hex: '#228B22' },
+  { value: 'jaune', label: 'Jaune', hex: '#FFD700' },
+  { value: 'orange', label: 'Orange', hex: '#FF8C00' },
+  { value: 'marron', label: 'Marron', hex: '#8B4513' },
+  { value: 'beige', label: 'Beige', hex: '#F5F5DC' },
+  { value: 'violet', label: 'Violet', hex: '#8B008B' },
 ];
 
 // Types de carburant

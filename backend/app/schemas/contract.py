@@ -3,6 +3,7 @@ Contract Pydantic schemas
 """
 from datetime import datetime
 from typing import Optional, Dict, Any
+from uuid import UUID
 from pydantic import BaseModel, Field
 
 
@@ -21,7 +22,7 @@ class ContractUpdate(BaseModel):
 class ContractResponse(BaseModel):
     id: int
     contract_number: str
-    agency_id: int
+    agency_id: UUID
     booking_id: int
     status: str
     pdf_url: Optional[str] = None
@@ -32,7 +33,7 @@ class ContractResponse(BaseModel):
     customer_ip_address: Optional[str] = None
     agent_signature_data: Optional[str] = None
     agent_signed_at: Optional[datetime] = None
-    agent_id: Optional[int] = None
+    agent_id: Optional[UUID] = None
     terms_and_conditions: str
     customer_accepted_terms: bool
     accepted_terms_at: Optional[datetime] = None

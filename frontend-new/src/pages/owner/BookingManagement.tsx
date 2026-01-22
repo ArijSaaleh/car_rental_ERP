@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Plus, Search, Edit, Trash2, Calendar, User, Car, CheckCircle, XCircle, Clock, CheckCircle2, Play } from 'lucide-react';
+import { Search, Edit, Trash2, Calendar, User, Car, CheckCircle, XCircle, Clock, CheckCircle2, Play, List, CalendarDays } from 'lucide-react';
 import { Button } from '../../components/ui/button';
+import BookingCalendar from '../../components/BookingCalendar';
 import { Input } from '../../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -126,6 +127,7 @@ export default function BookingManagement() {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [formData, setFormData] = useState({
     customer_id: '',
     vehicle_id: '',
@@ -215,40 +217,28 @@ export default function BookingManagement() {
     return matchesSearch && matchesStatus;
   });
 
-  const handleOpenDialog = (booking?: Booking) => {
+  const handleOpenDialog = (booking: Booking) => {
     setError('');
     setSuccess('');
     
-    if (booking) {
-      setSelectedBooking(booking);
-      setFormData({
-        customer_id: booking.customer_id.toString(),
-        vehicle_id: booking.vehicle_id,
-        start_date: booking.start_date,
-        end_date: booking.end_date,
-        daily_rate: booking.daily_rate,
-        deposit_amount: booking.deposit_amount,
-        fuel_policy: 'full_to_full',
-        notes: booking.notes || '',
-      });
-    } else {
-      setSelectedBooking(null);
-      setFormData({
-        customer_id: '',
-        vehicle_id: '',
-        start_date: new Date().toISOString().split('T')[0],
-        end_date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
-        daily_rate: 0,
-        deposit_amount: 500,
-        fuel_policy: 'full_to_full',
-        notes: '',
-      });
-    }
+    setSelectedBooking(booking);
+    setFormData({
+      customer_id: booking.customer_id.toString(),
+      vehicle_id: booking.vehicle_id,
+      start_date: booking.start_date,
+      end_date: booking.end_date,
+      daily_rate: booking.daily_rate,
+      deposit_amount: booking.deposit_amount,
+      fuel_policy: 'full_to_full',
+      notes: booking.notes || '',
+    });
     setDialogOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedBooking) return;
+    
     setLoading(true);
     setError('');
 
@@ -264,13 +254,8 @@ export default function BookingManagement() {
         notes: formData.notes || null,
       };
 
-      if (selectedBooking) {
-        await api.put(`/bookings/${selectedBooking.id}`, payload);
-        setSuccess('Réservation modifiée avec succès');
-      } else {
-        await api.post(`/bookings?agency_id=${selectedAgencyId}`, payload);
-        setSuccess('Réservation créée avec succès');
-      }
+      await api.put(`/bookings/${selectedBooking.id}`, payload);
+      setSuccess('Réservation modifiée avec succès');
       
       setDialogOpen(false);
       await loadData();
@@ -410,12 +395,30 @@ export default function BookingManagement() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Gestion des Réservations</h1>
-          <p className="text-slate-600 mt-1">Gérez toutes vos réservations de location</p>
+          <p className="text-slate-600 mt-1">Consultez et gérez toutes vos réservations de location</p>
         </div>
-        <Button onClick={() => handleOpenDialog()} disabled={!selectedAgencyId}>
-          <Plus className="h-5 w-5 mr-2" />
-          Nouvelle Réservation
-        </Button>
+        <div className="flex gap-2">
+          <div className="flex border rounded-lg bg-white">
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+              className="rounded-r-none"
+            >
+              <List className="h-4 w-4 mr-2" />
+              Liste
+            </Button>
+            <Button
+              variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('calendar')}
+              className="rounded-l-none"
+            >
+              <CalendarDays className="h-4 w-4 mr-2" />
+              Calendrier
+            </Button>
+          </div>
+        </div>
       </div>
 
       {error && (
@@ -538,15 +541,22 @@ export default function BookingManagement() {
         </CardContent>
       </Card>
 
-      {/* Bookings Table */}
-      {selectedAgencyId ? (
-        <Card>
-          <CardContent className="pt-6">
-            {loading ? (
-              <div className="text-center py-8 text-slate-500">Chargement...</div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
+      {/* Calendar or Table View */}
+      {viewMode === 'calendar' ? (
+        <BookingCalendar 
+          bookings={filteredBookings}
+          onBookingClick={(booking) => handleOpenDialog(booking)}
+        />
+      ) : (
+        /* Bookings Table */
+        selectedAgencyId ? (
+          <Card>
+            <CardContent className="pt-6">
+              {loading ? (
+                <div className="text-center py-8 text-slate-500">Chargement...</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>N° Réservation</TableHead>
@@ -686,23 +696,22 @@ export default function BookingManagement() {
             )}
           </CardContent>
         </Card>
-      ) : (
-        <Card>
-          <CardContent className="text-center py-12">
-            <p className="text-slate-500">Sélectionnez une agence pour voir ses réservations</p>
-          </CardContent>
-        </Card>
+        ) : (
+          <Card>
+            <CardContent className="text-center py-12">
+              <p className="text-slate-500">Sélectionnez une agence pour voir ses réservations</p>
+            </CardContent>
+          </Card>
+        )
       )}
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {selectedBooking ? 'Modifier la réservation' : 'Nouvelle réservation'}
-            </DialogTitle>
+            <DialogTitle>Modifier la réservation</DialogTitle>
             <DialogDescription>
-              Remplissez tous les champs pour créer une réservation
+              Modifiez les détails de la réservation {selectedBooking?.booking_number}
             </DialogDescription>
           </DialogHeader>
 
@@ -852,7 +861,7 @@ export default function BookingManagement() {
                 Annuler
               </Button>
               <Button type="submit" disabled={loading}>
-                {loading ? 'Enregistrement...' : selectedBooking ? 'Modifier' : 'Créer'}
+                {loading ? 'Enregistrement...' : 'Modifier'}
               </Button>
             </DialogFooter>
           </form>
