@@ -40,10 +40,10 @@ interface Agency {
 interface Manager {
   id: string;
   email: string;
-  full_name: string;
+  fullName: string;
   phone?: string;
   is_active: boolean;
-  created_at: string;
+  createdAt: string;
   last_login?: string;
 }
 
@@ -60,7 +60,7 @@ export default function AgencyManagers() {
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     email: '',
-    full_name: '',
+    fullName: '',
     phone: '',
     password: '',
   });
@@ -81,7 +81,7 @@ export default function AgencyManagers() {
   useEffect(() => {
     const filtered = managers.filter(
       (manager) =>
-        manager.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        manager.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         manager.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredManagers(filtered);
@@ -89,7 +89,7 @@ export default function AgencyManagers() {
 
   const loadAgencies = async () => {
     try {
-      const response = await api.get('/proprietaire/agencies');
+      const response = await api.get('/agencies');
       setAgencies(response.data);
       if (response.data.length > 0) {
         setSelectedAgencyId(response.data[0].id);
@@ -119,7 +119,7 @@ export default function AgencyManagers() {
   const handleOpenDialog = () => {
     setFormData({
       email: '',
-      full_name: '',
+      fullName: '',
       phone: '',
       password: '',
     });
@@ -133,9 +133,9 @@ export default function AgencyManagers() {
     setLoading(true);
 
     try {
-      await api.post(`/proprietaire/agencies/${selectedAgencyId}/managers`, {
+      await api.post(`/agencies/${selectedAgencyId}/managers`, {
         ...formData,
-        agency_id: selectedAgencyId,
+        agencyId: selectedAgencyId,
       });
       await loadManagers();
       setDialogOpen(false);
@@ -151,7 +151,7 @@ export default function AgencyManagers() {
 
     setLoading(true);
     try {
-      await api.delete(`/proprietaire/agencies/${selectedAgencyId}/managers/${selectedManager.id}`);
+      await api.delete(`/agencies/${selectedAgencyId}/managers/${selectedManager.id}`);
       await loadManagers();
       setDeleteDialogOpen(false);
       setSelectedManager(null);
@@ -280,7 +280,7 @@ export default function AgencyManagers() {
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <UserCircle className="h-5 w-5 text-slate-400" />
-                            <div className="font-medium">{manager.full_name}</div>
+                            <div className="font-medium">{manager.fullName}</div>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -299,10 +299,10 @@ export default function AgencyManagers() {
                             '-'
                           )}
                         </TableCell>
-                        <TableCell>{getStatusBadge(manager.is_active)}</TableCell>
+                        <TableCell>{getStatusBadge(manager.isActive)}</TableCell>
                         <TableCell>
                           <span className="text-sm text-slate-600">
-                            {formatDate(manager.last_login)}
+                            {formatDate(manager.lastLogin)}
                           </span>
                         </TableCell>
                         <TableCell className="text-right">
@@ -349,8 +349,8 @@ export default function AgencyManagers() {
                 <Label htmlFor="full_name">Nom Complet *</Label>
                 <Input
                   id="full_name"
-                  value={formData.full_name}
-                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                  value={formData.fullName}
+                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                   required
                 />
               </div>
@@ -408,7 +408,7 @@ export default function AgencyManagers() {
           <DialogHeader>
             <DialogTitle>Confirmer la suppression</DialogTitle>
             <DialogDescription>
-              Êtes-vous sûr de vouloir supprimer le gestionnaire "{selectedManager?.full_name}" ?
+              Êtes-vous sûr de vouloir supprimer le gestionnaire "{selectedManager?.fullName}" ?
               Cette action est irréversible.
             </DialogDescription>
           </DialogHeader>

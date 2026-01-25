@@ -7,22 +7,22 @@ export const paymentService = {
     return response.data;
   },
 
-  async getById(id: number): Promise<Payment> {
+  async getById(id: string): Promise<Payment> {
     const response = await api.get<Payment>(`/payments/${id}`);
     return response.data;
   },
 
-  async create(payment: Omit<Payment, 'id' | 'created_at'>): Promise<Payment> {
+  async create(payment: Omit<Payment, 'id' | 'createdAt'>): Promise<Payment> {
     const response = await api.post<Payment>('/payments', payment);
     return response.data;
   },
 
-  async update(id: number, payment: Partial<Payment>): Promise<Payment> {
-    const response = await api.put<Payment>(`/payments/${id}`, payment);
+  async update(id: string, payment: Partial<Payment>): Promise<Payment> {
+    const response = await api.patch<Payment>(`/payments/${id}`, payment);
     return response.data;
   },
 
-  async delete(id: number): Promise<void> {
+  async delete(id: string): Promise<void> {
     await api.delete(`/payments/${id}`);
   },
 };

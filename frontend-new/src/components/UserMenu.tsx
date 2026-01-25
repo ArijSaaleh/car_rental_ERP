@@ -9,9 +9,7 @@ export function UserMenu() {
   const navigate = useNavigate();
   const user = authService.getCurrentUserFromStorage();
   
-  const userName = user?.nom && user?.prenom 
-    ? `${user.prenom} ${user.nom}` 
-    : user?.email || 'Utilisateur';
+  const userName = user?.fullName || user?.email || 'Utilisateur';
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -36,11 +34,17 @@ export function UserMenu() {
 
   const getRoleLabel = (role: string) => {
     switch (role) {
-      case 'super_admin':
+      case 'SUPER_ADMIN':
         return 'Super Admin';
-      case 'proprietaire':
+      case 'PROPRIETAIRE':
         return 'Propriétaire';
-      case 'client':
+      case 'MANAGER':
+        return 'Manager';
+      case 'AGENT_COMPTOIR':
+        return 'Agent de Comptoir';
+      case 'AGENT_PARC':
+        return 'Agent de Parc';
+      case 'CLIENT':
         return 'Client';
       default:
         return role;

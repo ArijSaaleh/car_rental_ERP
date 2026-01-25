@@ -55,10 +55,10 @@ export default function Customers() {
   useEffect(() => {
     const filtered = customers.filter(
       (customer) =>
-        customer.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.cin_number?.toLowerCase().includes(searchTerm.toLowerCase())
+        customer.cinNumber?.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredCustomers(filtered);
   }, [searchTerm, customers]);
@@ -79,14 +79,14 @@ export default function Customers() {
     if (customer) {
       setSelectedCustomer(customer);
       setFormData({
-        nom: customer.last_name,
-        prenom: customer.first_name,
-        cin: customer.cin_number || '',
+        nom: customer.lastName,
+        prenom: customer.firstName,
+        cin: customer.cinNumber || '',
         email: customer.email,
         telephone: customer.phone,
         adresse: customer.address || '',
         date_naissance: customer.date_of_birth?.split('T')[0] || '',
-        num_permis: customer.license_number,
+        num_permis: customer.licenseNumber,
         date_permis: customer.license_issue_date?.split('T')[0] || '',
       });
     } else {
@@ -224,13 +224,13 @@ export default function Customers() {
                           <User className="h-4 w-4 text-slate-400" />
                           <div>
                             <div className="font-medium">
-                              {customer.first_name} {customer.last_name}
+                              {customer.firstName} {customer.lastName}
                             </div>
                             <div className="text-sm text-slate-500">{customer.email}</div>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>{customer.cin_number || '-'}</TableCell>
+                      <TableCell>{customer.cinNumber || '-'}</TableCell>
                       <TableCell>
                         <div className="text-sm">
                           <div>{customer.phone}</div>
@@ -239,7 +239,7 @@ export default function Customers() {
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          <div>{customer.license_number}</div>
+                          <div>{customer.licenseNumber}</div>
                           <div className="text-slate-500">
                             Délivré: {customer.license_issue_date ? new Date(customer.license_issue_date).toLocaleDateString() : '-'}
                           </div>

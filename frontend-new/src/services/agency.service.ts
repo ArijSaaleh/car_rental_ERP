@@ -3,26 +3,26 @@ import type { Agency } from '../types';
 
 export const agencyService = {
   async getAll(): Promise<Agency[]> {
-    const response = await api.get<Agency[]>('/agency');
+    const response = await api.get<Agency[]>('/agencies');
     return response.data;
   },
 
-  async getById(id: number): Promise<Agency> {
-    const response = await api.get<Agency>(`/agency/${id}`);
+  async getById(id: string): Promise<Agency> {
+    const response = await api.get<Agency>(`/agencies/${id}`);
     return response.data;
   },
 
-  async create(agency: Omit<Agency, 'id' | 'created_at'>): Promise<Agency> {
-    const response = await api.post<Agency>('/agency', agency);
+  async create(agency: Omit<Agency, 'id' | 'createdAt' | 'updatedAt'>): Promise<Agency> {
+    const response = await api.post<Agency>('/agencies', agency);
     return response.data;
   },
 
-  async update(id: number, agency: Partial<Agency>): Promise<Agency> {
-    const response = await api.put<Agency>(`/agency/${id}`, agency);
+  async update(id: string, agency: Partial<Agency>): Promise<Agency> {
+    const response = await api.patch<Agency>(`/agencies/${id}`, agency);
     return response.data;
   },
 
-  async delete(id: number): Promise<void> {
-    await api.delete(`/agency/${id}`);
+  async delete(id: string): Promise<void> {
+    await api.delete(`/agencies/${id}`);
   },
 };

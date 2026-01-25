@@ -38,14 +38,14 @@ interface Agency {
   country: string;
   subscription_plan: string;
   is_active: boolean;
-  parent_agency_id?: string | null;  // Hierarchy: NULL = main agency
+  parent_agencyId?: string | null;  // Hierarchy: NULL = main agency
   is_main: boolean;                   // True if main agency, false if branch
   branch_count: number;               // Number of branches (only for main)
   manager_count: number;
   employee_count: number;
   vehicle_count: number;
   customer_count: number;
-  created_at: string;
+  createdAt: string;
 }
 
 export default function MyAgencies() {
@@ -78,7 +78,7 @@ export default function MyAgencies() {
     const filtered = agencies.filter(
       (agency) =>
         agency.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        agency.legal_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        agency.legalName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         agency.city.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredAgencies(filtered);
@@ -86,7 +86,7 @@ export default function MyAgencies() {
 
   const loadAgencies = async () => {
     try {
-      const response = await api.get('/proprietaire/agencies');
+      const response = await api.get('/agencies');
       setAgencies(response.data);
       setFilteredAgencies(response.data);
     } catch (err) {
@@ -103,13 +103,13 @@ export default function MyAgencies() {
       setParentAgencyId('');
       setFormData({
         name: agency.name,
-        legal_name: agency.legal_name,
-        tax_id: agency.tax_id,
+        legal_name: agency.legalName,
+        tax_id: agency.taxId,
         email: agency.email,
         phone: agency.phone,
         address: agency.address,
         city: agency.city,
-        postal_code: agency.postal_code || '',
+        postal_code: agency.postalCode || '',
         country: agency.country,
       });
     } else {
@@ -146,13 +146,13 @@ export default function MyAgencies() {
 
     try {
       const payload = isBranchMode && !selectedAgency
-        ? { ...formData, parent_agency_id: parentAgencyId }
+        ? { ...formData, parent_agencyId: parentAgencyId }
         : formData;
 
       if (selectedAgency) {
-        await api.put(`/proprietaire/agencies/${selectedAgency.id}`, payload);
+        await api.put(`/agencies/${selectedAgency.id}`, payload);
       } else {
-        await api.post('/proprietaire/agencies', payload);
+        await api.post('/agencies', payload);
       }
       await loadAgencies();
       setDialogOpen(false);
@@ -165,7 +165,7 @@ export default function MyAgencies() {
 
   const handleToggleStatus = async (agency: Agency) => {
     try {
-      await api.post(`/proprietaire/agencies/${agency.id}/toggle-status`);
+      await api.post(`/agencies/${agency.id}/toggle-status`);
       await loadAgencies();
     } catch (err) {
       setError(extractErrorMessage(err));
@@ -335,7 +335,7 @@ export default function MyAgencies() {
                                 </Badge>
                               )}
                             </div>
-                            <div className="text-sm text-slate-500">{agency.legal_name}</div>
+                            <div className="text-sm text-slate-500">{agency.legalName}</div>
                             {agency.is_main && agency.branch_count > 0 && (
                               <div className="text-xs text-blue-600 mt-1">
                                 {agency.branch_count} succursale{agency.branch_count > 1 ? 's' : ''}
@@ -351,7 +351,7 @@ export default function MyAgencies() {
                         </div>
                       </TableCell>
                       <TableCell>{agency.city}</TableCell>
-                      <TableCell>{getPlanBadge(agency.subscription_plan)}</TableCell>
+                      <TableCell>{getPlanBadge(agency.subscriptionPlan)}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <Car className="h-5 w-5 text-slate-400" />
@@ -367,7 +367,7 @@ export default function MyAgencies() {
                       <TableCell>
                         {agency.manager_count + agency.employee_count}
                       </TableCell>
-                      <TableCell>{getStatusBadge(agency.is_active)}</TableCell>
+                      <TableCell>{getStatusBadge(agency.isActive)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
@@ -382,7 +382,7 @@ export default function MyAgencies() {
                             size="icon"
                             onClick={() => handleToggleStatus(agency)}
                           >
-                            {agency.is_active ? (
+                            {agency.isActive ? (
                               <ToggleRight className="h-6 w-6 text-green-600" />
                             ) : (
                               <ToggleLeft className="h-6 w-6 text-slate-400" />
@@ -465,7 +465,7 @@ export default function MyAgencies() {
                 <Label htmlFor="legal_name">Raison Sociale *</Label>
                 <Input
                   id="legal_name"
-                  value={formData.legal_name}
+                  value={formData.legalName}
                   onChange={(e) => setFormData({ ...formData, legal_name: e.target.value })}
                   required
                 />
@@ -475,7 +475,7 @@ export default function MyAgencies() {
                 <Label htmlFor="tax_id">Matricule Fiscal *</Label>
                 <Input
                   id="tax_id"
-                  value={formData.tax_id}
+                  value={formData.taxId}
                   onChange={(e) => setFormData({ ...formData, tax_id: e.target.value })}
                   required
                 />
@@ -526,7 +526,7 @@ export default function MyAgencies() {
                 <Label htmlFor="postal_code">Code Postal</Label>
                 <Input
                   id="postal_code"
-                  value={formData.postal_code}
+                  value={formData.postalCode}
                   onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
                 />
               </div>

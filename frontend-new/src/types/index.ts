@@ -2,144 +2,156 @@
 export interface User {
   id: string;
   email: string;
-  full_name: string;
-  role: 'super_admin' | 'proprietaire' | 'manager' | 'agent_comptoir' | 'agent_parc' | 'client';
-  agency_id?: string;
-  is_active: boolean;
-  is_verified: boolean;
-  created_at: string;
-  last_login?: string;
+  fullName: string;
+  phone?: string;
+  role: 'SUPER_ADMIN' | 'PROPRIETAIRE' | 'MANAGER' | 'AGENT_COMPTOIR' | 'AGENT_PARC' | 'CLIENT';
+  agencyId?: string;
+  agency?: Agency;
+  isActive: boolean;
+  isVerified: boolean;
+  createdAt: string;
+  updatedAt?: string;
+  lastLogin?: string;
 }
 
 export interface Agency {
   id: string;
-  owner_id?: string;
-  parent_agency_id?: string;
+  ownerId?: string;
+  parentAgencyId?: string;
   name: string;
-  legal_name: string;
-  tax_id: string;
+  legalName: string;
+  taxId: string;
   email: string;
   phone: string;
   address: string;
   city: string;
-  postal_code?: string;
+  postalCode?: string;
   country: string;
-  subscription_plan: 'basique' | 'standard' | 'premium' | 'entreprise';
-  subscription_start_date: string;
-  subscription_end_date?: string;
-  is_active: boolean;
-  created_at: string;
+  subscriptionPlan: 'BASIQUE' | 'STANDARD' | 'PREMIUM' | 'ENTREPRISE';
+  subscriptionStatus?: string;
+  subscriptionStartDate?: string;
+  subscriptionEndDate?: string;
+  isActive: boolean;
+  currency?: string;
+  language?: string;
+  timezone?: string;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Vehicle {
   id: string;
-  agency_id: string;
-  license_plate: string;
+  agencyId: string;
+  licensePlate: string;
   vin?: string;
   brand: string;
   model: string;
   year: number;
   color: string;
-  fuel_type: 'essence' | 'diesel' | 'hybride' | 'electrique' | 'gpl';
-  transmission: 'manuelle' | 'automatique';
+  fuelType: 'ESSENCE' | 'DIESEL' | 'HYBRIDE' | 'ELECTRIQUE';
+  transmission: 'MANUELLE' | 'AUTOMATIQUE';
   seats: number;
   doors: number;
   mileage: number;
-  status: 'disponible' | 'loue' | 'maintenance' | 'hors_service';
-  registration_number?: string;
-  registration_expiry?: string;
-  insurance_policy?: string;
-  insurance_expiry?: string;
-  technical_control_expiry?: string;
-  daily_rate: number;
+  status: 'DISPONIBLE' | 'LOUE' | 'MAINTENANCE' | 'HORS_SERVICE';
+  registrationNumber?: string;
+  registrationExpiry?: string;
+  insurancePolicy?: string;
+  insuranceExpiry?: string;
+  technicalControlExpiry?: string;
+  dailyRate: string;
+  depositAmount?: string;
+  features?: string[];
+  images?: string[];
   notes?: string;
-  created_at: string;
-  updated_at?: string;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Customer {
-  id: number;
-  agency_id: string;
-  customer_type?: 'individual' | 'company';
-  first_name: string;
-  last_name: string;
+  id: string;
+  agencyId: string;
+  customerType?: 'INDIVIDUAL' | 'COMPANY';
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
-  cin_number?: string;
-  cin_issue_date?: string;
-  cin_expiry_date?: string;
-  date_of_birth?: string;
-  place_of_birth?: string;
-  license_number: string;
-  license_issue_date?: string;
-  license_expiry_date?: string;
-  license_category?: string;
+  cinNumber?: string;
+  cinIssueDate?: string;
+  cinExpiryDate?: string;
+  dateOfBirth?: string;
+  placeOfBirth?: string;
+  licenseNumber: string;
+  licenseIssueDate?: string;
+  licenseExpiryDate?: string;
+  licenseCategory?: string;
   address?: string;
   city?: string;
-  postal_code?: string;
+  postalCode?: string;
   country?: string;
-  created_at: string;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Booking {
-  id: number;
-  booking_number: string;
-  agency_id: string;
-  vehicle_id: string;
-  customer_id: number;
-  created_by_user_id: string;
-  start_date: string;
-  end_date: string;
-  pickup_datetime?: string;
-  return_datetime?: string;
-  daily_rate: number;
-  duration_days: number;
-  subtotal: number;
-  tax_amount: number;
-  timbre_fiscal: number;
-  total_amount: number;
-  deposit_amount: number;
-  status: 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
-  payment_status: 'pending' | 'partial' | 'paid' | 'refunded';
-  initial_mileage?: number;
-  final_mileage?: number;
-  mileage_limit?: number;
-  extra_mileage_rate?: number;
-  initial_fuel_level?: string;
-  final_fuel_level?: string;
-  fuel_policy: string;
+  id: string;
+  bookingNumber: string;
+  agencyId: string;
+  vehicleId: string;
+  customerId: string;
+  createdByUserId: string;
+  startDate: string;
+  endDate: string;
+  pickupDatetime?: string;
+  returnDatetime?: string;
+  dailyRate: string;
+  durationDays: number;
+  subtotal: string;
+  taxAmount?: string;
+  timbreFiscal?: string;
+  totalAmount: string;
+  depositAmount: string;
+  status: 'PENDING' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  paymentStatus?: 'PENDING' | 'PARTIAL' | 'PAID' | 'REFUNDED';
+  initialMileage?: number;
+  finalMileage?: number;
+  mileageLimit?: number;
+  extraMileageRate?: string;
+  initialFuelLevel?: string;
+  finalFuelLevel?: string;
+  fuelPolicy?: string;
   notes?: string;
-  cancellation_reason?: string;
-  created_at: string;
-  updated_at: string;
+  cancellationReason?: string;
+  createdAt: string;
+  updatedAt: string;
   customer?: Customer;
   vehicle?: Vehicle;
 }
 
 export interface BookingCreate {
-  vehicle_id: number;
-  customer_id: number;
-  start_date: string;
-  end_date: string;
-  daily_rate?: number;
-  deposit_amount?: number;
-  mileage_limit?: number;
-  extra_mileage_rate?: number;
-  fuel_policy?: string;
+  vehicleId: string;
+  customerId: string;
+  startDate: string;
+  endDate: string;
+  dailyRate?: string;
+  depositAmount?: string;
+  mileageLimit?: number;
+  extraMileageRate?: string;
+  fuelPolicy?: string;
   notes?: string;
 }
 
 export interface BookingUpdate {
-  start_date?: string;
-  end_date?: string;
+  startDate?: string;
+  endDate?: string;
   status?: string;
-  payment_status?: string;
-  initial_mileage?: number;
-  final_mileage?: number;
-  initial_fuel_level?: string;
-  final_fuel_level?: string;
+  paymentStatus?: string;
+  initialMileage?: number;
+  finalMileage?: number;
+  initialFuelLevel?: string;
+  finalFuelLevel?: string;
   notes?: string;
-  cancellation_reason?: string;
+  cancellationReason?: string;
 }
 
 export interface Contract {
@@ -176,8 +188,9 @@ export interface Payment {
 }
 
 export interface AuthResponse {
-  access_token: string;
-  token_type: string;
+  accessToken: string;
+  refreshToken?: string;
+  tokenType: string;
 }
 
 export interface LoginCredentials {

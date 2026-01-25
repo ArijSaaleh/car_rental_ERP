@@ -24,7 +24,7 @@ interface Customer {
 
 interface Vehicle {
   id: string;
-  license_plate: string;
+  licensePlate: string;
   brand: string;
   model: string;
   year: number;
@@ -136,14 +136,14 @@ export default function RentalWorkflow() {
   }, [selectedAgencyId]);
 
   useEffect(() => {
-    if (selectedAgencyId && bookingForm.start_date && bookingForm.end_date) {
+    if (selectedAgencyId && bookingForm.startDate && bookingForm.endDate) {
       loadVehicles();
     }
-  }, [bookingForm.start_date, bookingForm.end_date]);
+  }, [bookingForm.startDate, bookingForm.endDate]);
 
   useEffect(() => {
     calculatePricing();
-  }, [bookingForm.start_date, bookingForm.end_date, selectedVehicle]);
+  }, [bookingForm.startDate, bookingForm.endDate, selectedVehicle]);
 
   const loadAgencies = async () => {
     try {
@@ -162,8 +162,8 @@ export default function RentalWorkflow() {
     setLoading(true);
     try {
       // Si les dates sont sélectionnées, vérifier la disponibilité pour chaque véhicule
-      if (bookingForm.start_date && bookingForm.end_date) {
-        const response = await api.get(`/vehicles?agency_id=${selectedAgencyId}&status=disponible`);
+      if (bookingForm.startDate && bookingForm.endDate) {
+        const response = await api.get(`/vehicles?agencyId =${selectedAgencyId}&status=disponible`);
         const allVehicles = response.data.vehicles || response.data || [];
         
         // Vérifier la disponibilité pour chaque véhicule
@@ -172,10 +172,10 @@ export default function RentalWorkflow() {
             try {
               const availResponse = await api.post('/bookings/check-availability', {
                 vehicle_id: vehicle.id,
-                start_date: `${bookingForm.start_date}T00:00:00`,
-                end_date: `${bookingForm.end_date}T00:00:00`,
+                start_date: `${bookingForm.startDate}T00:00:00`,
+                end_date: `${bookingForm.endDate}T00:00:00`,
               }, {
-                params: { agency_id: selectedAgencyId }
+                params: { agencyId: selectedAgencyId }
               });
               return availResponse.data.available ? vehicle : null;
             } catch (err) {
@@ -188,7 +188,7 @@ export default function RentalWorkflow() {
         setVehicles(availableVehicles);
       } else {
         // Sans dates, charger tous les véhicules disponibles
-        const response = await api.get(`/vehicles?agency_id=${selectedAgencyId}&status=disponible`);
+        const response = await api.get(`/vehicles?agencyId =${selectedAgencyId}&status=disponible`);
         const vehiclesList = response.data.vehicles || response.data || [];
         setVehicles(vehiclesList);
       }
@@ -202,7 +202,7 @@ export default function RentalWorkflow() {
   const loadCustomers = async () => {
     if (!selectedAgencyId) return;
     try {
-      const response = await api.get(`/customers?agency_id=${selectedAgencyId}`);
+      const response = await api.get(`/customers?agencyId=${selectedAgencyId}`);
       const customers = response.data.customers || response.data || [];
       setSearchResults(customers);
     } catch (err) {
@@ -221,7 +221,7 @@ export default function RentalWorkflow() {
     }
     setLoading(true);
     try {
-      const response = await api.get(`/customers?agency_id=${selectedAgencyId}&search=${searchTerm}`);
+      const response = await api.get(`/customers?agencyId =${selectedAgencyId}&search=${searchTerm}`);
       const customers = response.data.customers || response.data || [];
       setSearchResults(customers);
       if (customers.length === 0) {
@@ -244,7 +244,7 @@ export default function RentalWorkflow() {
     try {
       const response = await api.post('/customers', {
         ...customerForm,
-        agency_id: selectedAgencyId,
+        agencyId: selectedAgencyId,
       });
       setSelectedCustomer(response.data);
       setIsNewCustomer(false);
@@ -259,15 +259,15 @@ export default function RentalWorkflow() {
   };
 
   const calculatePricing = () => {
-    if (!selectedVehicle || !bookingForm.start_date || !bookingForm.end_date) return;
+    if (!selectedVehicle || !bookingForm.startDate || !bookingForm.endDate) return;
 
-    const start = new Date(bookingForm.start_date);
-    const end = new Date(bookingForm.end_date);
+    const start = new Date(bookingForm.startDate);
+    const end = new Date(bookingForm.endDate);
     const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
     
     if (days <= 0) return;
 
-    const daily_rate = selectedVehicle.daily_rate || 0;
+    const daily_rate = selectedVehicle.dailyRate || 0;
     const subtotal = days * daily_rate;
     const tax_amount = subtotal * pricing.tax_rate;
     const total_amount = subtotal + tax_amount + pricing.timbre_fiscal;
@@ -325,16 +325,16 @@ export default function RentalWorkflow() {
 
       // Préparer les special_clauses avec les informations détaillées
       const specialClauses = {
-        client_name: `${selectedCustomer.first_name} ${selectedCustomer.last_name}`,
-        client_cin: selectedCustomer.cin_number,
+        client_name: `${selectedCustomer.firstName} ${selectedCustomer.lastName}`,
+        client_cin: selectedCustomer.cinNumber,
         client_license: selectedCustomer.driver_license,
         vehicle_brand: selectedVehicle.brand,
         vehicle_model: selectedVehicle.model,
-        vehicle_plate: selectedVehicle.license_plate,
-        start_date: bookingForm.start_date,
-        end_date: bookingForm.end_date,
+        vehicle_plate: selectedVehicle.licensePlate,
+        start_date: bookingForm.startDate,
+        end_date: bookingForm.endDate,
         montant_location: pricing.total_amount,
-        montant_caution: pricing.deposit_amount,
+        montant_caution: pricing.depositAmount,
         politique_carburant: 'Plein à plein',
         kilometrage_initial: selectedVehicle.mileage || 0,
         assurance: 'Responsabilité Civile incluse',
@@ -385,16 +385,16 @@ export default function RentalWorkflow() {
       const bookingData = {
         customer_id: selectedCustomer.id,
         vehicle_id: selectedVehicle.id,
-        start_date: `${bookingForm.start_date}T00:00:00`,
-        end_date: `${bookingForm.end_date}T00:00:00`,
-        daily_rate: pricing.daily_rate,
-        deposit_amount: pricing.deposit_amount,
+        start_date: `${bookingForm.startDate}T00:00:00`,
+        end_date: `${bookingForm.endDate}T00:00:00`,
+        daily_rate: pricing.dailyRate,
+        deposit_amount: pricing.depositAmount,
         fuel_policy: bookingForm.fuel_policy,
         notes: bookingForm.notes,
       };
       
       console.log('1. Creating booking with data:', bookingData);
-      const bookingResponse = await api.post(`/bookings?agency_id=${selectedAgencyId}`, bookingData);
+      const bookingResponse = await api.post(`/bookings?agencyId=${selectedAgencyId}`, bookingData);
       const newBookingId = bookingResponse.data.id;
       setBookingId(newBookingId);
       console.log('✅ Booking created:', newBookingId);
@@ -413,13 +413,13 @@ export default function RentalWorkflow() {
         booking_id: contractPayload.booking_id,
         terms_length: contractPayload.terms_and_conditions?.length,
         special_clauses_keys: Object.keys(contractPayload.special_clauses || {}),
-        agency_id: selectedAgencyId
+        agencyId: selectedAgencyId
       });
       
       let contractId;
       try {
         const contractResponse = await api.post('/contracts/', contractPayload, {
-          params: { agency_id: selectedAgencyId },
+          params: { agencyId: selectedAgencyId },
           headers: {
             'Content-Type': 'application/json',
           }
@@ -453,7 +453,7 @@ export default function RentalWorkflow() {
 
       if (paymentForm.deposit_paid) {
         await api.post(
-          `/bookings/${newBookingId}/payment?amount=${pricing.deposit_amount}&payment_method=${paymentForm.deposit_method}&payment_type=deposit&notes=${encodeURIComponent('Caution')}`
+          `/bookings/${newBookingId}/payment?amount=${pricing.depositAmount}&payment_method=${paymentForm.deposit_method}&payment_type=deposit&notes=${encodeURIComponent('Caution')}`
         );
         console.log('✅ Deposit payment recorded');
       }
@@ -461,7 +461,7 @@ export default function RentalWorkflow() {
       // 4. Confirmer la réservation
       console.log('4. Confirming booking');
       await api.post(`/bookings/${newBookingId}/confirm`, null, {
-        params: { agency_id: selectedAgencyId }
+        params: { agencyId: selectedAgencyId }
       });
       console.log('✅ Booking confirmed');
       
@@ -469,7 +469,7 @@ export default function RentalWorkflow() {
       console.log('5. Starting rental with mileage:', startMileage);
       await api.post(`/bookings/${newBookingId}/start`, null, {
         params: {
-          agency_id: selectedAgencyId,
+          agencyId: selectedAgencyId,
           initial_mileage: startMileage,
           initial_fuel_level: 'full'
         }
@@ -479,7 +479,7 @@ export default function RentalWorkflow() {
       // 6. Télécharger le contrat PDF
       console.log('6. Downloading contract PDF');
       const pdfResponse = await api.get(`/contracts/${contractId}/pdf`, {
-        params: { agency_id: selectedAgencyId },
+        params: { agencyId: selectedAgencyId },
         responseType: 'blob',
       });
       
@@ -531,15 +531,15 @@ export default function RentalWorkflow() {
           setError('Veuillez sélectionner un véhicule');
           return;
         }
-        if (!bookingForm.start_date || !bookingForm.end_date) {
+        if (!bookingForm.startDate || !bookingForm.endDate) {
           setError('Veuillez sélectionner les dates');
           return;
         }
         // Validate dates
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const startDate = new Date(bookingForm.start_date);
-        const endDate = new Date(bookingForm.end_date);
+        const startDate = new Date(bookingForm.startDate);
+        const endDate = new Date(bookingForm.endDate);
         
         if (startDate < today) {
           setError('La date de début doit être aujourd\'hui ou après');
@@ -622,11 +622,11 @@ export default function RentalWorkflow() {
                       <CheckCircle className="h-8 w-8" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-green-900">{selectedCustomer.first_name} {selectedCustomer.last_name}</h3>
+                      <h3 className="text-xl font-bold text-green-900">{selectedCustomer.firstName} {selectedCustomer.lastName}</h3>
                       <div className="flex gap-4 mt-2 text-green-700">
                         <span>📧 {selectedCustomer.email}</span>
                         <span>📱 {selectedCustomer.phone}</span>
-                        {selectedCustomer.cin_number && <span>🆔 CIN: {selectedCustomer.cin_number}</span>}
+                        {selectedCustomer.cinNumber && <span>🆔 CIN: {selectedCustomer.cinNumber}</span>}
                       </div>
                     </div>
                   </div>
@@ -650,7 +650,7 @@ export default function RentalWorkflow() {
                   <div>
                     <Label className="text-base">Prénom *</Label>
                     <Input
-                      value={customerForm.first_name}
+                      value={customerForm.firstName}
                       onChange={(e) => setCustomerForm({ ...customerForm, first_name: e.target.value })}
                       className="mt-1 h-11"
                     />
@@ -658,7 +658,7 @@ export default function RentalWorkflow() {
                   <div>
                     <Label className="text-base">Nom *</Label>
                     <Input
-                      value={customerForm.last_name}
+                      value={customerForm.lastName}
                       onChange={(e) => setCustomerForm({ ...customerForm, last_name: e.target.value })}
                       className="mt-1 h-11"
                     />
@@ -683,7 +683,7 @@ export default function RentalWorkflow() {
                   <div>
                     <Label className="text-base">Numéro CIN *</Label>
                     <Input
-                      value={customerForm.cin_number}
+                      value={customerForm.cinNumber}
                       onChange={(e) => setCustomerForm({ ...customerForm, cin_number: e.target.value })}
                       className="mt-1 h-11"
                     />
@@ -721,14 +721,14 @@ export default function RentalWorkflow() {
                     >
                       <div className="flex justify-between items-center">
                         <div>
-                          <p className="font-semibold text-lg">{customer.first_name} {customer.last_name}</p>
+                          <p className="font-semibold text-lg">{customer.firstName} {customer.lastName}</p>
                           <div className="flex gap-3 mt-1 text-sm text-slate-600">
                             <span>📧 {customer.email}</span>
                             <span>📱 {customer.phone}</span>
                           </div>
                         </div>
-                        {customer.cin_number && (
-                          <Badge variant="outline" className="text-sm">CIN: {customer.cin_number}</Badge>
+                        {customer.cinNumber && (
+                          <Badge variant="outline" className="text-sm">CIN: {customer.cinNumber}</Badge>
                         )}
                       </div>
                     </div>
@@ -751,7 +751,7 @@ export default function RentalWorkflow() {
                 </Label>
                 <Input
                   type="date"
-                  value={bookingForm.start_date}
+                  value={bookingForm.startDate}
                   min={new Date().toISOString().split('T')[0]}
                   onChange={(e) => {
                     const newStartDate = e.target.value;
@@ -759,7 +759,7 @@ export default function RentalWorkflow() {
                       ...bookingForm, 
                       start_date: newStartDate,
                       // Reset end_date if it's before new start_date
-                      end_date: bookingForm.end_date && bookingForm.end_date <= newStartDate ? '' : bookingForm.end_date
+                      end_date: bookingForm.endDate && bookingForm.endDate <= newStartDate ? '' : bookingForm.endDate
                     });
                   }}
                   className="mt-2 h-12 text-lg"
@@ -772,13 +772,13 @@ export default function RentalWorkflow() {
                 </Label>
                 <Input
                   type="date"
-                  value={bookingForm.end_date}
-                  min={bookingForm.start_date || new Date().toISOString().split('T')[0]}
+                  value={bookingForm.endDate}
+                  min={bookingForm.startDate || new Date().toISOString().split('T')[0]}
                   onChange={(e) => setBookingForm({ ...bookingForm, end_date: e.target.value })}
                   className="mt-2 h-12 text-lg"
-                  disabled={!bookingForm.start_date}
+                  disabled={!bookingForm.startDate}
                 />
-                {!bookingForm.start_date && (
+                {!bookingForm.startDate && (
                   <p className="text-sm text-gray-500 mt-2">Sélectionnez d'abord la date de début</p>
                 )}
               </div>
@@ -795,9 +795,9 @@ export default function RentalWorkflow() {
                     <div>
                       <h3 className="text-xl font-bold text-blue-900">{selectedVehicle.brand} {selectedVehicle.model} ({selectedVehicle.year})</h3>
                       <div className="flex gap-4 mt-2 text-blue-700">
-                        <span>🚗 {selectedVehicle.license_plate}</span>
+                        <span>🚗 {selectedVehicle.licensePlate}</span>
                         <span>📏 {selectedVehicle.mileage?.toLocaleString()} km</span>
-                        <span className="font-bold text-lg">💰 {selectedVehicle.daily_rate} DT/jour</span>
+                        <span className="font-bold text-lg">💰 {selectedVehicle.dailyRate} DT/jour</span>
                       </div>
                     </div>
                   </div>
@@ -819,7 +819,7 @@ export default function RentalWorkflow() {
                   </div>
                   <div className="flex justify-between text-lg">
                     <span className="text-green-700">Tarif journalier</span>
-                    <span className="font-semibold">{pricing.daily_rate.toFixed(2)} DT</span>
+                    <span className="font-semibold">{pricing.dailyRate.toFixed(2)} DT</span>
                   </div>
                   <div className="flex justify-between text-lg">
                     <span className="text-green-700">Sous-total</span>
@@ -841,7 +841,7 @@ export default function RentalWorkflow() {
                   </div>
                   <div className="flex justify-between text-lg bg-amber-100 p-3 rounded-lg">
                     <span className="text-amber-800 font-semibold">Caution</span>
-                    <span className="font-bold text-amber-900">{pricing.deposit_amount.toFixed(2)} DT</span>
+                    <span className="font-bold text-amber-900">{pricing.depositAmount.toFixed(2)} DT</span>
                   </div>
                 </div>
               </div>
@@ -862,12 +862,12 @@ export default function RentalWorkflow() {
                         <div>
                           <h4 className="text-xl font-bold text-slate-900">{vehicle.brand} {vehicle.model} ({vehicle.year})</h4>
                           <div className="flex gap-4 mt-2 text-slate-600">
-                            <span>🚗 {vehicle.license_plate}</span>
+                            <span>🚗 {vehicle.licensePlate}</span>
                             <span>📏 {vehicle.mileage?.toLocaleString()} km</span>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-3xl font-bold text-blue-600">{vehicle.daily_rate} DT</p>
+                          <p className="text-3xl font-bold text-blue-600">{vehicle.dailyRate} DT</p>
                           <p className="text-sm text-slate-600">par jour</p>
                         </div>
                       </div>
@@ -889,23 +889,23 @@ export default function RentalWorkflow() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white p-4 rounded-lg">
                   <p className="text-sm text-slate-600">Client</p>
-                  <p className="font-bold text-lg">{selectedCustomer?.first_name} {selectedCustomer?.last_name}</p>
-                  <p className="text-sm text-slate-600">CIN: {selectedCustomer?.cin_number}</p>
+                  <p className="font-bold text-lg">{selectedCustomer?.firstName} {selectedCustomer?.lastName}</p>
+                  <p className="text-sm text-slate-600">CIN: {selectedCustomer?.cinNumber}</p>
                 </div>
                 <div className="bg-white p-4 rounded-lg">
                   <p className="text-sm text-slate-600">Véhicule</p>
                   <p className="font-bold text-lg">{selectedVehicle?.brand} {selectedVehicle?.model}</p>
-                  <p className="text-sm text-slate-600">{selectedVehicle?.license_plate}</p>
+                  <p className="text-sm text-slate-600">{selectedVehicle?.licensePlate}</p>
                 </div>
                 <div className="bg-white p-4 rounded-lg">
                   <p className="text-sm text-slate-600">Période</p>
-                  <p className="font-bold">{bookingForm.start_date} → {bookingForm.end_date}</p>
+                  <p className="font-bold">{bookingForm.startDate} → {bookingForm.endDate}</p>
                   <p className="text-sm text-slate-600">{pricing.days} jour(s)</p>
                 </div>
                 <div className="bg-white p-4 rounded-lg">
                   <p className="text-sm text-slate-600">Montant total</p>
                   <p className="font-bold text-lg text-blue-600">{pricing.total_amount.toFixed(2)} DT</p>
-                  <p className="text-sm text-slate-600">Caution: {pricing.deposit_amount} DT</p>
+                  <p className="text-sm text-slate-600">Caution: {pricing.depositAmount} DT</p>
                 </div>
               </div>
             </div>
@@ -1071,7 +1071,7 @@ export default function RentalWorkflow() {
             {/* Deposit */}
             <div className="bg-amber-50 p-6 rounded-xl border-2 border-amber-200">
               <div className="flex items-center justify-between mb-4">
-                <Label className="text-lg font-semibold">Caution ({pricing.deposit_amount} DT)</Label>
+                <Label className="text-lg font-semibold">Caution ({pricing.depositAmount} DT)</Label>
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
@@ -1139,18 +1139,18 @@ export default function RentalWorkflow() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-white p-4 rounded-lg">
                       <p className="text-sm text-slate-600">Client</p>
-                      <p className="font-bold text-lg">{selectedCustomer?.first_name} {selectedCustomer?.last_name}</p>
+                      <p className="font-bold text-lg">{selectedCustomer?.firstName} {selectedCustomer?.lastName}</p>
                       <p className="text-sm">📧 {selectedCustomer?.email}</p>
                       <p className="text-sm">📱 {selectedCustomer?.phone}</p>
                     </div>
                     <div className="bg-white p-4 rounded-lg">
                       <p className="text-sm text-slate-600">Véhicule</p>
                       <p className="font-bold text-lg">{selectedVehicle?.brand} {selectedVehicle?.model}</p>
-                      <p className="text-sm">{selectedVehicle?.license_plate}</p>
+                      <p className="text-sm">{selectedVehicle?.licensePlate}</p>
                     </div>
                     <div className="bg-white p-4 rounded-lg">
                       <p className="text-sm text-slate-600">Période</p>
-                      <p className="font-bold">{bookingForm.start_date} → {bookingForm.end_date}</p>
+                      <p className="font-bold">{bookingForm.startDate} → {bookingForm.endDate}</p>
                       <p className="text-sm">{pricing.days} jour(s)</p>
                     </div>
                     <div className="bg-white p-4 rounded-lg">

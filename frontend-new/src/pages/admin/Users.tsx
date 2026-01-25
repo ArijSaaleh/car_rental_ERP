@@ -36,12 +36,12 @@ import { cn } from '../../lib/utils';
 interface User {
   id: string;
   email: string;
-  full_name: string;
+  fullName: string;
   phone?: string;
   role: string;
-  agency_id?: string;
-  is_active: boolean;
-  created_at: string;
+  agencyId?: string;
+  isActive: boolean;
+  createdAt: string;
 }
 
 interface Agency {
@@ -65,12 +65,12 @@ export default function Users() {
   const [pageSize] = useState(10);
   const [formData, setFormData] = useState({
     email: '',
-    full_name: '',
+    fullName: '',
     phone: '',
     password: '',
-    role: 'agent_comptoir',
-    agency_id: '',
-    is_active: true,
+    role: 'AGENT_COMPTOIR',
+    agencyId: '',
+    isActive: true,
   });
 
   useEffect(() => {
@@ -80,7 +80,7 @@ export default function Users() {
   useEffect(() => {
     const filtered = users.filter(
       (user) =>
-        user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.role.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -91,8 +91,8 @@ export default function Users() {
   const loadData = async () => {
     try {
       const [usersRes, agenciesRes] = await Promise.all([
-        api.get<User[]>('/admin/users'),
-        api.get<Agency[]>('/admin/agencies'),
+        api.get<User[]>('/users'),
+        api.get<Agency[]>('/agencies'),
       ]);
       setUsers(usersRes.data);
       setFilteredUsers(usersRes.data);
@@ -109,23 +109,23 @@ export default function Users() {
       setSelectedUser(user);
       setFormData({
         email: user.email,
-        full_name: user.full_name,
+        fullName: user.fullName,
         phone: user.phone || '',
         password: '',
         role: user.role,
-        agency_id: user.agency_id?.toString() || '',
-        is_active: user.is_active,
+        agencyId: user.agencyId?.toString() || '',
+        isActive: user.isActive,
       });
     } else {
       setSelectedUser(null);
       setFormData({
         email: '',
-        full_name: '',
+        fullName: '',
         phone: '',
         password: '',
-        role: 'agent_comptoir',
-        agency_id: '',
-        is_active: true,
+        role: 'AGENT_COMPTOIR',
+        agencyId: '',
+        isActive: true,
       });
     }
     setError('');
@@ -140,11 +140,11 @@ export default function Users() {
     try {
       const payload: any = {
         email: formData.email,
-        full_name: formData.full_name,
+        fullName: formData.fullName,
         phone: formData.phone || null,
         role: formData.role,
-        agency_id: formData.agency_id || null,
-        is_active: formData.is_active,
+        agencyId: formData.agencyId || null,
+        isActive: formData.isActive,
       };
 
       if (selectedUser) {
@@ -293,7 +293,7 @@ export default function Users() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">
-              {users.filter((u) => u.role === 'super_admin').length}
+              {users.filter((u) => u.role === 'SUPER_ADMIN').length}
             </div>
           </CardContent>
         </Card>
@@ -305,7 +305,7 @@ export default function Users() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">
-              {users.filter((u) => u.role === 'proprietaire').length}
+              {users.filter((u) => u.role === 'PROPRIETAIRE').length}
             </div>
           </CardContent>
         </Card>
@@ -367,7 +367,7 @@ export default function Users() {
                           <UserCircle className="h-5 w-5 text-slate-400" />
                           <div>
                             <div className="font-medium">
-                              {user.full_name}
+                              {user.fullName}
                             </div>
                           </div>
                         </div>
@@ -379,8 +379,8 @@ export default function Users() {
                         </div>
                       </TableCell>
                       <TableCell>{getRoleBadge(user.role)}</TableCell>
-                      <TableCell>{agencies.find(a => a.id === user.agency_id)?.name || '-'}</TableCell>
-                      <TableCell>{getStatusBadge(user.is_active)}</TableCell>
+                      <TableCell>{agencies.find(a => a.id === user.agencyId)?.name || '-'}</TableCell>
+                      <TableCell>{getStatusBadge(user.isActive)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
@@ -482,11 +482,11 @@ export default function Users() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2 col-span-2">
-                <Label htmlFor="full_name">Nom complet</Label>
+                <Label htmlFor="fullName">Nom complet</Label>
                 <Input
-                  id="full_name"
-                  value={formData.full_name}
-                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                  id="fullName"
+                  value={formData.fullName}
+                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                   required
                 />
               </div>
@@ -537,20 +537,20 @@ export default function Users() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="super_admin">Super Admin</SelectItem>
-                    <SelectItem value="proprietaire">Propriétaire</SelectItem>
-                    <SelectItem value="agent_comptoir">Agent Comptoir</SelectItem>
+                    <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
+                    <SelectItem value="PROPRIETAIRE">Propriétaire</SelectItem>
+                    <SelectItem value="AGENT_COMPTOIR">Agent Comptoir</SelectItem>
                     <SelectItem value="gestionnaire_flotte">Gestionnaire Flotte</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="agency_id">Agence (optionnel)</Label>
+                <Label htmlFor="agencyId">Agence (optionnel)</Label>
                 <Select
-                  value={formData.agency_id || "none"}
+                  value={formData.agencyId || "none"}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, agency_id: value === "none" ? "" : value })
+                    setFormData({ ...formData, agencyId: value === "none" ? "" : value })
                   }
                 >
                   <SelectTrigger>
@@ -568,11 +568,11 @@ export default function Users() {
               </div>
 
               <div className="space-y-2 col-span-2">
-                <Label htmlFor="is_active">Statut</Label>
+                <Label htmlFor="isActive">Statut</Label>
                 <Select
-                  value={formData.is_active.toString()}
+                  value={formData.isActive.toString()}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, is_active: value === 'true' })
+                    setFormData({ ...formData, isActive: value === 'true' })
                   }
                 >
                   <SelectTrigger>

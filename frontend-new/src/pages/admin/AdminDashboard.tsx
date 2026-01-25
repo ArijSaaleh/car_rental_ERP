@@ -31,14 +31,14 @@ interface AdminStats {
 interface Agency {
   id: string;
   name: string;
-  legal_name: string;
+  legalName: string;
   email: string;
   phone: string;
   city: string;
-  subscription_plan: string;
-  is_active: boolean;
-  created_at: string;
-  parent_agency_id?: string | null;
+  subscriptionPlan: string;
+  isActive: boolean;
+  createdAt: string;
+  parentAgencyId?: string | null;
   is_main: boolean;
   branch_count: number;
   manager_count: number;
@@ -67,21 +67,17 @@ export default function AdminDashboard() {
 
   const loadAdminData = async () => {
     try {
-      const [statsResponse, agenciesResponse] = await Promise.all([
-        api.get('/admin/statistics'),
-        api.get('/admin/agencies')
-      ]);
+      const agenciesResponse = await api.get('/agencies');
       
+      const agenciesData = agenciesResponse.data;
       setStats({
-        total_agencies: statsResponse.data.total_agencies,
-        active_agencies: statsResponse.data.active_agencies,
-        total_users: statsResponse.data.total_users,
-        total_vehicles: statsResponse.data.total_vehicles,
-        total_customers: statsResponse.data.total_customers,
-        total_bookings: statsResponse.data.total_bookings || 0,
-        total_revenue: typeof statsResponse.data.total_revenue === 'string'
-          ? parseFloat(statsResponse.data.total_revenue)
-          : statsResponse.data.total_revenue || 0,
+        total_agencies: agenciesData.length,
+        active_agencies: agenciesData.filter((a: any) => a.isActive).length,
+        total_users: 0, // Will be loaded separately
+        total_vehicles: 0, // Will be loaded separately
+        total_customers: 0, // Will be loaded separately
+        total_bookings: 0,
+        total_revenue: 0,
       });
 
       setAgencies(agenciesResponse.data);
@@ -104,27 +100,27 @@ export default function AdminDashboard() {
       ),
     },
     {
-      key: 'subscription_plan',
+      key: 'subscriptionPlan',
       label: 'Plan',
       render: (agency: Agency) => (
         <StatusBadge 
-          status={agency.subscription_plan} 
+          status={agency.subscriptionPlan} 
           variant={
-            agency.subscription_plan === 'premium' ? 'success' :
-            agency.subscription_plan === 'standard' ? 'info' : 'default'
+            agency.subscriptionPlan === 'PREMIUM' ? 'success' :
+            agency.subscriptionPlan === 'STANDARD' ? 'info' : 'default'
           }
         >
-          <span className="capitalize">{agency.subscription_plan}</span>
+          <span className="capitalize">{agency.subscriptionPlan}</span>
         </StatusBadge>
       ),
     },
     {
-      key: 'is_active',
+      key: 'isActive',
       label: 'Statut',
       render: (agency: Agency) => (
         <StatusBadge 
-          status={agency.is_active ? 'Actif' : 'Inactif'} 
-          variant={agency.is_active ? 'success' : 'error'}
+          status={agency.isActive ? 'Actif' : 'Inactif'} 
+          variant={agency.isActive ? 'success' : 'error'}
         />
       ),
     },

@@ -49,27 +49,27 @@ export default function Vehicles() {
   const [error, setError] = useState('');
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [formData, setFormData] = useState<{
-    license_plate: string;
+    licensePlate: string;
     brand: string;
     model: string;
     year: number;
     color: string;
-    fuel_type: 'essence' | 'diesel' | 'hybride' | 'electrique' | 'gpl';
+    fuel_type: 'ESSENCE' | 'DIESEL' | 'HYBRIDE' | 'ELECTRIQUE' | 'gpl';
     mileage: number;
     daily_rate: number;
-    status: 'disponible' | 'loue' | 'maintenance' | 'hors_service';
+    status: 'DISPONIBLE' | 'LOUE' | 'MAINTENANCE' | 'HORS_SERVICE';
     insurance_expiry?: string;
     registration_expiry?: string;
   }>({
-    license_plate: '',
+    licensePlate: '',
     brand: '',
     model: '',
     year: new Date().getFullYear(),
     color: '',
-    fuel_type: 'essence',
+    fuel_type: 'ESSENCE',
     mileage: 0,
     daily_rate: 0,
-    status: 'disponible',
+    status: 'DISPONIBLE',
     insurance_expiry: '',
     registration_expiry: '',
   });
@@ -87,7 +87,7 @@ export default function Vehicles() {
         (vehicle) =>
           vehicle.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
           vehicle.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          vehicle.license_plate.toLowerCase().includes(searchTerm.toLowerCase())
+          vehicle.licensePlate.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -133,14 +133,14 @@ export default function Vehicles() {
     if (vehicle) {
       setSelectedVehicle(vehicle);
       setFormData({
-        license_plate: vehicle.license_plate,
+        licensePlate: vehicle.licensePlate,
         brand: vehicle.brand,
         model: vehicle.model,
         year: vehicle.year,
         color: vehicle.color,
-        fuel_type: vehicle.fuel_type,
+        fuel_type: vehicle.fuelType,
         mileage: vehicle.mileage,
-        daily_rate: vehicle.daily_rate,
+        daily_rate: vehicle.dailyRate,
         status: vehicle.status,
         insurance_expiry: vehicle.insurance_expiry || '',
         registration_expiry: vehicle.registration_expiry || '',
@@ -148,15 +148,15 @@ export default function Vehicles() {
     } else {
       setSelectedVehicle(null);
       setFormData({
-        license_plate: '',
+        licensePlate: '',
         brand: '',
         model: '',
         year: new Date().getFullYear(),
         color: '',
-        fuel_type: 'essence',
+        fuel_type: 'ESSENCE',
         mileage: 0,
         daily_rate: 0,
-        status: 'disponible',
+        status: 'DISPONIBLE',
         insurance_expiry: '',
         registration_expiry: '',
       });
@@ -260,9 +260,9 @@ export default function Vehicles() {
   // Calculate statistics
   const stats = {
     total: vehicles.length,
-    disponible: vehicles.filter(v => v.status === 'disponible').length,
-    loue: vehicles.filter(v => v.status === 'loue').length,
-    maintenance: vehicles.filter(v => v.status === 'maintenance').length,
+    disponible: vehicles.filter(v => v.status === 'DISPONIBLE').length,
+    loue: vehicles.filter(v => v.status === 'LOUE').length,
+    maintenance: vehicles.filter(v => v.status === 'MAINTENANCE').length,
     insuranceExpiring: vehicles.filter(v => {
       const status = getExpiryStatus(v.insurance_expiry);
       return status && (status.status === 'expire' || status.status === 'expire_bientot');
@@ -532,7 +532,7 @@ export default function Vehicles() {
                       <TableCell className="font-mono font-bold text-gray-900 py-4">
                         <div className="flex items-center gap-2">
                           <div className="w-1 h-8 bg-gradient-to-b from-blue-500 to-indigo-500 rounded-full"></div>
-                          {vehicle.license_plate}
+                          {vehicle.licensePlate}
                         </div>
                       </TableCell>
                       <TableCell className="py-4">
@@ -558,14 +558,14 @@ export default function Vehicles() {
                       </TableCell>
                       <TableCell className="py-4">
                         <span className="capitalize px-4 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border border-green-200 shadow-sm">
-                          {vehicle.fuel_type}
+                          {vehicle.fuelType}
                         </span>
                       </TableCell>
                       <TableCell className="text-gray-700 font-semibold py-4">
                         {vehicle.mileage?.toLocaleString()} km
                       </TableCell>
                       <TableCell className="font-bold text-blue-700 text-lg py-4">
-                        {vehicle.daily_rate} <span className="text-sm text-gray-500">TND</span>
+                        {vehicle.dailyRate} <span className="text-sm text-gray-500">TND</span>
                       </TableCell>
                       <TableCell className="py-4">
                         {insuranceStatus ? (
@@ -672,14 +672,14 @@ export default function Vehicles() {
                 </h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="license_plate" className="text-sm font-semibold text-gray-700">
+                    <Label htmlFor="licensePlate" className="text-sm font-semibold text-gray-700">
                       Matricule *
                     </Label>
                     <Input
-                      id="license_plate"
-                      value={formData.license_plate}
+                      id="licensePlate"
+                      value={formData.licensePlate}
                       onChange={(e) =>
-                        setFormData({ ...formData, license_plate: e.target.value })
+                        setFormData({ ...formData, licensePlate: e.target.value })
                       }
                       placeholder="123 TU 4567"
                       className="h-11 border-2 border-gray-300 focus:border-blue-500"
@@ -788,7 +788,7 @@ export default function Vehicles() {
                       Type de carburant *
                     </Label>
                     <Select
-                      value={formData.fuel_type}
+                      value={formData.fuelType}
                       onValueChange={(value: any) =>
                         setFormData({ ...formData, fuel_type: value })
                       }
@@ -832,7 +832,7 @@ export default function Vehicles() {
                       type="number"
                       step="0.01"
                       min="0"
-                      value={formData.daily_rate}
+                      value={formData.dailyRate}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
@@ -968,7 +968,7 @@ export default function Vehicles() {
                     {selectedVehicle.brand} {selectedVehicle.model}
                   </div>
                   <div className="text-sm text-gray-600 font-mono">
-                    {selectedVehicle.license_plate}
+                    {selectedVehicle.licensePlate}
                   </div>
                 </div>
               </div>

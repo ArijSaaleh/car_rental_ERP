@@ -38,28 +38,28 @@ import { extractErrorMessage } from '../../utils/errorHandler';
 interface Agency {
   id: string;
   name: string;
-  legal_name: string;
-  tax_id: string;
+  legalName: string;
+  taxId: string;
   email: string;
   phone: string;
   address: string;
   city: string;
-  postal_code?: string;
+  postalCode?: string;
   country: string;
-  subscription_plan: string;
-  is_active: boolean;
-  proprietaire_id?: number;
+  subscriptionPlan: string;
+  isActive: boolean;
+  proprietaireId?: number;
   proprietaire?: {
     id: number;
-    full_name: string;
+    fullName: string;
     email: string;
   };
-  created_at: string;
+  createdAt: string;
 }
 
 interface User {
   id: number;
-  full_name: string;
+  fullName: string;
   email: string;
   role: string;
 }
@@ -77,18 +77,18 @@ export default function AgencyManagement() {
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
-    legal_name: '',
-    tax_id: '',
+    legalName: '',
+    taxId: '',
     email: '',
     phone: '',
     address: '',
     governorate: '',
     city: '',
-    postal_code: '',
+    postalCode: '',
     country: 'Tunisia',
-    subscription_plan: 'basique',
-    is_active: true,
-    proprietaire_id: '',
+    subscriptionPlan: 'BASIQUE',
+    isActive: true,
+    proprietaireId: '',
     owner_email: '',
     owner_nom: '',
     owner_prenom: '',
@@ -105,7 +105,7 @@ export default function AgencyManagement() {
     const filtered = agencies.filter(
       (agency) =>
         agency.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        agency.legal_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        agency.legalName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         agency.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         agency.city.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -115,13 +115,13 @@ export default function AgencyManagement() {
   const loadAgencies = async () => {
     try {
       const [agenciesRes, usersRes] = await Promise.all([
-        api.get('/admin/agencies'),
-        api.get('/admin/users'),
+        api.get('/agencies'),
+        api.get('/users'),
       ]);
       setAgencies(agenciesRes.data);
       setFilteredAgencies(agenciesRes.data);
       // Filter only proprietaires
-      const owners = usersRes.data.filter((u: User) => u.role === 'proprietaire');
+      const owners = usersRes.data.filter((u: User) => u.role === 'PROPRIETAIRE');
       setProprietaires(owners);
     } catch (err) {
       setError(extractErrorMessage(err));
@@ -135,18 +135,18 @@ export default function AgencyManagement() {
       setSelectedAgency(agency);
       setFormData({
         name: agency.name,
-        legal_name: agency.legal_name,
-        tax_id: agency.tax_id,
+        legalName: agency.legalName,
+        taxId: agency.taxId,
         email: agency.email,
         phone: agency.phone,
         address: agency.address,
         governorate: '',
         city: agency.city,
-        postal_code: agency.postal_code || '',
+        postalCode: agency.postalCode || '',
         country: agency.country,
-        subscription_plan: agency.subscription_plan,
-        is_active: agency.is_active,
-        proprietaire_id: agency.proprietaire_id?.toString() || '',
+        subscriptionPlan: agency.subscriptionPlan,
+        isActive: agency.isActive,
+        proprietaireId: agency.proprietaireId?.toString() || '',
         owner_email: '',
         owner_nom: '',
         owner_prenom: '',
@@ -158,18 +158,18 @@ export default function AgencyManagement() {
       setSelectedAgency(null);
       setFormData({
         name: '',
-        legal_name: '',
-        tax_id: '',
+        legalName: '',
+        taxId: '',
         email: '',
         phone: '',
         address: '',
         governorate: '',
         city: '',
-        postal_code: '',
+        postalCode: '',
         country: 'Tunisia',
-        subscription_plan: 'basique',
-        is_active: true,
-        proprietaire_id: '',
+        subscriptionPlan: 'BASIQUE',
+        isActive: true,
+        proprietaireId: '',
         owner_email: '',
         owner_nom: '',
         owner_prenom: '',
@@ -191,7 +191,7 @@ export default function AgencyManagement() {
         // Update existing agency
         const payload = {
           ...formData,
-          proprietaire_id: formData.proprietaire_id || null,
+          proprietaireId: formData.proprietaireId || null,
         };
         await api.put(`/admin/agencies/${selectedAgency.id}`, payload);
         toast({
@@ -209,14 +209,14 @@ export default function AgencyManagement() {
             phone: formData.phone,
             address: formData.address,
             city: formData.city,
-            postal_code: formData.postal_code || '',
+            postalCode: formData.postalCode || '',
             country: formData.country,
-            tax_id: formData.tax_id || '',
-            owner_full_name: `${formData.owner_prenom} ${formData.owner_nom}`,
+            taxId: formData.taxId || '',
+            owner_fullName: `${formData.owner_prenom} ${formData.owner_nom}`,
             owner_email: formData.owner_email,
             owner_phone: formData.owner_phone || formData.phone,
             owner_password: formData.owner_password,
-            subscription_plan: formData.subscription_plan,
+            subscriptionPlan: formData.subscriptionPlan,
             trial_days: 14,
           };
           
@@ -229,7 +229,7 @@ export default function AgencyManagement() {
         } else {
           // Associate with existing owner
           const selectedOwner = proprietaires.find(
-            (p) => p.id.toString() === formData.proprietaire_id
+            (p) => p.id.toString() === formData.proprietaireId
           );
           
           if (!selectedOwner) {
@@ -244,14 +244,14 @@ export default function AgencyManagement() {
             phone: formData.phone,
             address: formData.address,
             city: formData.city,
-            postal_code: formData.postal_code || '',
+            postalCode: formData.postalCode || '',
             country: formData.country,
-            tax_id: formData.tax_id || '',
-            owner_full_name: selectedOwner.full_name,
+            taxId: formData.taxId || '',
+            owner_fullName: selectedOwner.fullName,
             owner_email: selectedOwner.email,
             owner_phone: formData.phone,
             owner_password: 'TempPassword123!',
-            subscription_plan: formData.subscription_plan,
+            subscriptionPlan: formData.subscriptionPlan,
             trial_days: 14,
           };
           
@@ -373,7 +373,7 @@ export default function AgencyManagement() {
                         <Building2 className="h-4 w-4 text-slate-400" />
                         <div>
                           <div className="font-medium">{agency.name}</div>
-                          <div className="text-sm text-slate-500">{agency.legal_name}</div>
+                          <div className="text-sm text-slate-500">{agency.legalName}</div>
                         </div>
                       </div>
                     </TableCell>
@@ -389,10 +389,10 @@ export default function AgencyManagement() {
                         <div className="text-slate-500">{agency.country}</div>
                       </div>
                     </TableCell>
-                    <TableCell>{getPlanBadge(agency.subscription_plan)}</TableCell>
+                    <TableCell>{getPlanBadge(agency.subscriptionPlan)}</TableCell>
                     <TableCell>
-                      <Badge variant={agency.is_active ? 'default' : 'destructive'}>
-                        {agency.is_active ? 'Active' : 'Inactive'}
+                      <Badge variant={agency.isActive ? 'default' : 'destructive'}>
+                        {agency.isActive ? 'Active' : 'Inactive'}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
@@ -474,11 +474,11 @@ export default function AgencyManagement() {
                   {/* Existing Owner Dropdown */}
                   {!formData.create_new_owner && (
                     <div className="col-span-2 space-y-2">
-                      <Label htmlFor="proprietaire_id">Sélectionner le Propriétaire *</Label>
+                      <Label htmlFor="proprietaireId">Sélectionner le Propriétaire *</Label>
                       <Select
-                        value={formData.proprietaire_id}
+                        value={formData.proprietaireId}
                         onValueChange={(value) =>
-                          setFormData({ ...formData, proprietaire_id: value })
+                          setFormData({ ...formData, proprietaireId: value })
                         }
                       >
                         <SelectTrigger>
@@ -487,7 +487,7 @@ export default function AgencyManagement() {
                         <SelectContent>
                           {proprietaires.map((owner) => (
                             <SelectItem key={owner.id} value={owner.id.toString()}>
-                              {owner.full_name} - {owner.email}
+                              {owner.fullName} - {owner.email}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -578,19 +578,19 @@ export default function AgencyManagement() {
               {/* For editing existing agency - show current owner */}
               {selectedAgency && (
                 <div className="space-y-2 col-span-2">
-                  <Label htmlFor="proprietaire_id">Propriétaire</Label>
+                  <Label htmlFor="proprietaireId">Propriétaire</Label>
                   {selectedAgency.proprietaire && (
                     <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-2">
                       <p className="text-sm text-blue-800">
                         <span className="font-semibold">Propriétaire actuel : </span>
-                        {selectedAgency.proprietaire.full_name} ({selectedAgency.proprietaire.email})
+                        {selectedAgency.proprietaire.fullName} ({selectedAgency.proprietaire.email})
                       </p>
                     </div>
                   )}
                   <Select
-                    value={formData.proprietaire_id}
+                    value={formData.proprietaireId}
                     onValueChange={(value) =>
-                      setFormData({ ...formData, proprietaire_id: value })
+                      setFormData({ ...formData, proprietaireId: value })
                     }
                   >
                     <SelectTrigger>
@@ -599,7 +599,7 @@ export default function AgencyManagement() {
                     <SelectContent>
                       {proprietaires.map((owner) => (
                         <SelectItem key={owner.id} value={owner.id.toString()}>
-                          {owner.full_name} - {owner.email}
+                          {owner.fullName} - {owner.email}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -618,21 +618,21 @@ export default function AgencyManagement() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="legal_name">Raison Sociale</Label>
+                <Label htmlFor="legalName">Raison Sociale</Label>
                 <Input
-                  id="legal_name"
-                  value={formData.legal_name}
-                  onChange={(e) => setFormData({ ...formData, legal_name: e.target.value })}
+                  id="legalName"
+                  value={formData.legalName}
+                  onChange={(e) => setFormData({ ...formData, legalName: e.target.value })}
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="tax_id">Matricule Fiscal</Label>
+                <Label htmlFor="taxId">Matricule Fiscal</Label>
                 <Input
-                  id="tax_id"
-                  value={formData.tax_id}
-                  onChange={(e) => setFormData({ ...formData, tax_id: e.target.value })}
+                  id="taxId"
+                  value={formData.taxId}
+                  onChange={(e) => setFormData({ ...formData, taxId: e.target.value })}
                   required
                 />
               </div>
@@ -669,11 +669,11 @@ export default function AgencyManagement() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="postal_code">Code Postal</Label>
+                <Label htmlFor="postalCode">Code Postal</Label>
                 <Input
-                  id="postal_code"
-                  value={formData.postal_code}
-                  onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
+                  id="postalCode"
+                  value={formData.postalCode}
+                  onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
                   placeholder="1000"
                 />
               </div>
@@ -699,30 +699,30 @@ export default function AgencyManagement() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="subscription_plan">Plan d'Abonnement</Label>
+                <Label htmlFor="subscriptionPlan">Plan d'Abonnement</Label>
                 <Select
-                  value={formData.subscription_plan}
+                  value={formData.subscriptionPlan}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, subscription_plan: value })
+                    setFormData({ ...formData, subscriptionPlan: value })
                   }
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="basique">Basique</SelectItem>
-                    <SelectItem value="standard">Standard</SelectItem>
-                    <SelectItem value="premium">Premium</SelectItem>
+                    <SelectItem value="BASIQUE">Basique</SelectItem>
+                    <SelectItem value="STANDARD">Standard</SelectItem>
+                    <SelectItem value="PREMIUM">Premium</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2 col-span-2">
-                <Label htmlFor="is_active">Statut</Label>
+                <Label htmlFor="isActive">Statut</Label>
                 <Select
-                  value={formData.is_active ? 'active' : 'inactive'}
+                  value={formData.isActive ? 'active' : 'inactive'}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, is_active: value === 'active' })
+                    setFormData({ ...formData, isActive: value === 'active' })
                   }
                 >
                   <SelectTrigger>

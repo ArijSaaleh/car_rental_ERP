@@ -28,27 +28,26 @@ interface NavItem {
 }
 
 interface SidebarProps {
-  userRole?: 'super_admin' | 'proprietaire' | 'client';
+  userRole?: 'SUPER_ADMIN' | 'PROPRIETAIRE' | 'MANAGER' | 'CLIENT';
   isCollapsed?: boolean;
   onToggle?: () => void;
 }
 
-export function Sidebar({ userRole = 'proprietaire', isCollapsed = false, onToggle }: SidebarProps) {
+export function Sidebar({ userRole = 'MANAGER', isCollapsed = false, onToggle }: SidebarProps) {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
 
   const getNavItems = (): NavItem[] => {
-    if (userRole === 'super_admin') {
+    if (userRole === 'SUPER_ADMIN') {
       return [
         { label: 'Tableau de bord', href: '/admin/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
         { label: 'Utilisateurs', href: '/admin/users', icon: <Users className="h-5 w-5" /> },
         { label: 'Agences', href: '/admin/agencies', icon: <Building2 className="h-5 w-5" /> },
-        { label: 'Statistiques', href: '/admin/stats', icon: <BarChart3 className="h-5 w-5" /> },
         { label: 'Paramètres', href: '/admin/settings', icon: <Settings className="h-5 w-5" /> },
       ];
     }
     
-    if (userRole === 'proprietaire') {
+    if (userRole === 'PROPRIETAIRE') {
       return [
         { label: 'Tableau de bord', href: '/owner/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
         { label: 'Nouvelle Location', href: '/owner/new-rental', icon: <PlusCircle className="h-5 w-5" />, badge: 'NEW' },
@@ -61,10 +60,22 @@ export function Sidebar({ userRole = 'proprietaire', isCollapsed = false, onTogg
       ];
     }
     
+    if (userRole === 'MANAGER') {
+      return [
+        { label: 'Tableau de bord', href: '/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
+        { label: 'Véhicules', href: '/dashboard/vehicles', icon: <Car className="h-5 w-5" /> },
+        { label: 'Réservations', href: '/dashboard/bookings', icon: <Calendar className="h-5 w-5" /> },
+        { label: 'Clients', href: '/dashboard/customers', icon: <Users className="h-5 w-5" /> },
+        { label: 'Contrats', href: '/dashboard/contracts', icon: <FileText className="h-5 w-5" /> },
+        { label: 'Paiements', href: '/dashboard/payments', icon: <CreditCard className="h-5 w-5" /> },
+      ];
+    }
+    
+    // CLIENT role
     return [
-      { label: 'Mes Réservations', href: '/bookings', icon: <Calendar className="h-5 w-5" /> },
-      { label: 'Véhicules', href: '/vehicles', icon: <Car className="h-5 w-5" /> },
-      { label: 'Mon Profil', href: '/profile', icon: <UserCircle className="h-5 w-5" /> },
+      { label: 'Mes Réservations', href: '/client/bookings', icon: <Calendar className="h-5 w-5" /> },
+      { label: 'Véhicules', href: '/client/vehicles', icon: <Car className="h-5 w-5" /> },
+      { label: 'Mon Profil', href: '/client/profile', icon: <UserCircle className="h-5 w-5" /> },
     ];
   };
 

@@ -41,7 +41,7 @@ interface Agency {
 
 interface Vehicle {
   id: string;
-  license_plate: string;
+  licensePlate: string;
   brand: string;
   model: string;
   year: number;
@@ -51,7 +51,7 @@ interface Vehicle {
   mileage: number;
   status: string;
   daily_rate?: number;
-  agency_id: string;
+  agencyId: string;
   insurance_expiry?: string;
   registration_expiry?: string;
 }
@@ -71,15 +71,15 @@ export default function VehicleManagement() {
   const [error, setError] = useState('');
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [formData, setFormData] = useState({
-    license_plate: '',
+    licensePlate: '',
     brand: '',
     model: '',
     year: new Date().getFullYear(),
     color: '',
     fuel_type: '',
-    transmission: 'automatique',
+    transmission: 'AUTOMATIQUE',
     mileage: 0,
-    status: 'disponible',
+    status: 'DISPONIBLE',
     daily_rate: 0,
     seats: undefined as number | undefined,
     doors: undefined as number | undefined,
@@ -132,7 +132,7 @@ export default function VehicleManagement() {
     
     try {
       setLoading(true);
-      const response = await api.get(`/vehicles?agency_id=${selectedAgencyId}`);
+      const response = await api.get(`/vehicles?agencyId=${selectedAgencyId}`);
       console.log('Vehicles loaded:', response.data);
       const vehiclesList = response.data.vehicles || (Array.isArray(response.data) ? response.data : []);
       console.log('Vehicles list:', vehiclesList);
@@ -150,7 +150,7 @@ export default function VehicleManagement() {
 
     if (searchTerm) {
       filtered = filtered.filter(v =>
-        v.license_plate?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        v.licensePlate?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         v.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         v.model?.toLowerCase().includes(searchTerm.toLowerCase())
       );
@@ -171,16 +171,16 @@ export default function VehicleManagement() {
     if (vehicle) {
       setSelectedVehicle(vehicle);
       setFormData({
-        license_plate: vehicle.license_plate || '',
+        licensePlate: vehicle.licensePlate || '',
         brand: vehicle.brand || '',
         model: vehicle.model || '',
         year: vehicle.year || new Date().getFullYear(),
         color: vehicle.color || '',
-        fuel_type: vehicle.fuel_type || '',
-        transmission: vehicle.transmission || 'automatique',
+        fuel_type: vehicle.fuelType || '',
+        transmission: vehicle.transmission || 'AUTOMATIQUE',
         mileage: vehicle.mileage || 0,
-        status: vehicle.status || 'disponible',
-        daily_rate: vehicle.daily_rate || 0,
+        status: vehicle.status || 'DISPONIBLE',
+        daily_rate: vehicle.dailyRate || 0,
         seats: (vehicle as any).seats || undefined,
         doors: (vehicle as any).doors || undefined,
         insurance_expiry: vehicle.insurance_expiry ? vehicle.insurance_expiry.split('T')[0] : '',
@@ -189,15 +189,15 @@ export default function VehicleManagement() {
     } else {
       setSelectedVehicle(null);
       setFormData({
-        license_plate: '',
+        licensePlate: '',
         brand: '',
         model: '',
         year: new Date().getFullYear(),
         color: '',
         fuel_type: '',
-        transmission: 'automatique',
+        transmission: 'AUTOMATIQUE',
         mileage: 0,
-        status: 'disponible',
+        status: 'DISPONIBLE',
         daily_rate: 0,
         seats: undefined,
         doors: undefined,
@@ -223,7 +223,7 @@ export default function VehicleManagement() {
     try {
       const payload = {
         ...formData,
-        agency_id: selectedAgencyId,
+        agencyId: selectedAgencyId,
         // Convert dates to ISO datetime format or null
         insurance_expiry: formData.insurance_expiry ? `${formData.insurance_expiry}T00:00:00` : null,
         registration_expiry: formData.registration_expiry ? `${formData.registration_expiry}T00:00:00` : null,
@@ -283,9 +283,9 @@ export default function VehicleManagement() {
   const getVehicleStats = () => {
     return {
       total: vehicles.length,
-      disponible: vehicles.filter((v) => v.status === 'disponible').length,
-      loue: vehicles.filter((v) => v.status === 'loue').length,
-      maintenance: vehicles.filter((v) => v.status === 'maintenance').length,
+      disponible: vehicles.filter((v) => v.status === 'DISPONIBLE').length,
+      loue: vehicles.filter((v) => v.status === 'LOUE').length,
+      maintenance: vehicles.filter((v) => v.status === 'MAINTENANCE').length,
     };
   };
 
@@ -480,7 +480,7 @@ export default function VehicleManagement() {
                       `}
                     >
                       <TableCell className="font-medium text-slate-900">
-                        {vehicle.license_plate}
+                        {vehicle.licensePlate}
                       </TableCell>
                       <TableCell className="text-slate-700">{vehicle.brand}</TableCell>
                       <TableCell className="text-slate-700">{vehicle.model}</TableCell>
@@ -501,7 +501,7 @@ export default function VehicleManagement() {
                         )}
                       </TableCell>
                       <TableCell className="text-slate-700">
-                        {FUEL_TYPES.find(f => f.value === vehicle.fuel_type)?.label || vehicle.fuel_type}
+                        {FUEL_TYPES.find(f => f.value === vehicle.fuelType)?.label || vehicle.fuelType}
                       </TableCell>
                       <TableCell className="text-slate-700">
                         {vehicle.mileage?.toLocaleString()} km
@@ -510,7 +510,7 @@ export default function VehicleManagement() {
                         {getStatusBadge(vehicle.status)}
                       </TableCell>
                       <TableCell className="font-medium text-slate-900">
-                        {vehicle.daily_rate} DT
+                        {vehicle.dailyRate} DT
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
@@ -568,8 +568,8 @@ export default function VehicleManagement() {
                 <Label htmlFor="license_plate">Plaque d'immatriculation *</Label>
                 <Input
                   id="license_plate"
-                  value={formData.license_plate}
-                  onChange={(e) => setFormData({ ...formData, license_plate: e.target.value })}
+                  value={formData.licensePlate}
+                  onChange={(e) => setFormData({ ...formData, licensePlate: e.target.value })}
                   required
                 />
               </div>
@@ -658,7 +658,7 @@ export default function VehicleManagement() {
               <div className="space-y-2">
                 <Label htmlFor="fuel_type">Type de carburant *</Label>
                 <Select
-                  value={formData.fuel_type}
+                  value={formData.fuelType}
                   onValueChange={(value) => setFormData({ ...formData, fuel_type: value })}
                 >
                   <SelectTrigger>
@@ -684,8 +684,8 @@ export default function VehicleManagement() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="automatique">Automatique</SelectItem>
-                    <SelectItem value="manuelle">Manuelle</SelectItem>
+                    <SelectItem value="AUTOMATIQUE">Automatique</SelectItem>
+                    <SelectItem value="MANUELLE">Manuelle</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -725,7 +725,7 @@ export default function VehicleManagement() {
                 <Input
                   id="daily_rate"
                   type="number"
-                  value={formData.daily_rate}
+                  value={formData.dailyRate}
                   onChange={(e) => setFormData({ ...formData, daily_rate: parseFloat(e.target.value) || 0 })}
                   min="0"
                   step="0.01"

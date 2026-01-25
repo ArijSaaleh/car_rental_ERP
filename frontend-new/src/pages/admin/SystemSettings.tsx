@@ -61,7 +61,7 @@ export default function SystemSettings() {
 
   const loadSettings = async () => {
     try {
-      const response = await api.get('/admin/settings');
+      const response = await api.get('/settings');
       if (response.data) {
         setSettings((prev) => ({ ...prev, ...response.data }));
       }

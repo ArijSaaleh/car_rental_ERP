@@ -19,8 +19,8 @@ interface AgencyListItem {
   postal_code?: string;
   subscription_plan: string;
   is_active: boolean;
-  created_at: string;
-  parent_agency_id: string | null;
+  createdAt: string;
+  parent_agencyId: string | null;
   vehicle_count: number;
   customer_count: number;
 }
@@ -81,9 +81,9 @@ export default function OwnerDashboard() {
       await Promise.all(agencies.map(async (agency) => {
         try {
           const [vehiclesRes, customersRes, bookingsRes] = await Promise.all([
-            api.get(`/vehicles?agency_id=${agency.id}`),
-            api.get(`/customers?agency_id=${agency.id}`),
-            api.get(`/bookings?agency_id=${agency.id}`)
+            api.get(`/vehicles?agencyId=${agency.id}`),
+            api.get(`/customers?agencyId=${agency.id}`),
+            api.get(`/bookings?agencyId=${agency.id}`)
           ]);
 
           const vehicles = vehiclesRes.data.vehicles || (Array.isArray(vehiclesRes.data) ? vehiclesRes.data : []);
@@ -108,16 +108,16 @@ export default function OwnerDashboard() {
           agencyList.push({
             id: agency.id,
             name: agency.name,
-            legal_name: agency.legal_name || agency.name,
+            legal_name: agency.legalName || agency.name,
             email: agency.email,
             phone: agency.phone,
             city: agency.city,
             address: agency.address || '',
-            postal_code: agency.postal_code,
-            subscription_plan: agency.subscription_plan || 'basique',
-            is_active: agency.is_active !== false,
-            created_at: agency.created_at,
-            parent_agency_id: agency.parent_agency_id || null,
+            postal_code: agency.postalCode,
+            subscription_plan: agency.subscriptionPlan || 'BASIQUE',
+            is_active: agency.isActive !== false,
+            createdAt: agency.createdAt,
+            parent_agencyId: agency.parentAgencyId || null,
             vehicle_count: vehicles.length,
             customer_count: customers.length,
           });
@@ -128,7 +128,7 @@ export default function OwnerDashboard() {
 
       setStats({
         total_agencies: agencies.length,
-        active_agencies: agencies.filter((a: any) => a.is_active !== false).length,
+        active_agencies: agencies.filter((a: any) => a.isActive !== false).length,
         total_vehicles: totalVehicles,
         total_customers: totalCustomers,
         total_bookings: totalBookings,
@@ -268,9 +268,9 @@ export default function OwnerDashboard() {
               
               <div className="divide-y divide-gray-200">
                 {stats.agencies
-                  .filter(agency => !agency.parent_agency_id)
+                  .filter(agency => !agency.parentAgencyId)
                   .map((mainAgency) => {
-                    const branches = stats.agencies.filter(a => a.parent_agency_id === mainAgency.id);
+                    const branches = stats.agencies.filter(a => a.parent_agencyId === mainAgency.id);
                     const isExpanded = expandedAgencies.has(mainAgency.id);
                     
                     return (
@@ -299,14 +299,14 @@ export default function OwnerDashboard() {
                                     Principale
                                   </span>
                                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                    mainAgency.is_active 
+                                    mainAgency.isActive 
                                       ? 'bg-green-100 text-green-700' 
                                       : 'bg-red-100 text-red-700'
                                   }`}>
-                                    {mainAgency.is_active ? 'Active' : 'Inactive'}
+                                    {mainAgency.isActive ? 'Active' : 'Inactive'}
                                   </span>
                                 </div>
-                                <p className="text-sm text-gray-600">{mainAgency.legal_name}</p>
+                                <p className="text-sm text-gray-600">{mainAgency.legalName}</p>
                               </div>
                             </div>
                             <Button 
@@ -352,11 +352,11 @@ export default function OwnerDashboard() {
                                       <div className="flex items-center gap-3 mb-1">
                                         <h4 className="text-base font-semibold text-gray-900">{branch.name}</h4>
                                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                          branch.is_active 
+                                          branch.isActive 
                                             ? 'bg-green-100 text-green-700' 
                                             : 'bg-red-100 text-red-700'
                                         }`}>
-                                          {branch.is_active ? 'Active' : 'Inactive'}
+                                          {branch.isActive ? 'Active' : 'Inactive'}
                                         </span>
                                       </div>
                                       <p className="text-sm text-gray-600">{branch.city}</p>
@@ -384,7 +384,7 @@ export default function OwnerDashboard() {
                                   </div>
                                   <div>
                                     <p className="text-xs text-gray-500">Abonnement</p>
-                                    <p className="text-sm font-medium text-gray-900 capitalize">{branch.subscription_plan}</p>
+                                    <p className="text-sm font-medium text-gray-900 capitalize">{branch.subscriptionPlan}</p>
                                   </div>
                                 </div>
                               </div>
@@ -417,19 +417,19 @@ export default function OwnerDashboard() {
                         <div className="flex items-center gap-3 mb-2">
                           <h3 className="text-xl font-bold text-gray-900">{selectedAgency.name}</h3>
                           <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            selectedAgency.is_active 
+                            selectedAgency.isActive 
                               ? 'bg-green-100 text-green-700' 
                               : 'bg-red-100 text-red-700'
                           }`}>
-                            {selectedAgency.is_active ? 'Active' : 'Inactive'}
+                            {selectedAgency.isActive ? 'Active' : 'Inactive'}
                           </span>
-                          {!selectedAgency.parent_agency_id && (
+                          {!selectedAgency.parentAgencyId && (
                             <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
                               Principale
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-600">{selectedAgency.legal_name}</p>
+                        <p className="text-sm text-gray-600">{selectedAgency.legalName}</p>
                       </div>
                     </div>
 
@@ -459,7 +459,7 @@ export default function OwnerDashboard() {
                           <div>
                             <p className="text-xs text-gray-500">Adresse</p>
                             <p className="text-sm font-medium text-gray-900">{selectedAgency.address}</p>
-                            <p className="text-sm text-gray-600">{selectedAgency.city} {selectedAgency.postal_code || ''}</p>
+                            <p className="text-sm text-gray-600">{selectedAgency.city} {selectedAgency.postalCode || ''}</p>
                           </div>
                         </div>
                       </div>
@@ -489,7 +489,7 @@ export default function OwnerDashboard() {
                           <CreditCard className="h-5 w-5 text-gray-400 mt-0.5" />
                           <div>
                             <p className="text-xs text-gray-500">Abonnement</p>
-                            <p className="text-sm font-medium text-gray-900 capitalize">{selectedAgency.subscription_plan}</p>
+                            <p className="text-sm font-medium text-gray-900 capitalize">{selectedAgency.subscriptionPlan}</p>
                           </div>
                         </div>
                         
@@ -498,7 +498,7 @@ export default function OwnerDashboard() {
                           <div>
                             <p className="text-xs text-gray-500">Date de création</p>
                             <p className="text-sm font-medium text-gray-900">
-                              {new Date(selectedAgency.created_at).toLocaleDateString('fr-FR', {
+                              {new Date(selectedAgency.createdAt).toLocaleDateString('fr-FR', {
                                 day: 'numeric',
                                 month: 'long',
                                 year: 'numeric'

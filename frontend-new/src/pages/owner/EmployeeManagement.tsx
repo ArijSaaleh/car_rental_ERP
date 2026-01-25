@@ -40,12 +40,12 @@ interface Agency {
 interface Employee {
   id: string;
   email: string;
-  full_name: string;
+  fullName: string;
   phone?: string;
   role: string;
-  agency_id: string;
+  agencyId: string;
   is_active: boolean;
-  created_at: string;
+  createdAt: string;
   last_login?: string;
 }
 
@@ -63,9 +63,9 @@ export default function EmployeeManagement() {
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     email: '',
-    full_name: '',
+    fullName: '',
     phone: '',
-    role: 'agent_comptoir',
+    role: 'AGENT_COMPTOIR',
     password: '',
     is_active: true,
   });
@@ -86,7 +86,7 @@ export default function EmployeeManagement() {
   useEffect(() => {
     let filtered = employees.filter(
       (emp) =>
-        emp.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        emp.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         emp.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -99,7 +99,7 @@ export default function EmployeeManagement() {
 
   const loadAgencies = async () => {
     try {
-      const response = await api.get('/proprietaire/agencies');
+      const response = await api.get('/agencies');
       setAgencies(response.data);
       if (response.data.length > 0) {
         setSelectedAgencyId(response.data[0].id);
@@ -131,19 +131,19 @@ export default function EmployeeManagement() {
       setSelectedEmployee(employee);
       setFormData({
         email: employee.email,
-        full_name: employee.full_name,
+        fullName: employee.fullName,
         phone: employee.phone || '',
         role: employee.role,
         password: '',
-        is_active: employee.is_active,
+        is_active: employee.isActive,
       });
     } else {
       setSelectedEmployee(null);
       setFormData({
         email: '',
-        full_name: '',
+        fullName: '',
         phone: '',
-        role: 'agent_comptoir',
+        role: 'AGENT_COMPTOIR',
         password: '',
         is_active: true,
       });
@@ -162,10 +162,10 @@ export default function EmployeeManagement() {
         // Update
         const payload: any = {
           email: formData.email,
-          full_name: formData.full_name,
+          fullName: formData.fullName,
           phone: formData.phone || null,
           role: formData.role,
-          is_active: formData.is_active,
+          is_active: formData.isActive,
         };
         await api.put(
           `/proprietaire/agencies/${selectedAgencyId}/employees/${selectedEmployee.id}`,
@@ -175,7 +175,7 @@ export default function EmployeeManagement() {
         // Create
         await api.post(`/proprietaire/agencies/${selectedAgencyId}/employees`, {
           ...formData,
-          agency_id: selectedAgencyId,
+          agencyId: selectedAgencyId,
         });
       }
       await loadEmployees();
@@ -193,7 +193,7 @@ export default function EmployeeManagement() {
     setLoading(true);
     try {
       await api.delete(
-        `/proprietaire/agencies/${selectedAgencyId}/employees/${selectedEmployee.id}`
+        `/agencies/${selectedAgencyId}/employees/${selectedEmployee.id}`
       );
       await loadEmployees();
       setDeleteDialogOpen(false);
@@ -212,7 +212,7 @@ export default function EmployeeManagement() {
       agent_parc: 'bg-green-100 text-green-700',
     };
     const labels: Record<string, string> = {
-      manager: 'Manager',
+      manager: 'MANAGER',
       agent_comptoir: 'Agent Comptoir',
       agent_parc: 'Agent Parc',
     };
@@ -245,10 +245,10 @@ export default function EmployeeManagement() {
   const getEmployeeStats = () => {
     return {
       total: employees.length,
-      managers: employees.filter((e) => e.role === 'manager').length,
-      agents_comptoir: employees.filter((e) => e.role === 'agent_comptoir').length,
-      agents_parc: employees.filter((e) => e.role === 'agent_parc').length,
-      active: employees.filter((e) => e.is_active).length,
+      managers: employees.filter((e) => e.role === 'MANAGER').length,
+      agents_comptoir: employees.filter((e) => e.role === 'AGENT_COMPTOIR').length,
+      agents_parc: employees.filter((e) => e.role === 'AGENT_PARC').length,
+      active: employees.filter((e) => e.isActive).length,
     };
   };
 
@@ -353,9 +353,9 @@ export default function EmployeeManagement() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous les rôles</SelectItem>
-                <SelectItem value="manager">Managers</SelectItem>
-                <SelectItem value="agent_comptoir">Agents Comptoir</SelectItem>
-                <SelectItem value="agent_parc">Agents Parc</SelectItem>
+                <SelectItem value="MANAGER">Managers</SelectItem>
+                <SelectItem value="AGENT_COMPTOIR">Agents Comptoir</SelectItem>
+                <SelectItem value="AGENT_PARC">Agents Parc</SelectItem>
               </SelectContent>
             </Select>
 
@@ -401,7 +401,7 @@ export default function EmployeeManagement() {
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <UserCircle className="h-5 w-5 text-slate-400" />
-                            <div className="font-medium">{employee.full_name}</div>
+                            <div className="font-medium">{employee.fullName}</div>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -421,10 +421,10 @@ export default function EmployeeManagement() {
                           )}
                         </TableCell>
                         <TableCell>{getRoleBadge(employee.role)}</TableCell>
-                        <TableCell>{getStatusBadge(employee.is_active)}</TableCell>
+                        <TableCell>{getStatusBadge(employee.isActive)}</TableCell>
                         <TableCell>
                           <span className="text-sm text-slate-600">
-                            {formatDate(employee.last_login)}
+                            {formatDate(employee.lastLogin)}
                           </span>
                         </TableCell>
                         <TableCell className="text-right">
@@ -484,8 +484,8 @@ export default function EmployeeManagement() {
                 <Label htmlFor="full_name">Nom Complet *</Label>
                 <Input
                   id="full_name"
-                  value={formData.full_name}
-                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                  value={formData.fullName}
+                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                   required
                 />
               </div>
@@ -519,9 +519,9 @@ export default function EmployeeManagement() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="manager">Manager / Gérant</SelectItem>
-                    <SelectItem value="agent_comptoir">Agent Comptoir</SelectItem>
-                    <SelectItem value="agent_parc">Agent Parc</SelectItem>
+                    <SelectItem value="MANAGER">Manager / Gérant</SelectItem>
+                    <SelectItem value="AGENT_COMPTOIR">Agent Comptoir</SelectItem>
+                    <SelectItem value="AGENT_PARC">Agent Parc</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -544,7 +544,7 @@ export default function EmployeeManagement() {
                 <div className="space-y-2">
                   <Label htmlFor="is_active">Statut</Label>
                   <Select
-                    value={formData.is_active.toString()}
+                    value={formData.isActive.toString()}
                     onValueChange={(value) => setFormData({ ...formData, is_active: value === 'true' })}
                   >
                     <SelectTrigger>
@@ -577,7 +577,7 @@ export default function EmployeeManagement() {
           <DialogHeader>
             <DialogTitle>Confirmer la suppression</DialogTitle>
             <DialogDescription>
-              Êtes-vous sûr de vouloir supprimer l'employé "{selectedEmployee?.full_name}" ?
+              Êtes-vous sûr de vouloir supprimer l'employé "{selectedEmployee?.fullName}" ?
               Cette action est irréversible.
             </DialogDescription>
           </DialogHeader>

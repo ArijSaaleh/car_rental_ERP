@@ -2,18 +2,18 @@ import api from './api';
 import type { Booking, BookingCreate, BookingUpdate } from '../types';
 
 export const bookingService = {
-  async getAll(agencyId?: string | number, status?: string, vehicleId?: number, customerId?: number): Promise<Booking[]> {
+  async getAll(agencyId?: string, status?: string, vehicleId?: string, customerId?: string): Promise<Booking[]> {
     const params = new URLSearchParams();
-    if (agencyId) params.append('agency_id', agencyId.toString());
+    if (agencyId) params.append('agencyId', agencyId);
     if (status) params.append('status', status);
-    if (vehicleId) params.append('vehicle_id', vehicleId.toString());
-    if (customerId) params.append('customer_id', customerId.toString());
+    if (vehicleId) params.append('vehicleId', vehicleId);
+    if (customerId) params.append('customerId', customerId);
     
     const response = await api.get<Booking[]>(`/bookings?${params.toString()}`);
     return response.data;
   },
 
-  async getById(id: number): Promise<Booking> {
+  async getById(id: string): Promise<Booking> {
     const response = await api.get<Booking>(`/bookings/${id}`);
     return response.data;
   },
@@ -23,57 +23,13 @@ export const bookingService = {
     return response.data;
   },
 
-  async update(id: number, booking: BookingUpdate): Promise<Booking> {
-    const response = await api.put<Booking>(`/bookings/${id}`, booking);
+  async update(id: string, booking: BookingUpdate): Promise<Booking> {
+    const response = await api.patch<Booking>(`/bookings/${id}`, booking);
     return response.data;
   },
 
-  async cancel(id: number, reason?: string): Promise<void> {
-    await api.delete(`/bookings/${id}`, { data: { cancellation_reason: reason } });
-  },
-
-  async confirm(id: number): Promise<Booking> {
-    const response = await api.post<Booking>(`/bookings/${id}/confirm`);
-    return response.data;
-  },
-
-  async startRental(id: number, initialMileage: number, initialFuelLevel: string): Promise<Booking> {
-    const response = await api.post<Booking>(`/bookings/${id}/start`, null, {
-      params: { initial_mileage: initialMileage, initial_fuel_level: initialFuelLevel },
-    });
-    return response.data;
-  },
-
-  async completeRental(id: number, finalMileage: number, finalFuelLevel: string): Promise<Booking> {
-    const response = await api.post<Booking>(`/bookings/${id}/complete`, null, {
-      params: { final_mileage: finalMileage, final_fuel_level: finalFuelLevel },
-    });
-    return response.data;
-  },
-
-  async recordPayment(
-    id: number,
-    amount: number,
-    paymentMethod: string,
-    paymentType: string = 'rental',
-    reference?: string,
-    notes?: string
-  ): Promise<any> {
-    const response = await api.post(`/bookings/${id}/payment`, null, {
-      params: {
-        amount,
-        payment_method: paymentMethod,
-        payment_type: paymentType,
-        reference,
-        notes,
-      },
-    });
-    return response.data;
-  },
-
-  async getPaymentSummary(id: number): Promise<any> {
-    const response = await api.get(`/bookings/${id}/payment-summary`);
-    return response.data;
+  async cancel(id: string, reason?: string): Promise<void> {
+    await api.post(`/bookings/${id}/cancel`, { cancellationReason: reason });
   },
 
   async checkAvailability(vehicleId: number, startDate: string, endDate: string): Promise<{

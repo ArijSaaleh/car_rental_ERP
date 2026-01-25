@@ -1,0 +1,74 @@
+export enum UserRole {
+  SUPER_ADMIN = 'SUPER_ADMIN',
+  PROPRIETAIRE = 'PROPRIETAIRE',
+  MANAGER = 'MANAGER',
+  AGENT_COMPTOIR = 'AGENT_COMPTOIR',
+  AGENT_PARC = 'AGENT_PARC',
+  CLIENT = 'CLIENT',
+}
+
+export enum SubscriptionPlan {
+  BASIQUE = 'BASIQUE',
+  STANDARD = 'STANDARD',
+  PREMIUM = 'PREMIUM',
+  ENTREPRISE = 'ENTREPRISE',
+}
+
+export enum FuelType {
+  ESSENCE = 'ESSENCE',
+  DIESEL = 'DIESEL',
+  ELECTRIQUE = 'ELECTRIQUE',
+  HYBRIDE = 'HYBRIDE',
+}
+
+export enum TransmissionType {
+  MANUELLE = 'MANUELLE',
+  AUTOMATIQUE = 'AUTOMATIQUE',
+}
+
+export enum VehicleStatus {
+  DISPONIBLE = 'DISPONIBLE',
+  LOUE = 'LOUE',
+  MAINTENANCE = 'MAINTENANCE',
+  HORS_SERVICE = 'HORS_SERVICE',
+}
+
+export enum BookingStatus {
+  PENDING = 'PENDING',
+  CONFIRMED = 'CONFIRMED',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum PaymentStatus {
+  PENDING = 'PENDING',
+  PAID = 'PAID',
+  PARTIALLY_PAID = 'PARTIALLY_PAID',
+  REFUNDED = 'REFUNDED',
+  FAILED = 'FAILED',
+}
+
+export enum ContractStatus {
+  DRAFT = 'DRAFT',
+  PENDING_SIGNATURE = 'PENDING_SIGNATURE',
+  SIGNED = 'SIGNED',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum PaymentMethod {
+  CASH = 'CASH',
+  CARD = 'CARD',
+  BANK_TRANSFER = 'BANK_TRANSFER',
+  PAYMEE = 'PAYMEE',
+  CLICTOPAY = 'CLICTOPAY',
+  ONLINE = 'ONLINE',
+}
+
+export enum PaymentType {
+  DEPOSIT = 'DEPOSIT',
+  RENTAL_FEE = 'RENTAL_FEE',
+  EXTRA_CHARGES = 'EXTRA_CHARGES',
+  REFUND = 'REFUND',
+}

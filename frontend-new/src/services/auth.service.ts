@@ -8,23 +8,47 @@ export const authService = {
       password: credentials.password,
     });
 
-    if (response.data.access_token) {
-      localStorage.setItem('access_token', response.data.access_token);
+    // Store both access and refresh tokens
+    if (response.data.accessToken) {
+      localStorage.setItem('access_token', response.data.accessToken);
+    }
+
+    if (response.data.refreshToken) {
+      localStorage.setItem('refresh_token', response.data.refreshToken);
     }
 
     return response.data;
   },
 
   async getCurrentUser(): Promise<User> {
-    const response = await api.get<User>('/auth/me');
+    // Ensure we have a token before making the request
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      throw new Error('No access token available');
+    }
+
+    const response = await api.get<User>('/auth/me', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
     localStorage.setItem('user', JSON.stringify(response.data));
     return response.data;
   },
 
-  logout() {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('user');
-    window.location.href = '/login';
+  async logout() {
+    try {
+      // Call backend logout endpoint to invalidate tokens
+      await api.post('/auth/logout');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      // Always clear local storage
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
   },
 
   isAuthenticated(): boolean {

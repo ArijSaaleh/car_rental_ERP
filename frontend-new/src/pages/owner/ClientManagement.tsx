@@ -39,7 +39,7 @@ interface Client {
   total_rentals: number;
   total_revenue: number;
   last_rental_date?: string;
-  created_at: string;
+  createdAt: string;
 }
 
 interface RentalHistory {
@@ -51,7 +51,7 @@ interface RentalHistory {
   total_amount: number;
   status: string;
   payment_status: string;
-  created_at: string;
+  createdAt: string;
 }
 
 // Helper functions to normalize data from API
@@ -84,8 +84,8 @@ export default function ClientManagement() {
   useEffect(() => {
     const filtered = clients.filter(
       (c) =>
-        c.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.phone.includes(searchTerm)
     );
@@ -125,7 +125,7 @@ export default function ClientManagement() {
 
     setLoading(true);
     try {
-      await api.put(`/proprietaire/clients/${selectedClient.id}/blacklist`, {
+      await api.put(`/customers/${selectedClient.id}/blacklist`, {
         is_blacklisted: !selectedClient.is_blacklisted,
         reason: selectedClient.is_blacklisted ? null : blacklistReason,
       });
@@ -293,7 +293,7 @@ export default function ClientManagement() {
                     <TableRow key={client.id}>
                       <TableCell>
                         <div className="font-medium">
-                          {client.first_name} {client.last_name}
+                          {client.firstName} {client.lastName}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -369,7 +369,7 @@ export default function ClientManagement() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              Historique de Location - {selectedClient?.first_name} {selectedClient?.last_name}
+              Historique de Location - {selectedClient?.firstName} {selectedClient?.lastName}
             </DialogTitle>
             <DialogDescription>
               Total de {rentalHistory.length} location(s) | Revenu total: {selectedClient?.total_revenue.toFixed(2)} DT
@@ -392,13 +392,13 @@ export default function ClientManagement() {
               </TableHeader>
               <TableBody>
                 {rentalHistory.map((rental) => (
-                  <TableRow key={rental.booking_number}>
+                  <TableRow key={rental.bookingNumber}>
                     <TableCell className="font-mono text-xs">
-                      {rental.booking_number}
+                      {rental.bookingNumber}
                     </TableCell>
                     <TableCell>{rental.vehicle_info}</TableCell>
-                    <TableCell>{new Date(rental.start_date).toLocaleDateString('fr-FR')}</TableCell>
-                    <TableCell>{new Date(rental.end_date).toLocaleDateString('fr-FR')}</TableCell>
+                    <TableCell>{new Date(rental.startDate).toLocaleDateString('fr-FR')}</TableCell>
+                    <TableCell>{new Date(rental.endDate).toLocaleDateString('fr-FR')}</TableCell>
                     <TableCell>{rental.duration_days}j</TableCell>
                     <TableCell className="font-semibold">
                       {rental.total_amount.toFixed(2)} DT
@@ -425,7 +425,7 @@ export default function ClientManagement() {
               {selectedClient?.is_blacklisted ? 'Retirer de la Blacklist' : 'Ajouter à la Blacklist'}
             </DialogTitle>
             <DialogDescription>
-              Client: {selectedClient?.first_name} {selectedClient?.last_name}
+              Client: {selectedClient?.firstName} {selectedClient?.lastName}
             </DialogDescription>
           </DialogHeader>
 

@@ -19,7 +19,7 @@ interface Booking {
   vehicle?: {
     brand: string;
     model: string;
-    license_plate: string;
+    licensePlate: string;
   };
 }
 
@@ -79,8 +79,8 @@ export default function BookingCalendar({ bookings, onBookingClick }: BookingCal
     
     return bookings.filter(booking => {
       // Extract date part only (YYYY-MM-DD) from booking dates
-      const startDate = booking.start_date.split('T')[0];
-      const endDate = booking.end_date.split('T')[0];
+      const startDate = booking.startDate.split('T')[0];
+      const endDate = booking.endDate.split('T')[0];
       return dateStr >= startDate && dateStr <= endDate;
     });
   };
@@ -143,7 +143,7 @@ export default function BookingCalendar({ bookings, onBookingClick }: BookingCal
                   {booking.vehicle?.brand} {booking.vehicle?.model}
                 </div>
                 <div className="truncate text-[10px] opacity-90">
-                  {booking.customer?.first_name} {booking.customer?.last_name}
+                  {booking.customer?.firstName} {booking.customer?.lastName}
                 </div>
               </div>
             ))}

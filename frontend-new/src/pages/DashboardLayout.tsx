@@ -3,17 +3,37 @@ import { Sidebar } from '../components/Sidebar';
 import { authService } from '../services/auth.service';
 import { UserMenu } from '../components/UserMenu';
 import { useState } from 'react';
+import type { User } from '../types';
 
 export default function DashboardLayout() {
   const user = authService.getCurrentUserFromStorage();
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Map user role to sidebar role type
+  const getSidebarRole = (userRole: User['role'] | undefined): 'SUPER_ADMIN' | 'PROPRIETAIRE' | 'MANAGER' | 'CLIENT' => {
+    if (!userRole) return 'CLIENT';
+    
+    switch (userRole) {
+      case 'SUPER_ADMIN':
+        return 'SUPER_ADMIN';
+      case 'PROPRIETAIRE':
+        return 'PROPRIETAIRE';
+      case 'MANAGER':
+      case 'AGENT_COMPTOIR':
+      case 'AGENT_PARC':
+        return 'MANAGER';
+      case 'CLIENT':
+      default:
+        return 'CLIENT';
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 flex">
       {/* Fixed Sidebar */}
       <div className="fixed left-0 top-0 h-screen z-40">
         <Sidebar 
-          userRole={user?.role as 'super_admin' | 'proprietaire' | 'client'} 
+          userRole={getSidebarRole(user?.role)} 
           isCollapsed={isCollapsed}
           onToggle={() => setIsCollapsed(!isCollapsed)}
         />

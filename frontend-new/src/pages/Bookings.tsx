@@ -40,13 +40,13 @@ import { extractErrorMessage } from '../utils/errorHandler';
 // Helper function to normalize booking data from API
 const normalizeBooking = (booking: any): Booking => ({
   ...booking,
-  daily_rate: typeof booking.daily_rate === 'string' ? parseFloat(booking.daily_rate) : booking.daily_rate,
+  dailyRate: typeof booking.dailyRate === 'string' ? parseFloat(booking.dailyRate) : booking.dailyRate,
   duration_days: typeof booking.duration_days === 'string' ? parseInt(booking.duration_days) : booking.duration_days,
   subtotal: typeof booking.subtotal === 'string' ? parseFloat(booking.subtotal) : booking.subtotal,
   tax_amount: typeof booking.tax_amount === 'string' ? parseFloat(booking.tax_amount) : booking.tax_amount,
   timbre_fiscal: typeof booking.timbre_fiscal === 'string' ? parseFloat(booking.timbre_fiscal) : booking.timbre_fiscal,
   total_amount: typeof booking.total_amount === 'string' ? parseFloat(booking.total_amount) : booking.total_amount,
-  deposit_amount: typeof booking.deposit_amount === 'string' ? parseFloat(booking.deposit_amount) : booking.deposit_amount,
+  depositAmount: typeof booking.depositAmount === 'string' ? parseFloat(booking.depositAmount) : booking.depositAmount,
 });
 
 export default function Bookings() {
@@ -63,10 +63,10 @@ export default function Bookings() {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState<BookingCreate>({
-    customer_id: 0,
-    vehicle_id: 0,
-    start_date: '',
-    end_date: '',
+    customerId: 0,
+    vehicleId: 0,
+    startDate: '',
+    endDate: '',
     fuel_policy: 'full_to_full',
     notes: '',
   });
@@ -78,10 +78,10 @@ export default function Bookings() {
   useEffect(() => {
     const filtered = bookings.filter(
       (booking) =>
-        booking.customer?.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        booking.customer?.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        booking.customer?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        booking.customer?.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         booking.vehicle?.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        booking.booking_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        booking.bookingNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         booking.status.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredBookings(filtered);
@@ -110,20 +110,20 @@ export default function Bookings() {
     if (booking) {
       setSelectedBooking(booking);
       setFormData({
-        customer_id: booking.customer_id,
-        vehicle_id: booking.vehicle_id as any,
-        start_date: booking.start_date.split('T')[0],
-        end_date: booking.end_date.split('T')[0],
+        customerId: booking.customerId,
+        vehicleId: booking.vehicleId as any,
+        startDate: booking.startDate.split('T')[0],
+        endDate: booking.endDate.split('T')[0],
         fuel_policy: booking.fuel_policy || 'full_to_full',
         notes: booking.notes || '',
       });
     } else {
       setSelectedBooking(null);
       setFormData({
-        customer_id: 0,
-        vehicle_id: 0,
-        start_date: '',
-        end_date: '',
+        customerId: 0,
+        vehicleId: 0,
+        startDate: '',
+        endDate: '',
         fuel_policy: 'full_to_full',
         notes: '',
       });
@@ -137,26 +137,26 @@ export default function Bookings() {
     setError('');
 
     // Validate required fields
-    if (!formData.customer_id || formData.customer_id === 0) {
+    if (!formData.customerId || formData.customerId === 0) {
       setError('Veuillez sélectionner un client');
       return;
     }
-    if (!formData.vehicle_id || formData.vehicle_id === 0) {
+    if (!formData.vehicleId || formData.vehicleId === 0) {
       setError('Veuillez sélectionner un véhicule');
       return;
     }
-    if (!formData.start_date) {
+    if (!formData.startDate) {
       setError('Veuillez sélectionner une date de début');
       return;
     }
-    if (!formData.end_date) {
+    if (!formData.endDate) {
       setError('Veuillez sélectionner une date de fin');
       return;
     }
 
     // Validate dates
-    const startDate = new Date(formData.start_date);
-    const endDate = new Date(formData.end_date);
+    const startDate = new Date(formData.startDate);
+    const endDate = new Date(formData.endDate);
     if (endDate <= startDate) {
       setError('La date de fin doit être après la date de début');
       return;
@@ -167,8 +167,8 @@ export default function Bookings() {
     try {
       if (selectedBooking) {
         const updateData: BookingUpdate = {
-          start_date: formData.start_date,
-          end_date: formData.end_date,
+          startDate: formData.startDate,
+          endDate: formData.endDate,
           notes: formData.notes,
         };
         await bookingService.update(selectedBooking.id, updateData);
@@ -296,15 +296,15 @@ export default function Bookings() {
                 ) : (
                   filteredBookings.map((booking) => (
                     <TableRow key={booking.id}>
-                      <TableCell className="font-medium">{booking.booking_number}</TableCell>
+                      <TableCell className="font-medium">{booking.bookingNumber}</TableCell>
                       <TableCell>
-                        {booking.customer?.first_name} {booking.customer?.last_name}
+                        {booking.customer?.firstName} {booking.customer?.lastName}
                       </TableCell>
                       <TableCell>
                         {booking.vehicle?.brand} {booking.vehicle?.model}
                       </TableCell>
-                      <TableCell>{new Date(booking.start_date).toLocaleDateString()}</TableCell>
-                      <TableCell>{new Date(booking.end_date).toLocaleDateString()}</TableCell>
+                      <TableCell>{new Date(booking.startDate).toLocaleDateString()}</TableCell>
+                      <TableCell>{new Date(booking.endDate).toLocaleDateString()}</TableCell>
                       <TableCell>{booking.total_amount.toFixed(3)} DT</TableCell>
                       <TableCell>{getStatusBadge(booking.status)}</TableCell>
                       <TableCell className="text-right">
@@ -369,11 +369,11 @@ export default function Bookings() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="customer_id">Client *</Label>
+                <Label htmlFor="customerId">Client *</Label>
                 <Select
-                  value={formData.customer_id > 0 ? formData.customer_id.toString() : ''}
+                  value={formData.customerId > 0 ? formData.customerId.toString() : ''}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, customer_id: parseInt(value) })
+                    setFormData({ ...formData, customerId: parseInt(value) })
                   }
                 >
                   <SelectTrigger>
@@ -390,18 +390,18 @@ export default function Bookings() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="vehicle_id">Véhicule *</Label>
+                <Label htmlFor="vehicleId">Véhicule *</Label>
                 <Select
-                  value={formData.vehicle_id > 0 ? formData.vehicle_id.toString() : ''}
+                  value={formData.vehicleId > 0 ? formData.vehicleId.toString() : ''}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, vehicle_id: parseInt(value) })
+                    setFormData({ ...formData, vehicleId: parseInt(value) })
                   }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Sélectionner un véhicule" />
                   </SelectTrigger>
                   <SelectContent>
-                    {vehicles.filter((v) => v.statut === 'disponible').map((vehicle) => (
+                    {vehicles.filter((v) => v.statut === 'DISPONIBLE').map((vehicle) => (
                       <SelectItem key={vehicle.id} value={vehicle.id.toString()}>
                         {vehicle.marque} {vehicle.modele} - {vehicle.matricule}
                       </SelectItem>
@@ -411,26 +411,26 @@ export default function Bookings() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="start_date">Date de début</Label>
+                <Label htmlFor="startDate">Date de début</Label>
                 <Input
-                  id="start_date"
+                  id="startDate"
                   type="date"
-                  value={formData.start_date}
+                  value={formData.startDate}
                   onChange={(e) =>
-                    setFormData({ ...formData, start_date: e.target.value })
+                    setFormData({ ...formData, startDate: e.target.value })
                   }
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="end_date">Date de fin</Label>
+                <Label htmlFor="endDate">Date de fin</Label>
                 <Input
-                  id="end_date"
+                  id="endDate"
                   type="date"
-                  value={formData.end_date}
+                  value={formData.endDate}
                   onChange={(e) =>
-                    setFormData({ ...formData, end_date: e.target.value })
+                    setFormData({ ...formData, endDate: e.target.value })
                   }
                   required
                 />

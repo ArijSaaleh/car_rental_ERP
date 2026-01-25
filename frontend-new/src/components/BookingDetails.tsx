@@ -167,7 +167,7 @@ export function BookingDetails({ booking, open, onClose, onUpdate }: BookingDeta
             <div className="flex items-start justify-between">
               <div>
                 <DialogTitle className="text-2xl">Détails de la réservation</DialogTitle>
-                <p className="text-sm text-slate-500 mt-1">#{booking.booking_number}</p>
+                <p className="text-sm text-slate-500 mt-1">#{booking.bookingNumber}</p>
               </div>
               <div className="flex gap-2">
                 {getStatusBadge(booking.status)}
@@ -189,7 +189,7 @@ export function BookingDetails({ booking, open, onClose, onUpdate }: BookingDeta
                 <div>
                   <p className="text-sm text-slate-500">Nom</p>
                   <p className="font-medium">
-                    {booking.customer?.first_name} {booking.customer?.last_name}
+                    {booking.customer?.firstName} {booking.customer?.lastName}
                   </p>
                 </div>
                 {booking.customer?.email && (
@@ -204,10 +204,10 @@ export function BookingDetails({ booking, open, onClose, onUpdate }: BookingDeta
                     <p className="text-sm">{booking.customer.phone}</p>
                   </div>
                 )}
-                {booking.customer?.cin_number && (
+                {booking.customer?.cinNumber && (
                   <div>
                     <p className="text-sm text-slate-500">CIN</p>
-                    <p className="text-sm">{booking.customer.cin_number}</p>
+                    <p className="text-sm">{booking.customer.cinNumber}</p>
                   </div>
                 )}
               </CardContent>
@@ -230,7 +230,7 @@ export function BookingDetails({ booking, open, onClose, onUpdate }: BookingDeta
                 </div>
                 <div>
                   <p className="text-sm text-slate-500">Matricule</p>
-                  <p className="text-sm">{booking.vehicle?.license_plate}</p>
+                  <p className="text-sm">{booking.vehicle?.licensePlate}</p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-500">Année</p>
@@ -238,7 +238,7 @@ export function BookingDetails({ booking, open, onClose, onUpdate }: BookingDeta
                 </div>
                 <div>
                   <p className="text-sm text-slate-500">Tarif journalier</p>
-                  <p className="text-sm">{booking.daily_rate} DT</p>
+                  <p className="text-sm">{booking.dailyRate} DT</p>
                 </div>
               </CardContent>
             </Card>
@@ -255,7 +255,7 @@ export function BookingDetails({ booking, open, onClose, onUpdate }: BookingDeta
                 <div>
                   <p className="text-sm text-slate-500">Date de début</p>
                   <p className="font-medium">
-                    {new Date(booking.start_date).toLocaleDateString('fr-FR', {
+                    {new Date(booking.startDate).toLocaleDateString('fr-FR', {
                       weekday: 'long',
                       year: 'numeric',
                       month: 'long',
@@ -266,7 +266,7 @@ export function BookingDetails({ booking, open, onClose, onUpdate }: BookingDeta
                 <div>
                   <p className="text-sm text-slate-500">Date de fin</p>
                   <p className="font-medium">
-                    {new Date(booking.end_date).toLocaleDateString('fr-FR', {
+                    {new Date(booking.endDate).toLocaleDateString('fr-FR', {
                       weekday: 'long',
                       year: 'numeric',
                       month: 'long',
@@ -335,10 +335,10 @@ export function BookingDetails({ booking, open, onClose, onUpdate }: BookingDeta
                     </div>
                   </>
                 )}
-                {booking.deposit_amount > 0 && (
+                {booking.depositAmount > 0 && (
                   <div className="flex justify-between">
                     <p className="text-sm text-slate-500">Caution</p>
-                    <p className="text-sm">{booking.deposit_amount.toFixed(3)} DT</p>
+                    <p className="text-sm">{booking.depositAmount.toFixed(3)} DT</p>
                   </div>
                 )}
               </CardContent>

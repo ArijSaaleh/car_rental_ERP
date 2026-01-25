@@ -49,7 +49,7 @@ interface Customer {
 
 interface Vehicle {
   id: string;
-  license_plate: string;
+  licensePlate: string;
   brand: string;
   model: string;
   year: number;
@@ -60,7 +60,7 @@ interface Vehicle {
 interface Booking {
   id: number;
   booking_number: string;
-  agency_id: string;
+  agencyId: string;
   vehicle_id: string;
   customer_id: number;
   start_date: string;
@@ -75,7 +75,7 @@ interface Booking {
   status: string;
   payment_status: string;
   notes?: string;
-  created_at: string;
+  createdAt: string;
   customer?: Customer;
   vehicle?: Vehicle;
 }
@@ -92,16 +92,16 @@ interface BookingStats {
 // Helper function to normalize booking data from API
 const normalizeBooking = (booking: any): Booking => ({
   ...booking,
-  daily_rate: typeof booking.daily_rate === 'string' ? parseFloat(booking.daily_rate) : booking.daily_rate,
+  daily_rate: typeof booking.dailyRate === 'string' ? parseFloat(booking.dailyRate) : booking.dailyRate,
   duration_days: typeof booking.duration_days === 'string' ? parseInt(booking.duration_days) : booking.duration_days,
   subtotal: typeof booking.subtotal === 'string' ? parseFloat(booking.subtotal) : booking.subtotal,
   tax_amount: typeof booking.tax_amount === 'string' ? parseFloat(booking.tax_amount) : booking.tax_amount,
   timbre_fiscal: typeof booking.timbre_fiscal === 'string' ? parseFloat(booking.timbre_fiscal) : booking.timbre_fiscal,
   total_amount: typeof booking.total_amount === 'string' ? parseFloat(booking.total_amount) : booking.total_amount,
-  deposit_amount: typeof booking.deposit_amount === 'string' ? parseFloat(booking.deposit_amount) : booking.deposit_amount,
+  deposit_amount: typeof booking.depositAmount === 'string' ? parseFloat(booking.depositAmount) : booking.depositAmount,
   vehicle: booking.vehicle ? {
     ...booking.vehicle,
-    daily_rate: typeof booking.vehicle.daily_rate === 'string' ? parseFloat(booking.vehicle.daily_rate) : booking.vehicle.daily_rate,
+    daily_rate: typeof booking.vehicle.dailyRate === 'string' ? parseFloat(booking.vehicle.dailyRate) : booking.vehicle.dailyRate,
   } : undefined,
 });
 
@@ -151,7 +151,7 @@ export default function BookingManagement() {
 
   const loadAgencies = async () => {
     try {
-      const response = await api.get('/proprietaire/agencies');
+      const response = await api.get('/agencies');
       setAgencies(response.data);
       if (response.data.length > 0) {
         setSelectedAgencyId(response.data[0].id);
@@ -167,9 +167,9 @@ export default function BookingManagement() {
     setLoading(true);
     try {
       const [bookingsRes, customersRes, vehiclesRes] = await Promise.all([
-        api.get(`/bookings?agency_id=${selectedAgencyId}`),
-        api.get(`/customers?agency_id=${selectedAgencyId}`),
-        api.get(`/vehicles?agency_id=${selectedAgencyId}&page_size=100`),
+        api.get(`/bookings?agencyId=${selectedAgencyId}`),
+        api.get(`/customers?agencyId=${selectedAgencyId}`),
+        api.get(`/vehicles?agencyId=${selectedAgencyId}&page_size=100`),
       ]);
 
       const rawBookings = Array.isArray(bookingsRes.data) ? bookingsRes.data : bookingsRes.data.bookings || [];
@@ -182,7 +182,7 @@ export default function BookingManagement() {
       const rawVehicles = vehiclesRes.data.vehicles || vehiclesRes.data || [];
       const normalizedVehicles = rawVehicles.map((v: any) => ({
         ...v,
-        daily_rate: typeof v.daily_rate === 'string' ? parseFloat(v.daily_rate) : v.daily_rate,
+        daily_rate: typeof v.dailyRate === 'string' ? parseFloat(v.dailyRate) : v.dailyRate,
       }));
       setVehicles(normalizedVehicles);
       
@@ -208,9 +208,9 @@ export default function BookingManagement() {
 
   const filteredBookings = bookings.filter(booking => {
     const matchesSearch = 
-      booking.booking_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.customer?.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.customer?.last_name?.toLowerCase().includes(searchTerm.toLowerCase());
+      booking.bookingNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      booking.customer?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      booking.customer?.lastName?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
     
@@ -223,12 +223,12 @@ export default function BookingManagement() {
     
     setSelectedBooking(booking);
     setFormData({
-      customer_id: booking.customer_id.toString(),
-      vehicle_id: booking.vehicle_id,
-      start_date: booking.start_date,
-      end_date: booking.end_date,
-      daily_rate: booking.daily_rate,
-      deposit_amount: booking.deposit_amount,
+      customer_id: booking.customerId.toString(),
+      vehicle_id: booking.vehicleId,
+      start_date: booking.startDate,
+      end_date: booking.endDate,
+      daily_rate: booking.dailyRate,
+      deposit_amount: booking.depositAmount,
       fuel_policy: 'full_to_full',
       notes: booking.notes || '',
     });
@@ -244,12 +244,12 @@ export default function BookingManagement() {
 
     try {
       const payload = {
-        customer_id: parseInt(formData.customer_id),
-        vehicle_id: formData.vehicle_id,
-        start_date: formData.start_date,
-        end_date: formData.end_date,
-        daily_rate: formData.daily_rate || null,
-        deposit_amount: formData.deposit_amount,
+        customer_id: parseInt(formData.customerId),
+        vehicle_id: formData.vehicleId,
+        start_date: formData.startDate,
+        end_date: formData.endDate,
+        daily_rate: formData.dailyRate || null,
+        deposit_amount: formData.depositAmount,
         fuel_policy: formData.fuel_policy,
         notes: formData.notes || null,
       };
@@ -344,8 +344,8 @@ export default function BookingManagement() {
   const handleVehicleChange = (vehicleId: string) => {
     setFormData(prev => ({ ...prev, vehicle_id: vehicleId }));
     const vehicle = vehicles.find(v => v.id === vehicleId);
-    if (vehicle && vehicle.daily_rate) {
-      setFormData(prev => ({ ...prev, daily_rate: vehicle.daily_rate }));
+    if (vehicle && vehicle.dailyRate) {
+      setFormData(prev => ({ ...prev, daily_rate: vehicle.dailyRate }));
     }
   };
 
@@ -581,14 +581,14 @@ export default function BookingManagement() {
                       filteredBookings.map((booking) => (
                         <TableRow key={booking.id}>
                           <TableCell className="font-mono font-medium">
-                            {booking.booking_number}
+                            {booking.bookingNumber}
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <User className="h-4 w-4 text-slate-400" />
                               <div>
                                 <div className="font-medium">
-                                  {booking.customer?.first_name} {booking.customer?.last_name}
+                                  {booking.customer?.firstName} {booking.customer?.lastName}
                                 </div>
                                 <div className="text-xs text-slate-500">
                                   {booking.customer?.phone}
@@ -604,7 +604,7 @@ export default function BookingManagement() {
                                   {booking.vehicle?.brand} {booking.vehicle?.model}
                                 </div>
                                 <div className="text-xs text-slate-500">
-                                  {booking.vehicle?.license_plate}
+                                  {booking.vehicle?.licensePlate}
                                 </div>
                               </div>
                             </div>
@@ -613,9 +613,9 @@ export default function BookingManagement() {
                             <div className="flex items-center gap-1 text-sm">
                               <Calendar className="h-3 w-3 text-slate-400" />
                               <div>
-                                <div>{new Date(booking.start_date).toLocaleDateString('fr-FR')}</div>
+                                <div>{new Date(booking.startDate).toLocaleDateString('fr-FR')}</div>
                                 <div className="text-xs text-slate-500">
-                                  au {new Date(booking.end_date).toLocaleDateString('fr-FR')}
+                                  au {new Date(booking.endDate).toLocaleDateString('fr-FR')}
                                 </div>
                               </div>
                             </div>
@@ -711,7 +711,7 @@ export default function BookingManagement() {
           <DialogHeader>
             <DialogTitle>Modifier la réservation</DialogTitle>
             <DialogDescription>
-              Modifiez les détails de la réservation {selectedBooking?.booking_number}
+              Modifiez les détails de la réservation {selectedBooking?.bookingNumber}
             </DialogDescription>
           </DialogHeader>
 
@@ -730,7 +730,7 @@ export default function BookingManagement() {
                   <div className="space-y-2">
                     <Label htmlFor="customer_id">Client *</Label>
                     <Select
-                      value={formData.customer_id}
+                      value={formData.customerId}
                       onValueChange={(value) => setFormData({ ...formData, customer_id: value })}
                       required
                     >
@@ -740,7 +740,7 @@ export default function BookingManagement() {
                       <SelectContent>
                         {customers.map((customer) => (
                           <SelectItem key={customer.id} value={customer.id.toString()}>
-                            {customer.first_name} {customer.last_name} - {customer.cin_number}
+                            {customer.firstName} {customer.lastName} - {customer.cinNumber}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -750,7 +750,7 @@ export default function BookingManagement() {
                   <div className="space-y-2">
                     <Label htmlFor="vehicle_id">Véhicule *</Label>
                     <Select
-                      value={formData.vehicle_id}
+                      value={formData.vehicleId}
                       onValueChange={handleVehicleChange}
                       required
                     >
@@ -758,9 +758,9 @@ export default function BookingManagement() {
                         <SelectValue placeholder="Sélectionner un véhicule" />
                       </SelectTrigger>
                       <SelectContent>
-                        {vehicles.filter(v => v.status === 'disponible').map((vehicle) => (
+                        {vehicles.filter(v => v.status === 'DISPONIBLE').map((vehicle) => (
                           <SelectItem key={vehicle.id} value={vehicle.id}>
-                            {vehicle.brand} {vehicle.model} - {vehicle.license_plate} ({vehicle.daily_rate} DT/jour)
+                            {vehicle.brand} {vehicle.model} - {vehicle.licensePlate} ({vehicle.dailyRate} DT/jour)
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -778,7 +778,7 @@ export default function BookingManagement() {
                     <Input
                       id="start_date"
                       type="date"
-                      value={formData.start_date}
+                      value={formData.startDate}
                       onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
                       required
                     />
@@ -789,7 +789,7 @@ export default function BookingManagement() {
                     <Input
                       id="end_date"
                       type="date"
-                      value={formData.end_date}
+                      value={formData.endDate}
                       onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
                       required
                     />
@@ -801,7 +801,7 @@ export default function BookingManagement() {
                       id="daily_rate"
                       type="number"
                       step="0.001"
-                      value={formData.daily_rate}
+                      value={formData.dailyRate}
                       onChange={(e) => setFormData({ ...formData, daily_rate: parseFloat(e.target.value) || 0 })}
                       placeholder="Utiliser le tarif du véhicule"
                     />
@@ -813,7 +813,7 @@ export default function BookingManagement() {
                       id="deposit_amount"
                       type="number"
                       step="0.001"
-                      value={formData.deposit_amount}
+                      value={formData.depositAmount}
                       onChange={(e) => setFormData({ ...formData, deposit_amount: parseFloat(e.target.value) || 0 })}
                       required
                     />
@@ -874,7 +874,7 @@ export default function BookingManagement() {
           <DialogHeader>
             <DialogTitle>Confirmer la suppression</DialogTitle>
             <DialogDescription>
-              Êtes-vous sûr de vouloir supprimer la réservation <strong>{selectedBooking?.booking_number}</strong> ?
+              Êtes-vous sûr de vouloir supprimer la réservation <strong>{selectedBooking?.bookingNumber}</strong> ?
               <br /><br />
               Cette action est irréversible.
             </DialogDescription>

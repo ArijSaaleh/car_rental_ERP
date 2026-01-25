@@ -39,7 +39,7 @@ interface Contract {
   end_date?: string;
   total_amount?: number;
   status: string;
-  agency_id: string;
+  agencyId: string;
   terms_and_conditions?: string;
   special_clauses?: any;
   created_at?: string;
@@ -50,17 +50,17 @@ const normalizeContract = (contract: any): Contract => ({
   id: contract.id,
   contract_number: contract.contract_number,
   booking_id: contract.booking_id,
-  booking_number: contract.booking_number || contract.contract_number,
+  booking_number: contract.bookingNumber || contract.contract_number,
   customer_name: contract.customer_name || 'N/A',
   vehicle_info: contract.vehicle_info || 'N/A',
-  start_date: contract.start_date,
-  end_date: contract.end_date,
+  start_date: contract.startDate,
+  end_date: contract.endDate,
   total_amount: contract.total_amount ? (typeof contract.total_amount === 'string' ? parseFloat(contract.total_amount) : contract.total_amount) : 0,
   status: contract.status,
-  agency_id: contract.agency_id,
+  agencyId: contract.agencyId,
   terms_and_conditions: contract.terms_and_conditions,
   special_clauses: contract.special_clauses,
-  created_at: contract.created_at,
+  createdAt: contract.createdAt,
 });
 
 export default function ContractManagement() {
@@ -87,7 +87,7 @@ export default function ContractManagement() {
   useEffect(() => {
     const filtered = contracts.filter(
       (c) =>
-        c.booking_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.bookingNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.vehicle_info.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -96,7 +96,7 @@ export default function ContractManagement() {
 
   const loadAgencies = async () => {
     try {
-      const response = await api.get('/proprietaire/agencies');
+      const response = await api.get('/agencies');
       setAgencies(response.data);
       if (response.data.length > 0) {
         setSelectedAgencyId(response.data[0].id);
@@ -113,7 +113,7 @@ export default function ContractManagement() {
     try {
       console.log('📋 Loading contracts for agency:', selectedAgencyId);
       const response = await api.get('/contracts/', {
-        params: { agency_id: selectedAgencyId }
+        params: { agencyId: selectedAgencyId }
       });
       console.log('✅ Contracts loaded:', response.data.length);
       const normalizedContracts = response.data.map(normalizeContract);
@@ -124,7 +124,7 @@ export default function ContractManagement() {
         message: err.message,
         response: err.response?.data,
         status: err.response?.status,
-        agency_id: selectedAgencyId
+        agencyId: selectedAgencyId
       });
       setError(extractErrorMessage(err));
     } finally {
@@ -144,7 +144,7 @@ export default function ContractManagement() {
 
     try {
       const response = await api.get(`/contracts/${contract.id}/pdf`, {
-        params: { agency_id: selectedAgencyId },
+        params: { agencyId: selectedAgencyId },
         responseType: 'blob',
       });
 
@@ -284,15 +284,15 @@ export default function ContractManagement() {
                   filteredContracts.map((contract) => (
                     <TableRow key={contract.booking_id}>
                       <TableCell className="font-mono text-xs">
-                        {contract.booking_number}
+                        {contract.bookingNumber}
                       </TableCell>
                       <TableCell>{contract.customer_name}</TableCell>
                       <TableCell>{contract.vehicle_info}</TableCell>
                       <TableCell>
-                        {new Date(contract.start_date).toLocaleDateString('fr-FR')}
+                        {new Date(contract.startDate).toLocaleDateString('fr-FR')}
                       </TableCell>
                       <TableCell>
-                        {new Date(contract.end_date).toLocaleDateString('fr-FR')}
+                        {new Date(contract.endDate).toLocaleDateString('fr-FR')}
                       </TableCell>
                       <TableCell className="font-semibold">
                         {contract.total_amount ? contract.total_amount.toFixed(2) : '0.00'} DT
@@ -348,7 +348,7 @@ export default function ContractManagement() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-slate-600">Numéro de Réservation</p>
-                  <p className="font-semibold">{selectedContract.booking_number}</p>
+                  <p className="font-semibold">{selectedContract.bookingNumber}</p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-600">Statut</p>
@@ -365,13 +365,13 @@ export default function ContractManagement() {
                 <div>
                   <p className="text-sm text-slate-600">Date de Début</p>
                   <p className="font-semibold">
-                    {new Date(selectedContract.start_date).toLocaleDateString('fr-FR')}
+                    {new Date(selectedContract.startDate).toLocaleDateString('fr-FR')}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-600">Date de Fin</p>
                   <p className="font-semibold">
-                    {new Date(selectedContract.end_date).toLocaleDateString('fr-FR')}
+                    {new Date(selectedContract.endDate).toLocaleDateString('fr-FR')}
                   </p>
                 </div>
                 <div className="col-span-2">

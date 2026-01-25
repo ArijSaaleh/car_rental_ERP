@@ -27,14 +27,14 @@ export default function Dashboard() {
   const loadStats = async () => {
     try {
       const user = authService.getCurrentUserFromStorage();
-      let agencyId = user?.agency_id;
+      let agencyId = user?.agencyId;
 
-      // If owner without direct agency_id, load their main agency
-      if (!agencyId && user?.role === 'proprietaire') {
+      // If owner without direct agencyId, load their main agency
+      if (!agencyId && user?.role === 'PROPRIETAIRE') {
         try {
           const agencies = await agencyService.getAll();
-          // Filter main agencies (those without parent_agency_id)
-          const mainAgencies = agencies.filter((a: any) => !a.parent_agency_id);
+          // Filter main agencies (those without parentAgencyId)
+          const mainAgencies = agencies.filter((a: any) => !a.parentAgencyId);
           if (mainAgencies.length > 0) {
             agencyId = mainAgencies[0].id;
           } else if (agencies.length > 0) {

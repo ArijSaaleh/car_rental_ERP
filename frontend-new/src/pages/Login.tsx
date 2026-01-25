@@ -7,6 +7,7 @@ import { Label } from '../components/ui/label';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { authService } from '../services/auth.service';
 import { extractErrorMessage } from '../utils/errorHandler';
+import { getDefaultDashboard } from '../utils/roleNavigation';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -25,14 +26,9 @@ export default function Login() {
       await authService.login({ email, password });
       const user = await authService.getCurrentUser();
       
-      // Redirect based on user role
-      if (user.role === 'super_admin') {
-        navigate('/admin/dashboard');
-      } else if (user.role === 'proprietaire') {
-        navigate('/owner/dashboard');
-      } else {
-        navigate('/dashboard');
-      }
+      // Redirect to role-appropriate dashboard
+      const dashboardRoute = getDefaultDashboard(user);
+      navigate(dashboardRoute);
     } catch (err: any) {
       setError(extractErrorMessage(err));
     } finally {
