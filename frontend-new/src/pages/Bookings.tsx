@@ -40,13 +40,13 @@ import { extractErrorMessage } from '../utils/errorHandler';
 // Helper function to normalize booking data from API
 const normalizeBooking = (booking: any): Booking => ({
   ...booking,
-  dailyRate: typeof booking.dailyRate === 'string' ? parseFloat(booking.dailyRate) : booking.dailyRate,
-  duration_days: typeof booking.duration_days === 'string' ? parseInt(booking.duration_days) : booking.duration_days,
-  subtotal: typeof booking.subtotal === 'string' ? parseFloat(booking.subtotal) : booking.subtotal,
-  tax_amount: typeof booking.tax_amount === 'string' ? parseFloat(booking.tax_amount) : booking.tax_amount,
-  timbre_fiscal: typeof booking.timbre_fiscal === 'string' ? parseFloat(booking.timbre_fiscal) : booking.timbre_fiscal,
-  total_amount: typeof booking.total_amount === 'string' ? parseFloat(booking.total_amount) : booking.total_amount,
-  depositAmount: typeof booking.depositAmount === 'string' ? parseFloat(booking.depositAmount) : booking.depositAmount,
+  dailyRate: typeof booking.dailyRate === 'string' ? booking.dailyRate : String(booking.dailyRate),
+  durationDays: typeof booking.durationDays === 'string' ? parseInt(booking.durationDays) : booking.durationDays,
+  subtotal: typeof booking.subtotal === 'string' ? booking.subtotal : String(booking.subtotal),
+  taxAmount: typeof booking.taxAmount === 'string' ? booking.taxAmount : String(booking.taxAmount),
+  timbreFiscal: typeof booking.timbreFiscal === 'string' ? booking.timbreFiscal : String(booking.timbreFiscal),
+  totalAmount: typeof booking.totalAmount === 'string' ? booking.totalAmount : String(booking.totalAmount),
+  depositAmount: typeof booking.depositAmount === 'string' ? booking.depositAmount : String(booking.depositAmount),
 });
 
 export default function Bookings() {
@@ -305,7 +305,7 @@ export default function Bookings() {
                       </TableCell>
                       <TableCell>{new Date(booking.startDate).toLocaleDateString()}</TableCell>
                       <TableCell>{new Date(booking.endDate).toLocaleDateString()}</TableCell>
-                      <TableCell>{booking.total_amount.toFixed(3)} DT</TableCell>
+                      <TableCell>{parseFloat(booking.totalAmount).toFixed(3)} DT</TableCell>
                       <TableCell>{getStatusBadge(booking.status)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">

@@ -8,6 +8,7 @@ import {
   Delete,
   Query,
   UseGuards,
+  Put,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { CustomersService } from './customers.service';
@@ -67,5 +68,20 @@ export class CustomersController {
   @ApiResponse({ status: 404, description: 'Customer not found' })
   remove(@Param('id') id: string, @TenantContext() tenant: any) {
     return this.customersService.remove(+id, tenant.agencyId);
+  }
+
+  @Get(':id/bookings')
+  @ApiOperation({ summary: 'Get customer booking history' })
+  @ApiResponse({ status: 200, description: 'Bookings retrieved successfully' })
+  getBookings(@Param('id') id: string, @TenantContext() tenant: any) {
+    return this.customersService.getBookings(+id, tenant.agencyId);
+  }
+
+  @Put(':id/blacklist')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.PROPRIETAIRE, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Toggle customer blacklist status' })
+  @ApiResponse({ status: 200, description: 'Blacklist status updated' })
+  toggleBlacklist(@Param('id') id: string, @Body() data: any, @TenantContext() tenant: any) {
+    return this.customersService.toggleBlacklist(+id, tenant.agencyId, data.is_blacklisted, data.reason);
   }
 }

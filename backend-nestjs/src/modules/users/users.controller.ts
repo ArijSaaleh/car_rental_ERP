@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, Body, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Param, Body, Delete, UseGuards, Query } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -17,9 +17,10 @@ export class UsersController {
   @Get()
   @Roles(UserRole.SUPER_ADMIN, UserRole.PROPRIETAIRE, UserRole.MANAGER)
   @ApiOperation({ summary: 'Get all users in the agency (or all users for SUPER_ADMIN)' })
-  findAll(@TenantContext() tenant: any, @CurrentUser() user: any) {
+  findAll(@TenantContext() tenant: any, @CurrentUser() user: any, @Query() query: any) {
     // SUPER_ADMIN gets all users, others get agency users only
-    return this.usersService.findAll(user.role === UserRole.SUPER_ADMIN ? null : tenant.agencyId);
+    const agencyId = user.role === UserRole.SUPER_ADMIN ? (query.agencyId || null) : tenant.agencyId;
+    return this.usersService.findAll(agencyId, query);
   }
 
   @Get(':id')

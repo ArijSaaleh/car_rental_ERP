@@ -76,7 +76,7 @@ export default function SystemSettings() {
     setSuccess(false);
 
     try {
-      await api.post('/admin/settings', { section, settings });
+      await api.post('/settings', { section, settings });
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err: any) {

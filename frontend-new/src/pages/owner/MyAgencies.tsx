@@ -22,29 +22,30 @@ import {
 } from '../../components/ui/dialog';
 import { Label } from '../../components/ui/label';
 import { Alert, AlertDescription } from '../../components/ui/alert';
+import { LocationSelectors } from '../../components/LocationSelectors';
 import api from '../../services/api';
 import { extractErrorMessage } from '../../utils/errorHandler';
 
 interface Agency {
   id: string;
   name: string;
-  legal_name: string;
-  tax_id: string;
+  legalName: string;
+  taxId: string;
   email: string;
   phone: string;
   address: string;
   city: string;
-  postal_code?: string;
+  postalCode?: string;
   country: string;
-  subscription_plan: string;
-  is_active: boolean;
-  parent_agencyId?: string | null;  // Hierarchy: NULL = main agency
-  is_main: boolean;                   // True if main agency, false if branch
-  branch_count: number;               // Number of branches (only for main)
-  manager_count: number;
-  employee_count: number;
-  vehicle_count: number;
-  customer_count: number;
+  subscriptionPlan: string;
+  isActive: boolean;
+  parentAgencyId?: string | null;  // Hierarchy: NULL = main agency
+  isMain: boolean;                   // True if main agency, false if branch
+  branchCount: number;               // Number of branches (only for main)
+  managerCount: number;
+  employeeCount: number;
+  vehicleCount: number;
+  customerCount: number;
   createdAt: string;
 }
 
@@ -60,13 +61,14 @@ export default function MyAgencies() {
   const [parentAgencyId, setParentAgencyId] = useState<string>('');
   const [formData, setFormData] = useState({
     name: '',
-    legal_name: '',
-    tax_id: '',
+    legalName: '',
+    taxId: '',
     email: '',
     phone: '',
     address: '',
+    governorate: '',
     city: '',
-    postal_code: '',
+    postalCode: '',
     country: 'Tunisia',
   });
 
@@ -101,15 +103,54 @@ export default function MyAgencies() {
       setSelectedAgency(agency);
       setIsBranchMode(false);
       setParentAgencyId('');
+      
+      // Map city to governorate
+      let governorate = '';
+      if (agency.city) {
+        const cityLower = agency.city.toLowerCase();
+        if (['tunis', 'carthage', 'la marsa', 'sidi bou said'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Tunis';
+        } else if (['sfax', 'sakiet ezzit'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Sfax';
+        } else if (['sousse', 'hammam sousse', 'port el kantaoui'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Sousse';
+        } else if (['nabeul', 'hammamet', 'kelibia'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Nabeul';
+        } else if (['monastir', 'skanes'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Monastir';
+        } else if (['bizerte', 'menzel bourguiba'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Bizerte';
+        } else if (['gabes', 'matmata'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Gabès';
+        } else if (['kairouan'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Kairouan';
+        } else if (['ariana'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Ariana';
+        } else if (['ben arous', 'rades'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Ben Arous';
+        } else if (['mahdia'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Mahdia';
+        } else if (['medenine', 'djerba', 'zarzis'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Médenine';
+        } else if (['gafsa'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Gafsa';
+        } else if (['tozeur', 'nefta'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Tozeur';
+        } else if (['kebili', 'douz'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Kébili';
+        }
+      }
+      
       setFormData({
         name: agency.name,
-        legal_name: agency.legalName,
-        tax_id: agency.taxId,
+        legalName: agency.legalName,
+        taxId: agency.taxId,
         email: agency.email,
         phone: agency.phone,
         address: agency.address,
+        governorate: governorate,
         city: agency.city,
-        postal_code: agency.postalCode || '',
+        postalCode: agency.postalCode || '',
         country: agency.country,
       });
     } else {
@@ -118,13 +159,14 @@ export default function MyAgencies() {
       setParentAgencyId('');
       setFormData({
         name: '',
-        legal_name: '',
-        tax_id: '',
+        legalName: '',
+        taxId: '',
         email: '',
         phone: '',
         address: '',
+        governorate: '',
         city: '',
-        postal_code: '',
+        postalCode: '',
         country: 'Tunisia',
       });
     }
@@ -145,12 +187,24 @@ export default function MyAgencies() {
     setLoading(true);
 
     try {
-      const payload = isBranchMode && !selectedAgency
-        ? { ...formData, parent_agencyId: parentAgencyId }
-        : formData;
+      const payload: any = {
+        name: formData.name,
+        legalName: formData.legalName || formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        city: formData.city,
+        postalCode: formData.postalCode || '',
+        country: formData.country || 'Tunisia',
+        taxId: formData.taxId || `TAX${Date.now()}`,
+      };
+      
+      if (isBranchMode && !selectedAgency && parentAgencyId) {
+        payload.parentAgencyId = parentAgencyId;
+      }
 
       if (selectedAgency) {
-        await api.put(`/agencies/${selectedAgency.id}`, payload);
+        await api.patch(`/agencies/${selectedAgency.id}`, payload);
       } else {
         await api.post('/agencies', payload);
       }
@@ -209,7 +263,7 @@ export default function MyAgencies() {
             <Plus className="h-5 w-5" />
             Nouvelle Agence Principale
           </Button>
-          {agencies.some(a => a.is_main) && (
+          {agencies.some(a => a.isMain) && (
             <Button 
               onClick={() => handleOpenDialog(undefined, false)} 
               variant="outline" 
@@ -248,7 +302,7 @@ export default function MyAgencies() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {agencies.reduce((sum, a) => sum + a.vehicle_count, 0)}
+              {agencies.reduce((sum, a) => sum + (a.vehicleCount || 0), 0)}
             </div>
           </CardContent>
         </Card>
@@ -260,7 +314,7 @@ export default function MyAgencies() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {agencies.reduce((sum, a) => sum + a.customer_count, 0)}
+              {agencies.reduce((sum, a) => sum + (a.customerCount || 0), 0)}
             </div>
           </CardContent>
         </Card>
@@ -272,7 +326,7 @@ export default function MyAgencies() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {agencies.reduce((sum, a) => sum + a.manager_count + a.employee_count, 0)}
+              {agencies.reduce((sum, a) => sum + (a.managerCount || 0) + (a.employeeCount || 0), 0)}
             </div>
           </CardContent>
         </Card>
@@ -317,28 +371,28 @@ export default function MyAgencies() {
                   </TableRow>
                 ) : (
                   filteredAgencies.map((agency) => (
-                    <TableRow key={agency.id} className={!agency.is_main ? 'bg-slate-50' : ''}>
+                    <TableRow key={agency.id} className={!agency.isMain ? 'bg-slate-50' : ''}>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <Building2 className={`h-6 w-6 ${agency.is_main ? 'text-blue-600' : 'text-slate-400'}`} />
+                          <Building2 className={`h-6 w-6 ${agency.isMain ? 'text-blue-600' : 'text-slate-400'}`} />
                           <div>
                             <div className="font-medium flex items-center gap-2">
                               {agency.name}
-                              {agency.is_main && (
+                              {agency.isMain && (
                                 <Badge className="bg-blue-100 text-blue-700 text-xs">
                                   Principal
                                 </Badge>
                               )}
-                              {!agency.is_main && (
+                              {!agency.isMain && (
                                 <Badge className="bg-slate-100 text-slate-600 text-xs">
                                   Succursale
                                 </Badge>
                               )}
                             </div>
                             <div className="text-sm text-slate-500">{agency.legalName}</div>
-                            {agency.is_main && agency.branch_count > 0 && (
+                            {agency.isMain && agency.branchCount > 0 && (
                               <div className="text-xs text-blue-600 mt-1">
-                                {agency.branch_count} succursale{agency.branch_count > 1 ? 's' : ''}
+                                {agency.branchCount} succursale{agency.branchCount > 1 ? 's' : ''}
                               </div>
                             )}
                           </div>
@@ -355,17 +409,17 @@ export default function MyAgencies() {
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <Car className="h-5 w-5 text-slate-400" />
-                          {agency.vehicle_count}
+                          {agency.vehicleCount}
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <Users className="h-5 w-5 text-slate-400" />
-                          {agency.customer_count}
+                          {agency.customerCount}
                         </div>
                       </TableCell>
                       <TableCell>
-                        {agency.manager_count + agency.employee_count}
+                        {(agency.managerCount || 0) + (agency.employeeCount || 0)}
                       </TableCell>
                       <TableCell>{getStatusBadge(agency.isActive)}</TableCell>
                       <TableCell className="text-right">
@@ -438,7 +492,7 @@ export default function MyAgencies() {
                   className="mt-2 w-full p-2 border rounded-md"
                 >
                   <option value="">Sélectionnez l'agence principale</option>
-                  {agencies.filter(a => a.is_main).map((agency) => (
+                  {agencies.filter(a => a.isMain).map((agency) => (
                     <option key={agency.id} value={agency.id}>
                       {agency.name} - {agency.city}
                     </option>
@@ -466,7 +520,7 @@ export default function MyAgencies() {
                 <Input
                   id="legal_name"
                   value={formData.legalName}
-                  onChange={(e) => setFormData({ ...formData, legal_name: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, legalName: e.target.value })}
                   required
                 />
               </div>
@@ -476,7 +530,7 @@ export default function MyAgencies() {
                 <Input
                   id="tax_id"
                   value={formData.taxId}
-                  onChange={(e) => setFormData({ ...formData, tax_id: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, taxId: e.target.value })}
                   required
                 />
               </div>
@@ -502,13 +556,12 @@ export default function MyAgencies() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="city">Ville *</Label>
-                <Input
-                  id="city"
-                  value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  required
+              <div className="space-y-2 col-span-2">
+                <LocationSelectors
+                  governorate={formData.governorate}
+                  city={formData.city}
+                  onGovernorateChange={(value) => setFormData({ ...formData, governorate: value, city: '' })}
+                  onCityChange={(value) => setFormData({ ...formData, city: value })}
                 />
               </div>
 
@@ -527,7 +580,7 @@ export default function MyAgencies() {
                 <Input
                   id="postal_code"
                   value={formData.postalCode}
-                  onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
                 />
               </div>
 

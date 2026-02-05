@@ -40,11 +40,11 @@ interface Agency {
 
 interface Customer {
   id: number;
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
-  cin_number?: string;
+  cinNumber?: string;
 }
 
 interface Vehicle {
@@ -54,26 +54,26 @@ interface Vehicle {
   model: string;
   year: number;
   status: string;
-  daily_rate: number;
+  dailyRate: number;
 }
 
 interface Booking {
   id: number;
-  booking_number: string;
+  bookingNumber: string;
   agencyId: string;
-  vehicle_id: string;
-  customer_id: number;
-  start_date: string;
-  end_date: string;
-  daily_rate: number;
-  duration_days: number;
+  vehicleId: string;
+  customerId: number;
+  startDate: string;
+  endDate: string;
+  dailyRate: number;
+  durationDays: number;
   subtotal: number;
-  tax_amount: number;
-  timbre_fiscal: number;
-  total_amount: number;
-  deposit_amount: number;
+  taxAmount: number;
+  timbreFiscal: number;
+  totalAmount: number;
+  depositAmount: number;
   status: string;
-  payment_status: string;
+  paymentStatus: string;
   notes?: string;
   createdAt: string;
   customer?: Customer;
@@ -91,13 +91,27 @@ interface BookingStats {
 
 // Helper function to normalize booking data from API
 const normalizeBooking = (booking: any): Booking => ({
-  ...booking,
-  daily_rate: typeof booking.dailyRate === 'string' ? parseFloat(booking.dailyRate) : booking.dailyRate,
-  duration_days: typeof booking.duration_days === 'string' ? parseInt(booking.duration_days) : booking.duration_days,
+  id: booking.id,
+  bookingNumber: booking.bookingNumber,
+  agencyId: booking.agencyId,
+  vehicleId: booking.vehicleId,
+  customerId: booking.customerId,
+  startDate: booking.startDate,
+  endDate: booking.endDate,
+  dailyRate: typeof booking.dailyRate === 'string' ? parseFloat(booking.dailyRate) : booking.dailyRate,
+  durationDays: typeof booking.durationDays === 'string' ? parseInt(booking.durationDays) : booking.durationDays,
   subtotal: typeof booking.subtotal === 'string' ? parseFloat(booking.subtotal) : booking.subtotal,
-  tax_amount: typeof booking.tax_amount === 'string' ? parseFloat(booking.tax_amount) : booking.tax_amount,
-  timbre_fiscal: typeof booking.timbre_fiscal === 'string' ? parseFloat(booking.timbre_fiscal) : booking.timbre_fiscal,
-  total_amount: typeof booking.total_amount === 'string' ? parseFloat(booking.total_amount) : booking.total_amount,
+  taxAmount: typeof booking.taxAmount === 'string' ? parseFloat(booking.taxAmount) : booking.taxAmount,
+  timbreFiscal: typeof booking.timbreFiscal === 'string' ? parseFloat(booking.timbreFiscal) : booking.timbreFiscal,
+  totalAmount: typeof booking.totalAmount === 'string' ? parseFloat(booking.totalAmount) : booking.totalAmount,
+  depositAmount: typeof booking.depositAmount === 'string' ? parseFloat(booking.depositAmount) : booking.depositAmount,
+  status: booking.status,
+  paymentStatus: booking.paymentStatus,
+  notes: booking.notes,
+  createdAt: booking.createdAt,
+  customer: booking.customer,
+  vehicle: booking.vehicle,
+});
   deposit_amount: typeof booking.depositAmount === 'string' ? parseFloat(booking.depositAmount) : booking.depositAmount,
   vehicle: booking.vehicle ? {
     ...booking.vehicle,
@@ -169,7 +183,7 @@ export default function BookingManagement() {
       const [bookingsRes, customersRes, vehiclesRes] = await Promise.all([
         api.get(`/bookings?agencyId=${selectedAgencyId}`),
         api.get(`/customers?agencyId=${selectedAgencyId}`),
-        api.get(`/vehicles?agencyId=${selectedAgencyId}&page_size=100`),
+        api.get(`/vehicles?agencyId=${selectedAgencyId}`),
       ]);
 
       const rawBookings = Array.isArray(bookingsRes.data) ? bookingsRes.data : bookingsRes.data.bookings || [];
@@ -254,7 +268,7 @@ export default function BookingManagement() {
         notes: formData.notes || null,
       };
 
-      await api.put(`/bookings/${selectedBooking.id}`, payload);
+      await api.patch(`/bookings/${selectedBooking.id}`, payload);
       setSuccess('Réservation modifiée avec succès');
       
       setDialogOpen(false);
@@ -620,12 +634,12 @@ export default function BookingManagement() {
                               </div>
                             </div>
                           </TableCell>
-                          <TableCell>{booking.duration_days} jours</TableCell>
+                          <TableCell>{booking.durationDays} jours</TableCell>
                           <TableCell className="font-medium">
-                            {booking.total_amount.toFixed(3)} DT
+                            {booking.totalAmount.toFixed(3)} DT
                           </TableCell>
                           <TableCell>{getStatusBadge(booking.status)}</TableCell>
-                          <TableCell>{getPaymentBadge(booking.payment_status)}</TableCell>
+                          <TableCell>{getPaymentBadge(booking.paymentStatus)}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
                               {booking.status === 'pending' && (

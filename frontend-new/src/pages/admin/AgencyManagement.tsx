@@ -133,6 +133,63 @@ export default function AgencyManagement() {
   const handleOpenDialog = (agency?: Agency) => {
     if (agency) {
       setSelectedAgency(agency);
+      
+      // Map city to governorate
+      let governorate = '';
+      if (agency.city) {
+        // Find which governorate contains this city
+        const cityLower = agency.city.toLowerCase();
+        if (['tunis', 'carthage', 'la marsa', 'sidi bou said'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Tunis';
+        } else if (['sfax', 'sakiet ezzit', 'sakiet eddaier'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Sfax';
+        } else if (['sousse', 'hammam sousse', 'port el kantaoui'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Sousse';
+        } else if (['nabeul', 'hammamet', 'kelibia'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Nabeul';
+        } else if (['monastir', 'skanes', 'ksar hellal'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Monastir';
+        } else if (['bizerte', 'menzel bourguiba', 'ras jebel'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Bizerte';
+        } else if (['gabes', 'matmata', 'mareth'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Gabès';
+        } else if (['kairouan'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Kairouan';
+        } else if (['ariana', 'ettadhamen'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Ariana';
+        } else if (['ben arous', 'rades', 'hammam lif'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Ben Arous';
+        } else if (['mahdia'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Mahdia';
+        } else if (['medenine', 'djerba', 'zarzis'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Médenine';
+        } else if (['gafsa'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Gafsa';
+        } else if (['tozeur', 'nefta'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Tozeur';
+        } else if (['kebili', 'douz'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Kébili';
+        } else if (['kasserine'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Kasserine';
+        } else if (['sidi bouzid'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Sidi Bouzid';
+        } else if (['beja'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Béja';
+        } else if (['jendouba', 'tabarka'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Jendouba';
+        } else if (['kef'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Le Kef';
+        } else if (['siliana'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Siliana';
+        } else if (['zaghouan'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Zaghouan';
+        } else if (['manouba'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Manouba';
+        } else if (['tataouine'].some(c => cityLower.includes(c.toLowerCase()))) {
+          governorate = 'Tataouine';
+        }
+      }
+      
       setFormData({
         name: agency.name,
         legalName: agency.legalName,
@@ -140,7 +197,7 @@ export default function AgencyManagement() {
         email: agency.email,
         phone: agency.phone,
         address: agency.address,
-        governorate: '',
+        governorate: governorate,
         city: agency.city,
         postalCode: agency.postalCode || '',
         country: agency.country,
@@ -188,12 +245,25 @@ export default function AgencyManagement() {
 
     try {
       if (selectedAgency) {
-        // Update existing agency
-        const payload = {
-          ...formData,
-          proprietaireId: formData.proprietaireId || null,
+        // Update existing agency - only send fields that can be updated
+        const payload: any = {
+          name: formData.name,
+          legalName: formData.legalName,
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
+          city: formData.city,
+          postalCode: formData.postalCode,
+          country: formData.country,
+          taxId: formData.taxId,
+          subscriptionPlan: formData.subscriptionPlan,
         };
-        await api.put(`/admin/agencies/${selectedAgency.id}`, payload);
+        
+        if (formData.proprietaireId) {
+          payload.ownerId = formData.proprietaireId;
+        }
+        
+        await api.patch(`/agencies/${selectedAgency.id}`, payload);
         toast({
           title: "Agence mise à jour",
           description: "L'agence a été mise à jour avec succès.",
@@ -202,25 +272,33 @@ export default function AgencyManagement() {
       } else {
         // Create new agency with onboarding
         if (formData.create_new_owner) {
-          // Create new owner and agency
-          const payload = {
-            agency_name: formData.name,
+          // First create the owner user
+          const ownerPayload = {
+            email: formData.owner_email,
+            password: formData.owner_password,
+            fullName: `${formData.owner_prenom} ${formData.owner_nom}`,
+            phone: formData.owner_phone || formData.phone,
+            role: 'PROPRIETAIRE',
+          };
+          
+          const ownerResponse = await api.post('/auth/register', ownerPayload);
+          
+          // Then create the agency
+          const agencyPayload = {
+            name: formData.name,
+            legalName: formData.legalName || formData.name,
             email: formData.email,
             phone: formData.phone,
             address: formData.address,
             city: formData.city,
             postalCode: formData.postalCode || '',
             country: formData.country,
-            taxId: formData.taxId || '',
-            owner_fullName: `${formData.owner_prenom} ${formData.owner_nom}`,
-            owner_email: formData.owner_email,
-            owner_phone: formData.owner_phone || formData.phone,
-            owner_password: formData.owner_password,
-            subscriptionPlan: formData.subscriptionPlan,
-            trial_days: 14,
+            taxId: formData.taxId || `TAX${Date.now()}`,
+            ownerId: ownerResponse.data.user.id,
+            subscriptionPlan: formData.subscriptionPlan || 'BASIQUE',
           };
           
-          await api.post('/admin/agencies/onboard', payload);
+          await api.post('/agencies', agencyPayload);
           toast({
             title: "Agence créée",
             description: "Nouvelle agence et propriétaire créés avec succès.",
@@ -239,23 +317,20 @@ export default function AgencyManagement() {
           }
 
           const payload = {
-            agency_name: formData.name,
+            name: formData.name,
+            legalName: formData.legalName || formData.name,
             email: formData.email,
             phone: formData.phone,
             address: formData.address,
             city: formData.city,
             postalCode: formData.postalCode || '',
             country: formData.country,
-            taxId: formData.taxId || '',
-            owner_fullName: selectedOwner.fullName,
-            owner_email: selectedOwner.email,
-            owner_phone: formData.phone,
-            owner_password: 'TempPassword123!',
-            subscriptionPlan: formData.subscriptionPlan,
-            trial_days: 14,
+            taxId: formData.taxId || `TAX${Date.now()}`,
+            ownerId: formData.proprietaireId,
+            subscriptionPlan: formData.subscriptionPlan || 'BASIQUE',
           };
           
-          await api.post('/admin/agencies/onboard', payload);
+          await api.post('/agencies', payload);
           toast({
             title: "Agence créée",
             description: "Nouvelle agence associée au propriétaire existant.",
@@ -277,7 +352,7 @@ export default function AgencyManagement() {
     setLoading(true);
 
     try {
-      await api.delete(`/admin/agencies/${selectedAgency.id}`);
+      await api.delete(`/agencies/${selectedAgency.id}`);
       toast({
         title: "Agence supprimée",
         description: "L'agence a été supprimée avec succès.",

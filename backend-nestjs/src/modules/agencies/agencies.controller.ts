@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, UseGuards, Delete } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { AgenciesService } from './agencies.service';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -43,5 +43,19 @@ export class AgenciesController {
   @ApiOperation({ summary: 'Update an agency' })
   update(@Param('id') id: string, @Body() updateData: any) {
     return this.agenciesService.update(id, updateData);
+  }
+
+  @Delete(':id')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Delete an agency' })
+  remove(@Param('id') id: string) {
+    return this.agenciesService.remove(id);
+  }
+
+  @Post(':id/toggle-status')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.PROPRIETAIRE)
+  @ApiOperation({ summary: 'Toggle agency active status' })
+  toggleStatus(@Param('id') id: string) {
+    return this.agenciesService.toggleStatus(id);
   }
 }

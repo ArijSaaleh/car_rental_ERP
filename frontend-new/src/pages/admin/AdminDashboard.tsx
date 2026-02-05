@@ -128,14 +128,14 @@ export default function AdminDashboard() {
       key: 'vehicle_count',
       label: 'Véhicules',
       render: (agency: Agency) => (
-        <span className="font-semibold text-gray-900">{agency.vehicle_count}</span>
+        <span className="font-semibold text-gray-900">{agency.vehicle_count || 0}</span>
       ),
     },
     {
       key: 'customer_count',
       label: 'Clients',
       render: (agency: Agency) => (
-        <span className="font-semibold text-gray-900">{agency.customer_count}</span>
+        <span className="font-semibold text-gray-900">{agency.customer_count || 0}</span>
       ),
     },
     {
@@ -143,7 +143,7 @@ export default function AdminDashboard() {
       label: 'Employés',
       render: (agency: Agency) => (
         <span className="font-semibold text-gray-900">
-          {agency.manager_count + agency.employee_count}
+          {(agency.manager_count || 0) + (agency.employee_count || 0)}
         </span>
       ),
     },

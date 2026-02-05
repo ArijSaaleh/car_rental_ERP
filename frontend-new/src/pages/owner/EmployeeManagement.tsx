@@ -116,7 +116,7 @@ export default function EmployeeManagement() {
 
     setLoading(true);
     try {
-      const response = await api.get(`/proprietaire/agencies/${selectedAgencyId}/employees`);
+      const response = await api.get(`/users?agencyId=${selectedAgencyId}&role=AGENT_COMPTOIR,AGENT_PARC`);
       setEmployees(response.data);
       setFilteredEmployees(response.data);
     } catch (err) {
@@ -167,14 +167,18 @@ export default function EmployeeManagement() {
           role: formData.role,
           is_active: formData.isActive,
         };
-        await api.put(
-          `/proprietaire/agencies/${selectedAgencyId}/employees/${selectedEmployee.id}`,
+        await api.patch(
+          `/users/${selectedEmployee.id}`,
           payload
         );
       } else {
         // Create
-        await api.post(`/proprietaire/agencies/${selectedAgencyId}/employees`, {
-          ...formData,
+        await api.post(`/auth/register`, {
+          email: formData.email,
+          fullName: formData.fullName,
+          phone: formData.phone || null,
+          password: formData.password,
+          role: formData.role,
           agencyId: selectedAgencyId,
         });
       }

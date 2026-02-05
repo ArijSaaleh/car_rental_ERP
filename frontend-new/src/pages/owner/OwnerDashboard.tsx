@@ -101,7 +101,7 @@ export default function OwnerDashboard() {
           totalBookings += bookings.length;
           
           const agencyRevenue = bookings.reduce((sum: number, booking: any) => {
-            return sum + (parseFloat(booking.total_amount) || 0);
+            return sum + (parseFloat(booking.totalAmount) || 0);
           }, 0);
           totalRevenue += agencyRevenue;
 

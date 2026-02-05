@@ -85,4 +85,27 @@ export class CustomersService {
       where: { id },
     });
   }
+
+  async getBookings(id: number, agencyId: string) {
+    return this.prisma.booking.findMany({
+      where: { 
+        customerId: id,
+        agencyId 
+      },
+      include: {
+        vehicle: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async toggleBlacklist(id: number, agencyId: string, blacklisted: boolean, reason?: string) {
+    return this.prisma.customer.update({
+      where: { id },
+      data: {
+        isBlacklisted: blacklisted,
+        blacklistReason: reason || null,
+      },
+    });
+  }
 }

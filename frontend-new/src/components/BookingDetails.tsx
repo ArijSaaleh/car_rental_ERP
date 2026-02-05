@@ -171,7 +171,7 @@ export function BookingDetails({ booking, open, onClose, onUpdate }: BookingDeta
               </div>
               <div className="flex gap-2">
                 {getStatusBadge(booking.status)}
-                {getPaymentStatusBadge(booking.payment_status)}
+                {getPaymentStatusBadge(booking.paymentStatus || 'PENDING')}
               </div>
             </div>
           </DialogHeader>
@@ -276,7 +276,7 @@ export function BookingDetails({ booking, open, onClose, onUpdate }: BookingDeta
                 </div>
                 <div>
                   <p className="text-sm text-slate-500">Durée</p>
-                  <p className="text-sm">{booking.duration_days} jours</p>
+                  <p className="text-sm">{booking.durationDays} jours</p>
                 </div>
                 {booking.pickup_datetime && (
                   <div>
@@ -321,7 +321,7 @@ export function BookingDetails({ booking, open, onClose, onUpdate }: BookingDeta
                 <hr className="my-2" />
                 <div className="flex justify-between font-semibold">
                   <p>Total</p>
-                  <p>{booking.total_amount.toFixed(3)} DT</p>
+                  <p>{parseFloat(booking.totalAmount).toFixed(3)} DT</p>
                 </div>
                 {paymentSummary && (
                   <>
@@ -424,7 +424,7 @@ export function BookingDetails({ booking, open, onClose, onUpdate }: BookingDeta
                 Terminer la location
               </Button>
             )}
-            {booking.payment_status !== 'paid' && (
+            {booking.paymentStatus !== 'PAID' && (
               <Button variant="outline" onClick={() => setPaymentDialog(true)}>
                 Enregistrer un paiement
               </Button>

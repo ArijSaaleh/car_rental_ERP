@@ -15,6 +15,7 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { CustomersModule } from './modules/customers/customers.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { HealthModule } from './modules/health/health.module';
+import { SettingsModule } from './modules/settings/settings.module';
 
 // Guards and Interceptors
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -48,6 +49,7 @@ import { TenantInterceptor } from './common/interceptors/tenant.interceptor';
     CustomersModule,
     ReportsModule,
     HealthModule,
+    SettingsModule,
   ],
   providers: [
     {

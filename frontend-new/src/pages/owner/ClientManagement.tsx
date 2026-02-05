@@ -28,41 +28,62 @@ import { extractErrorMessage } from '../../utils/errorHandler';
 
 interface Client {
   id: number;
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
-  customer_type: string;
-  is_blacklisted: boolean;
-  blacklist_reason?: string;
-  agency_name: string;
-  total_rentals: number;
-  total_revenue: number;
-  last_rental_date?: string;
+  isBlacklisted: boolean;
+  blacklistReason?: string;
   createdAt: string;
+  // Computed fields - may not exist
+  totalRentals?: number;
+  totalRevenue?: number;
+  lastRentalDate?: string;
 }
 
 interface RentalHistory {
-  booking_number: string;
-  vehicle_info: string;
-  start_date: string;
-  end_date: string;
-  duration_days: number;
-  total_amount: number;
+  id: number;
+  bookingNumber: string;
+  startDate: string;
+  endDate: string;
+  durationDays: number;
+  totalAmount: number;
   status: string;
-  payment_status: string;
+  paymentStatus: string;
   createdAt: string;
+  vehicle?: {
+    brand: string;
+    model: string;
+    licensePlate: string;
+  };
 }
 
 // Helper functions to normalize data from API
 const normalizeClient = (client: any): Client => ({
-  ...client,
-  total_revenue: typeof client.total_revenue === 'string' ? parseFloat(client.total_revenue) : client.total_revenue,
+  id: client.id,
+  firstName: client.firstName,
+  lastName: client.lastName,
+  email: client.email,
+  phone: client.phone,
+  isBlacklisted: client.isBlacklisted || false,
+  blacklistReason: client.blacklistReason,
+  createdAt: client.createdAt,
+  totalRentals: client.totalRentals || 0,
+  totalRevenue: typeof client.totalRevenue === 'string' ? parseFloat(client.totalRevenue) : (client.totalRevenue || 0),
+  lastRentalDate: client.lastRentalDate,
 });
 
 const normalizeRentalHistory = (rental: any): RentalHistory => ({
-  ...rental,
-  total_amount: typeof rental.total_amount === 'string' ? parseFloat(rental.total_amount) : rental.total_amount,
+  id: rental.id,
+  bookingNumber: rental.bookingNumber,
+  startDate: rental.startDate,
+  endDate: rental.endDate,
+  durationDays: rental.durationDays,
+  totalAmount: typeof rental.totalAmount === 'string' ? parseFloat(rental.totalAmount) : rental.totalAmount,
+  status: rental.status,
+  paymentStatus: rental.paymentStatus,
+  createdAt: rental.createdAt,
+  vehicle: rental.vehicle,
 });
 
 export default function ClientManagement() {
@@ -95,7 +116,7 @@ export default function ClientManagement() {
   const loadClients = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/proprietaire/clients');
+      const response = await api.get('/customers');
       const normalizedClients = response.data.map(normalizeClient);
       setClients(normalizedClients);
       setFilteredClients(normalizedClients);
@@ -109,7 +130,7 @@ export default function ClientManagement() {
   const loadRentalHistory = async (clientId: number) => {
     setLoading(true);
     try {
-      const response = await api.get(`/proprietaire/clients/${clientId}/rentals`);
+      const response = await api.get(`/customers/${clientId}/bookings`);
       const normalizedHistory = response.data.map(normalizeRentalHistory);
       setRentalHistory(normalizedHistory);
       setHistoryDialogOpen(true);
@@ -126,8 +147,8 @@ export default function ClientManagement() {
     setLoading(true);
     try {
       await api.put(`/customers/${selectedClient.id}/blacklist`, {
-        is_blacklisted: !selectedClient.is_blacklisted,
-        reason: selectedClient.is_blacklisted ? null : blacklistReason,
+        is_blacklisted: !selectedClient.isBlacklisted,
+        reason: selectedClient.isBlacklisted ? null : blacklistReason,
       });
       await loadClients();
       setBlacklistDialogOpen(false);
@@ -135,15 +156,15 @@ export default function ClientManagement() {
       setSelectedClient(null);
     } catch (err) {
       setError(extractErrorMessage(err));
-    } finally {
-      setLoading(false);
+    } finally {(c.totalRevenue || 0), 0),
+      totalRentals: clients.reduce((sum, c) => sum + (c.totalRentals || 0)
     }
   };
 
   const getStats = () => {
     return {
       total: clients.length,
-      blacklisted: clients.filter((c) => c.is_blacklisted).length,
+      blacklisted: clients.filter((c) => c.isBlacklisted).length,
       totalRevenue: clients.reduce((sum, c) => sum + c.total_revenue, 0),
       totalRentals: clients.reduce((sum, c) => sum + c.total_rentals, 0),
     };
@@ -302,23 +323,21 @@ export default function ClientManagement() {
                           <div className="text-slate-500">{client.phone}</div>
                         </div>
                       </TableCell>
-                      <TableCell>{client.agency_name}</TableCell>
-                      <TableCell className="capitalize">{client.customer_type}</TableCell>
                       <TableCell>
-                        <div className="font-semibold">{client.total_rentals}</div>
+                        <div className="font-semibold">{client.totalRentals || 0}</div>
                       </TableCell>
                       <TableCell>
                         <div className="font-semibold text-green-600">
-                          {client.total_revenue.toFixed(2)} DT
+                          {(client.totalRevenue || 0).toFixed(2)} DT
                         </div>
                       </TableCell>
                       <TableCell>
-                        {client.last_rental_date
-                          ? new Date(client.last_rental_date).toLocaleDateString('fr-FR')
+                        {client.lastRentalDate
+                          ? new Date(client.lastRentalDate).toLocaleDateString('fr-FR')
                           : '-'}
                       </TableCell>
                       <TableCell>
-                        {client.is_blacklisted ? (
+                        {client.isBlacklisted ? (
                           <Badge className="bg-red-100 text-red-700">Blacklisté</Badge>
                         ) : (
                           <Badge className="bg-green-100 text-green-700">Actif</Badge>
@@ -342,12 +361,12 @@ export default function ClientManagement() {
                             size="icon"
                             onClick={() => {
                               setSelectedClient(client);
-                              setBlacklistReason(client.blacklist_reason || '');
+                              setBlacklistReason(client.blacklistReason || '');
                               setBlacklistDialogOpen(true);
                             }}
-                            title={client.is_blacklisted ? 'Retirer de la blacklist' : 'Ajouter à la blacklist'}
+                            title={client.isBlacklisted ? 'Retirer de la blacklist' : 'Ajouter à la blacklist'}
                           >
-                            {client.is_blacklisted ? (
+                            {client.isBlacklisted ? (
                               <CheckCircle className="h-4 w-4 text-green-600" />
                             ) : (
                               <Ban className="h-4 w-4 text-red-600" />
@@ -372,7 +391,7 @@ export default function ClientManagement() {
               Historique de Location - {selectedClient?.firstName} {selectedClient?.lastName}
             </DialogTitle>
             <DialogDescription>
-              Total de {rentalHistory.length} location(s) | Revenu total: {selectedClient?.total_revenue.toFixed(2)} DT
+              Total de {rentalHistory.length} location(s) | Revenu total: {(selectedClient?.totalRevenue || 0).toFixed(2)} DT
             </DialogDescription>
           </DialogHeader>
 
@@ -396,15 +415,17 @@ export default function ClientManagement() {
                     <TableCell className="font-mono text-xs">
                       {rental.bookingNumber}
                     </TableCell>
-                    <TableCell>{rental.vehicle_info}</TableCell>
+                    <TableCell>
+                      {rental.vehicle ? `${rental.vehicle.brand} ${rental.vehicle.model}` : 'N/A'}
+                    </TableCell>
                     <TableCell>{new Date(rental.startDate).toLocaleDateString('fr-FR')}</TableCell>
                     <TableCell>{new Date(rental.endDate).toLocaleDateString('fr-FR')}</TableCell>
-                    <TableCell>{rental.duration_days}j</TableCell>
+                    <TableCell>{rental.durationDays}j</TableCell>
                     <TableCell className="font-semibold">
-                      {rental.total_amount.toFixed(2)} DT
+                      {rental.totalAmount.toFixed(2)} DT
                     </TableCell>
                     <TableCell>{getStatusBadge(rental.status)}</TableCell>
-                    <TableCell>{getPaymentBadge(rental.payment_status)}</TableCell>
+                    <TableCell>{getPaymentBadge(rental.paymentStatus)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -422,14 +443,14 @@ export default function ClientManagement() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {selectedClient?.is_blacklisted ? 'Retirer de la Blacklist' : 'Ajouter à la Blacklist'}
+              {selectedClient?.isBlacklisted ? 'Retirer de la blacklist' : 'Ajouter à la blacklist'}
             </DialogTitle>
             <DialogDescription>
               Client: {selectedClient?.firstName} {selectedClient?.lastName}
             </DialogDescription>
           </DialogHeader>
 
-          {!selectedClient?.is_blacklisted && (
+          {!selectedClient?.isBlacklisted && (
             <div className="space-y-2">
               <Label htmlFor="reason">Raison de la blacklist *</Label>
               <Textarea
@@ -442,11 +463,11 @@ export default function ClientManagement() {
             </div>
           )}
 
-          {selectedClient?.is_blacklisted && selectedClient.blacklist_reason && (
+          {selectedClient?.isBlacklisted && selectedClient.blacklistReason && (
             <div className="space-y-2">
               <Label>Raison actuelle:</Label>
               <div className="p-3 bg-slate-100 rounded text-sm">
-                {selectedClient.blacklist_reason}
+                {selectedClient.blacklistReason}
               </div>
             </div>
           )}
@@ -456,13 +477,13 @@ export default function ClientManagement() {
               Annuler
             </Button>
             <Button
-              variant={selectedClient?.is_blacklisted ? 'default' : 'destructive'}
+              variant={selectedClient?.isBlacklisted ? 'default' : 'destructive'}
               onClick={handleBlacklist}
-              disabled={loading || (!selectedClient?.is_blacklisted && !blacklistReason.trim())}
+              disabled={loading || (!selectedClient?.isBlacklisted && !blacklistReason.trim())}
             >
               {loading
                 ? 'Enregistrement...'
-                : selectedClient?.is_blacklisted
+                : selectedClient?.isBlacklisted
                 ? 'Retirer de la Blacklist'
                 : 'Ajouter à la Blacklist'}
             </Button>

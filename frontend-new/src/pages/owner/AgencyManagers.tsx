@@ -106,7 +106,7 @@ export default function AgencyManagers() {
     
     setLoading(true);
     try {
-      const response = await api.get(`/proprietaire/agencies/${selectedAgencyId}/managers`);
+      const response = await api.get(`/users?agencyId=${selectedAgencyId}&role=MANAGER`);
       setManagers(response.data);
       setFilteredManagers(response.data);
     } catch (err) {
@@ -133,9 +133,13 @@ export default function AgencyManagers() {
     setLoading(true);
 
     try {
-      await api.post(`/agencies/${selectedAgencyId}/managers`, {
-        ...formData,
+      await api.post(`/auth/register`, {
+        email: formData.email,
+        fullName: formData.fullName,
+        phone: formData.phone || null,
+        password: formData.password,
         agencyId: selectedAgencyId,
+        role: 'MANAGER',
       });
       await loadManagers();
       setDialogOpen(false);
@@ -151,7 +155,7 @@ export default function AgencyManagers() {
 
     setLoading(true);
     try {
-      await api.delete(`/agencies/${selectedAgencyId}/managers/${selectedManager.id}`);
+      await api.delete(`/users/${selectedManager.id}`);
       await loadManagers();
       setDeleteDialogOpen(false);
       setSelectedManager(null);

@@ -59,4 +59,19 @@ export class AgenciesService {
       data: updateData,
     });
   }
+
+  async remove(id: string) {
+    return this.prisma.agency.update({
+      where: { id },
+      data: { isActive: false },
+    });
+  }
+
+  async toggleStatus(id: string) {
+    const agency = await this.prisma.agency.findUnique({ where: { id } });
+    return this.prisma.agency.update({
+      where: { id },
+      data: { isActive: !agency.isActive },
+    });
+  }
 }

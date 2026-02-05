@@ -151,15 +151,22 @@ export default function Users() {
         if (formData.password) {
           payload.password = formData.password;
         }
-        await api.put(`/admin/users/${selectedUser.id}`, payload);
+        await api.patch(`/users/${selectedUser.id}`, payload);
         toast({
           title: "Utilisateur mis à jour",
           description: "L'utilisateur a été mis à jour avec succès.",
           variant: "success",
         });
       } else {
-        payload.password = formData.password;
-        await api.post('/admin/users/create', payload);
+        const registerPayload = {
+          email: formData.email,
+          fullName: formData.fullName,
+          phone: formData.phone || null,
+          password: formData.password,
+          role: formData.role,
+          agencyId: formData.agencyId || null,
+        };
+        await api.post('/auth/register', registerPayload);
         toast({
           title: "Utilisateur créé",
           description: "Le nouvel utilisateur a été créé avec succès.",
@@ -181,7 +188,7 @@ export default function Users() {
     setError('');
 
     try {
-      await api.delete(`/admin/users/${selectedUser.id}`);
+      await api.delete(`/users/${selectedUser.id}`);
       toast({
         title: "Utilisateur supprimé",
         description: "L'utilisateur a été supprimé avec succès.",

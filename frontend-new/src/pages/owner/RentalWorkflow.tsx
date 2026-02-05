@@ -163,7 +163,7 @@ export default function RentalWorkflow() {
     try {
       // Si les dates sont sélectionnées, vérifier la disponibilité pour chaque véhicule
       if (bookingForm.startDate && bookingForm.endDate) {
-        const response = await api.get(`/vehicles?agencyId =${selectedAgencyId}&status=disponible`);
+        const response = await api.get(`/vehicles?agencyId=${selectedAgencyId}&status=DISPONIBLE`);
         const allVehicles = response.data.vehicles || response.data || [];
         
         // Vérifier la disponibilité pour chaque véhicule
@@ -188,7 +188,7 @@ export default function RentalWorkflow() {
         setVehicles(availableVehicles);
       } else {
         // Sans dates, charger tous les véhicules disponibles
-        const response = await api.get(`/vehicles?agencyId =${selectedAgencyId}&status=disponible`);
+        const response = await api.get(`/vehicles?agencyId=${selectedAgencyId}&status=DISPONIBLE`);
         const vehiclesList = response.data.vehicles || response.data || [];
         setVehicles(vehiclesList);
       }
@@ -221,7 +221,7 @@ export default function RentalWorkflow() {
     }
     setLoading(true);
     try {
-      const response = await api.get(`/customers?agencyId =${selectedAgencyId}&search=${searchTerm}`);
+      const response = await api.get(`/customers?agencyId=${selectedAgencyId}&search=${searchTerm}`);
       const customers = response.data.customers || response.data || [];
       setSearchResults(customers);
       if (customers.length === 0) {

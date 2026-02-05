@@ -233,7 +233,7 @@ export default function VehicleManagement() {
       };
 
       if (selectedVehicle) {
-        await api.put(`/vehicles/${selectedVehicle.id}`, payload);
+        await api.patch(`/vehicles/${selectedVehicle.id}`, payload);
       } else {
         await api.post('/vehicles', payload);
       }

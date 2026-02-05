@@ -30,37 +30,41 @@ interface Agency {
 
 interface Contract {
   id: number;
-  contract_number: string;
-  booking_id: number;
-  booking_number?: string;
-  customer_name?: string;
-  vehicle_info?: string;
-  start_date?: string;
-  end_date?: string;
-  total_amount?: number;
+  contractNumber: string;
+  bookingId: number;
   status: string;
   agencyId: string;
-  terms_and_conditions?: string;
-  special_clauses?: any;
-  created_at?: string;
+  termsAndConditions?: string;
+  specialClauses?: any;
+  createdAt?: string;
+  booking?: {
+    bookingNumber: string;
+    startDate: string;
+    endDate: string;
+    totalAmount: number;
+    customer: {
+      firstName: string;
+      lastName: string;
+    };
+    vehicle: {
+      brand: string;
+      model: string;
+      licensePlate: string;
+    };
+  };
 }
 
 // Helper function to normalize contract data from API
 const normalizeContract = (contract: any): Contract => ({
   id: contract.id,
-  contract_number: contract.contract_number,
-  booking_id: contract.booking_id,
-  booking_number: contract.bookingNumber || contract.contract_number,
-  customer_name: contract.customer_name || 'N/A',
-  vehicle_info: contract.vehicle_info || 'N/A',
-  start_date: contract.startDate,
-  end_date: contract.endDate,
-  total_amount: contract.total_amount ? (typeof contract.total_amount === 'string' ? parseFloat(contract.total_amount) : contract.total_amount) : 0,
+  contractNumber: contract.contractNumber,
+  bookingId: contract.bookingId,
   status: contract.status,
   agencyId: contract.agencyId,
-  terms_and_conditions: contract.terms_and_conditions,
-  special_clauses: contract.special_clauses,
+  termsAndConditions: contract.termsAndConditions,
+  specialClauses: contract.specialClauses,
   createdAt: contract.createdAt,
+  booking: contract.booking,
 });
 
 export default function ContractManagement() {
@@ -87,9 +91,11 @@ export default function ContractManagement() {
   useEffect(() => {
     const filtered = contracts.filter(
       (c) =>
-        c.bookingNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.vehicle_info.toLowerCase().includes(searchTerm.toLowerCase())
+        (c.contractNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          c.booking?.customer?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          c.booking?.customer?.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          c.booking?.vehicle?.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          c.booking?.vehicle?.model?.toLowerCase().includes(searchTerm.toLowerCase()))
     );
     setFilteredContracts(filtered);
   }, [searchTerm, contracts]);
@@ -151,7 +157,7 @@ export default function ContractManagement() {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `Contrat_${contract.contract_number}.pdf`);
+      link.setAttribute('download', `Contrat_${contract.contractNumber}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -282,20 +288,34 @@ export default function ContractManagement() {
                   </TableRow>
                 ) : (
                   filteredContracts.map((contract) => (
-                    <TableRow key={contract.booking_id}>
+                    <TableRow key={contract.bookingId}>
                       <TableCell className="font-mono text-xs">
-                        {contract.bookingNumber}
-                      </TableCell>
-                      <TableCell>{contract.customer_name}</TableCell>
-                      <TableCell>{contract.vehicle_info}</TableCell>
-                      <TableCell>
-                        {new Date(contract.startDate).toLocaleDateString('fr-FR')}
+                        {contract.booking?.bookingNumber || 'N/A'}
                       </TableCell>
                       <TableCell>
-                        {new Date(contract.endDate).toLocaleDateString('fr-FR')}
+                        {contract.booking?.customer 
+                          ? `${contract.booking.customer.firstName} ${contract.booking.customer.lastName}`
+                          : 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        {contract.booking?.vehicle 
+                          ? `${contract.booking.vehicle.brand} ${contract.booking.vehicle.model}`
+                          : 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        {contract.booking?.startDate 
+                          ? new Date(contract.booking.startDate).toLocaleDateString('fr-FR')
+                          : 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        {contract.booking?.endDate 
+                          ? new Date(contract.booking.endDate).toLocaleDateString('fr-FR')
+                          : 'N/A'}
                       </TableCell>
                       <TableCell className="font-semibold">
-                        {contract.total_amount ? contract.total_amount.toFixed(2) : '0.00'} DT
+                        {contract.booking?.totalAmount 
+                          ? contract.booking.totalAmount.toFixed(2) 
+                          : '0.00'} DT
                       </TableCell>
                       <TableCell>{getStatusBadge(contract.status)}</TableCell>
                       <TableCell className="text-right">
@@ -333,7 +353,7 @@ export default function ContractManagement() {
           <DialogHeader>
             <DialogTitle>Détails du Contrat</DialogTitle>
             <DialogDescription>
-              Contrat N°: {selectedContract?.contract_number}
+              Contrat N°: {selectedContract?.contractNumber}
             </DialogDescription>
           </DialogHeader>
 
@@ -356,11 +376,19 @@ export default function ContractManagement() {
                 </div>
                 <div>
                   <p className="text-sm text-slate-600">Client</p>
-                  <p className="font-semibold">{selectedContract.customer_name}</p>
+                  <p className="font-semibold">
+                    {selectedContract.booking?.customer
+                      ? `${selectedContract.booking.customer.firstName} ${selectedContract.booking.customer.lastName}`
+                      : 'N/A'}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-600">Véhicule</p>
-                  <p className="font-semibold">{selectedContract.vehicle_info}</p>
+                  <p className="font-semibold">
+                    {selectedContract.booking?.vehicle
+                      ? `${selectedContract.booking.vehicle.brand} ${selectedContract.booking.vehicle.model}`
+                      : 'N/A'}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-600">Date de Début</p>
@@ -377,7 +405,9 @@ export default function ContractManagement() {
                 <div className="col-span-2">
                   <p className="text-sm text-slate-600">Montant Total</p>
                   <p className="text-2xl font-bold text-blue-600">
-                    {selectedContract.total_amount ? selectedContract.total_amount.toFixed(2) : '0.00'} DT
+                    {selectedContract.booking?.totalAmount 
+                      ? selectedContract.booking.totalAmount.toFixed(2) 
+                      : '0.00'} DT
                   </p>
                 </div>
               </div>

@@ -102,4 +102,74 @@ export class BookingsService {
       },
     });
   }
+
+  async remove(id: number, agencyId: string) {
+    return this.prisma.booking.delete({
+      where: { id },
+    });
+  }
+
+  async checkAvailability(vehicleId: string, startDate: Date, endDate: Date, agencyId: string) {
+    // Check if vehicle exists and belongs to agency
+    const vehicle = await this.prisma.vehicle.findFirst({
+      where: { id: vehicleId, agencyId },
+    });
+
+    if (!vehicle) {
+      return { available: false, message: 'Vehicle not found' };
+    }
+
+    if (vehicle.status !== 'DISPONIBLE') {
+      return { available: false, message: `Vehicle is ${vehicle.status}` };
+    }
+
+    // Check for overlapping bookings
+    const overlappingBookings = await this.prisma.booking.count({
+      where: {
+        vehicleId,
+        agencyId,
+        status: {
+          in: ['PENDING', 'CONFIRMED', 'IN_PROGRESS'],
+        },
+        OR: [
+          {
+            startDate: { lte: endDate },
+            endDate: { gte: startDate },
+          },
+        ],
+      },
+    });
+
+    return { 
+      available: overlappingBookings === 0,
+      message: overlappingBookings > 0 ? 'Vehicle is already booked for this period' : 'Vehicle is available',
+    };
+  }
+
+  async confirm(id: number, agencyId: string) {
+    return this.prisma.booking.update({
+      where: { id },
+      data: { status: BookingStatus.CONFIRMED },
+    });
+  }
+
+  async start(id: number, agencyId: string) {
+    return this.prisma.booking.update({
+      where: { id },
+      data: { 
+        status: BookingStatus.IN_PROGRESS,
+        pickupDatetime: new Date(),
+      },
+    });
+  }
+
+  async complete(id: number, agencyId: string) {
+    return this.prisma.booking.update({
+      where: { id },
+      data: { 
+        status: BookingStatus.COMPLETED,
+        returnDatetime: new Date(),
+      },
+    });
+  }
 }
