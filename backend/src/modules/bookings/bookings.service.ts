@@ -12,7 +12,7 @@ export class BookingsService {
       where: { ownerId: userId },
       select: { id: true },
     });
-    return agencies.map(a => a.id);
+    return agencies.map((a) => a.id);
   }
 
   async create(agencyId: string, createData: any) {
@@ -62,7 +62,7 @@ export class BookingsService {
 
   async findAll(tenant: any, filters: any = {}) {
     const where: any = { ...filters };
-    
+
     // If owner, get all bookings from owned agencies
     if (tenant.isOwner) {
       const agencyIds = await this.getOwnerAgencyIds(tenant.userId);
@@ -70,7 +70,7 @@ export class BookingsService {
     } else {
       where.agencyId = tenant.agencyId;
     }
-    
+
     return this.prisma.booking.findMany({
       where,
       include: {
@@ -91,7 +91,7 @@ export class BookingsService {
 
   async findOne(id: number, tenant?: any) {
     const where: any = { id };
-    
+
     // If tenant is provided, scope by agency
     if (tenant) {
       if (tenant.isOwner) {
@@ -189,9 +189,12 @@ export class BookingsService {
       },
     });
 
-    return { 
+    return {
       available: overlappingBookings === 0,
-      message: overlappingBookings > 0 ? 'Vehicle is already booked for this period' : 'Vehicle is available',
+      message:
+        overlappingBookings > 0
+          ? 'Vehicle is already booked for this period'
+          : 'Vehicle is available',
     };
   }
 
@@ -219,7 +222,7 @@ export class BookingsService {
 
     return this.prisma.booking.update({
       where: { id },
-      data: { 
+      data: {
         status: BookingStatus.IN_PROGRESS,
         pickupDatetime: new Date(),
       },
@@ -236,7 +239,7 @@ export class BookingsService {
 
     return this.prisma.booking.update({
       where: { id },
-      data: { 
+      data: {
         status: BookingStatus.COMPLETED,
         returnDatetime: new Date(),
       },

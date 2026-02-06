@@ -11,7 +11,7 @@ export class PaymentsService {
       where: { ownerId: userId },
       select: { id: true },
     });
-    return agencies.map(a => a.id);
+    return agencies.map((a) => a.id);
   }
 
   async create(agencyId: string, createPaymentDto: any) {
@@ -38,7 +38,7 @@ export class PaymentsService {
 
   async findAll(tenant: any, filters: any = {}) {
     const where: any = {};
-    
+
     // If owner, get all payments from owned agencies
     if (tenant.isOwner) {
       const agencyIds = await this.getOwnerAgencyIds(tenant.userId);
@@ -46,15 +46,15 @@ export class PaymentsService {
     } else {
       where.agencyId = tenant.agencyId;
     }
-    
+
     if (filters.bookingId) {
       where.bookingId = parseInt(filters.bookingId);
     }
-    
+
     if (filters.status) {
       where.status = filters.status;
     }
-    
+
     if (filters.paymentMethod) {
       where.paymentMethod = filters.paymentMethod;
     }
@@ -75,7 +75,7 @@ export class PaymentsService {
 
   async findOne(id: number, tenant?: any) {
     const where: any = { id };
-    
+
     // If tenant is provided, scope by agency
     if (tenant) {
       if (tenant.isOwner) {
@@ -108,23 +108,23 @@ export class PaymentsService {
     }
 
     const updateData: any = {};
-    
+
     if (updatePaymentDto.amount !== undefined) {
       updateData.amount = updatePaymentDto.amount;
     }
-    
+
     if (updatePaymentDto.paymentMethod) {
       updateData.paymentMethod = updatePaymentDto.paymentMethod;
     }
-    
+
     if (updatePaymentDto.paymentDate) {
       updateData.paidAt = new Date(updatePaymentDto.paymentDate);
     }
-    
+
     if (updatePaymentDto.status) {
       updateData.status = updatePaymentDto.status;
     }
-    
+
     if (updatePaymentDto.transactionId) {
       updateData.paymentReference = updatePaymentDto.transactionId;
     }

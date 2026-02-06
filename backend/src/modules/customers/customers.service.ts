@@ -12,7 +12,7 @@ export class CustomersService {
       where: { ownerId: userId },
       select: { id: true },
     });
-    return agencies.map(a => a.id);
+    return agencies.map((a) => a.id);
   }
 
   async create(agencyId: string, createCustomerDto: CreateCustomerDto) {
@@ -31,17 +31,21 @@ export class CustomersService {
         address: createCustomerDto.address,
         city: createCustomerDto.city,
         country: createCustomerDto.country || 'Tunisia',
-        dateOfBirth: createCustomerDto.dateOfBirth ? new Date(createCustomerDto.dateOfBirth) : undefined,
+        dateOfBirth: createCustomerDto.dateOfBirth
+          ? new Date(createCustomerDto.dateOfBirth)
+          : undefined,
         cinNumber: createCustomerDto.idCardNumber,
         licenseNumber: createCustomerDto.driverLicenseNumber || '',
-        licenseExpiryDate: createCustomerDto.licenseExpiryDate ? new Date(createCustomerDto.licenseExpiryDate) : undefined,
+        licenseExpiryDate: createCustomerDto.licenseExpiryDate
+          ? new Date(createCustomerDto.licenseExpiryDate)
+          : undefined,
       },
     });
   }
 
   async findAll(tenant: any) {
     const where: any = {};
-    
+
     // If owner, get all customers from owned agencies
     if (tenant.isOwner) {
       const agencyIds = await this.getOwnerAgencyIds(tenant.userId);
@@ -49,7 +53,7 @@ export class CustomersService {
     } else {
       where.agencyId = tenant.agencyId;
     }
-    
+
     return this.prisma.customer.findMany({
       where,
       orderBy: { createdAt: 'desc' },
@@ -58,7 +62,7 @@ export class CustomersService {
 
   async findOne(id: number, tenant?: any) {
     const where: any = { id };
-    
+
     // If tenant is provided, scope by agency
     if (tenant) {
       if (tenant.isOwner) {
@@ -140,7 +144,7 @@ export class CustomersService {
     }
 
     const where: any = { customerId: id };
-    
+
     // Also filter bookings by agency access
     if (tenant.isOwner) {
       const agencyIds = await this.getOwnerAgencyIds(tenant.userId);

@@ -11,7 +11,7 @@ export class ContractsService {
       where: { ownerId: userId },
       select: { id: true },
     });
-    return agencies.map(a => a.id);
+    return agencies.map((a) => a.id);
   }
 
   async create(agencyId: string, createContractDto: any) {
@@ -36,7 +36,7 @@ export class ContractsService {
 
   async findAll(tenant: any, filters: any = {}) {
     const where: any = {};
-    
+
     // If owner, get all contracts from owned agencies
     if (tenant.isOwner) {
       const agencyIds = await this.getOwnerAgencyIds(tenant.userId);
@@ -44,11 +44,11 @@ export class ContractsService {
     } else {
       where.agencyId = tenant.agencyId;
     }
-    
+
     if (filters.status) {
       where.status = filters.status;
     }
-    
+
     if (filters.bookingId) {
       where.bookingId = parseInt(filters.bookingId);
     }
@@ -69,7 +69,7 @@ export class ContractsService {
 
   async findOne(id: number, tenant?: any) {
     const where: any = { id };
-    
+
     // If tenant is provided, scope by agency
     if (tenant) {
       if (tenant.isOwner) {
@@ -102,15 +102,15 @@ export class ContractsService {
     }
 
     const updateData: any = {};
-    
+
     if (updateContractDto.terms) {
       updateData.termsAndConditions = updateContractDto.terms;
     }
-    
+
     if (updateContractDto.status) {
       updateData.status = updateContractDto.status;
     }
-    
+
     if (updateContractDto.customerAcceptedTerms !== undefined) {
       updateData.customerAcceptedTerms = updateContractDto.customerAcceptedTerms;
     }
@@ -145,7 +145,7 @@ export class ContractsService {
   async generatePdf(id: number, tenant: any) {
     // Get contract data - automatically validates agency access
     const contract = await this.findOne(id, tenant);
-    
+
     if (!contract) {
       throw new Error('Contract not found or does not belong to your agency');
     }

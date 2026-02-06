@@ -2,6 +2,11 @@ import api from './api';
 import type { User } from '../types';
 
 export const userService = {
+  async create(data: Partial<User> & { password: string }): Promise<User> {
+    const response = await api.post<User>('/users', data);
+    return response.data;
+  },
+
   async getAll(agencyId?: string): Promise<User[]> {
     const params = agencyId ? `?agencyId=${agencyId}` : '';
     const response = await api.get<User[]>(`/users${params}`);

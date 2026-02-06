@@ -77,6 +77,7 @@ export default function Users() {
     email: '',
     fullName: '',
     phone: '',
+    password: '',
     role: 'AGENT_COMPTOIR' as User['role'],
     agencyId: '',
     isActive: true,
@@ -154,6 +155,7 @@ export default function Users() {
         email: user.email,
         fullName: user.fullName,
         phone: user.phone || '',
+        password: '',
         role: user.role,
         agencyId: user.agencyId || '',
         isActive: user.isActive,
@@ -164,6 +166,7 @@ export default function Users() {
         email: '',
         fullName: '',
         phone: '',
+        password: '',
         role: 'AGENT_COMPTOIR',
         agencyId: '',
         isActive: true,
@@ -178,17 +181,23 @@ export default function Users() {
     setError('');
 
     try {
-      const userData = {
-        email: formData.email,
-        fullName: formData.fullName,
-        phone: formData.phone || undefined,
-        role: formData.role,
-        agencyId: formData.agencyId || undefined,
-        isActive: formData.isActive,
-      };
-
       if (selectedUser) {
-        const updated = await userService.update(selectedUser.id, userData);
+        // Update existing user
+        const updateData: any = {
+          email: formData.email,
+          fullName: formData.fullName,
+          phone: formData.phone || undefined,
+          role: formData.role,
+          agencyId: formData.agencyId || undefined,
+          isActive: formData.isActive,
+        };
+
+        // Only include password if it was provided
+        if (formData.password && formData.password.trim()) {
+          updateData.password = formData.password;
+        }
+
+        const updated = await userService.update(selectedUser.id, updateData);
         setUsers((prev) =>
           prev.map((u) => (u.id === selectedUser.id ? updated : u))
         );
@@ -198,13 +207,28 @@ export default function Users() {
           variant: 'success',
         });
       } else {
-        // For creation, we'd need a createUser endpoint
-        toast({
-          title: 'Fonction non disponible',
-          description: 'La création d\'utilisateur nécessite un endpoint API dédié.',
-          variant: 'destructive',
+        // Create new user
+        if (!formData.password || formData.password.length < 8) {
+          setError('Le mot de passe doit contenir au moins 8 caractères');
+          return;
+        }
+
+        const newUser = await userService.create({
+          email: formData.email,
+          fullName: formData.fullName,
+          phone: formData.phone || undefined,
+          password: formData.password,
+          role: formData.role,
+          agencyId: formData.agencyId || undefined,
+          isActive: formData.isActive,
         });
-        return;
+
+        setUsers((prev) => [...prev, newUser]);
+        toast({
+          title: 'Utilisateur créé',
+          description: 'L\'utilisateur a été créé avec succès.',
+          variant: 'success',
+        });
       }
 
       setDialogOpen(false);
@@ -624,6 +648,25 @@ export default function Users() {
                 />
               </div>
               <div className="space-y-2">
+                <Label htmlFor="password">
+                  Mot de passe {!selectedUser && '*'}
+                </Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
+                  required={!selectedUser}
+                  placeholder={selectedUser ? 'Laisser vide pour ne pas changer' : 'Minimum 8 caractères'}
+                  minLength={selectedUser ? undefined : 8}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
                 <Label htmlFor="role">Rôle *</Label>
                 <Select
                   value={formData.role}
@@ -643,28 +686,27 @@ export default function Users() {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="agencyId">Agence</Label>
-              <Select
-                value={formData.agencyId}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, agencyId: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner une agence" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Aucune agence</SelectItem>
-                  {agencies.map((agency) => (
-                    <SelectItem key={agency.id} value={agency.id}>
-                      {agency.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <Label htmlFor="agencyId">Agence</Label>
+                <Select
+                  value={formData.agencyId}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, agencyId: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner une agence" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Aucune agence</SelectItem>
+                    {agencies.map((agency) => (
+                      <SelectItem key={agency.id} value={agency.id}>
+                        {agency.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             {error && (
