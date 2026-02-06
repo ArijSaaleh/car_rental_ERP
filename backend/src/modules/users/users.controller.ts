@@ -1,6 +1,7 @@
-import { Controller, Get, Patch, Param, Body, Delete, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, Delete, UseGuards, Query } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { UsersService } from './users.service';
+import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantContext } from '../../common/decorators/tenant.decorator';
@@ -13,6 +14,13 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 @UseGuards(RolesGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  @Post()
+  @Roles(UserRole.SUPER_ADMIN, UserRole.PROPRIETAIRE, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Create a new user' })
+  create(@Body() createUserDto: CreateUserDto) {
+    return this.usersService.create(createUserDto);
+  }
 
   @Get()
   @Roles(UserRole.SUPER_ADMIN, UserRole.PROPRIETAIRE, UserRole.MANAGER)
@@ -32,8 +40,8 @@ export class UsersController {
   @Patch(':id')
   @Roles(UserRole.SUPER_ADMIN, UserRole.PROPRIETAIRE, UserRole.MANAGER)
   @ApiOperation({ summary: 'Update a user' })
-  update(@Param('id') id: string, @Body() updateData: any) {
-    return this.usersService.update(id, updateData);
+  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+    return this.usersService.update(id, updateUserDto);
   }
 
   @Delete(':id')
