@@ -1,0 +1,788 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                                    String                  @id @default(uuid()) @db.Uuid
+  email                                 String                  @unique
+  hashedPassword                        String                  @map("hashed_password")
+  fullName                              String                  @map("full_name")
+  phone                                 String?
+  role                                  UserRole                @default(AGENT_COMPTOIR)
+  agencyId                              String?                 @map("agency_id") @db.Uuid
+  isActive                              Boolean                 @default(true) @map("is_active")
+  isVerified                            Boolean                 @default(false) @map("is_verified")
+  createdAt                             DateTime                @default(now()) @map("created_at")
+  updatedAt                             DateTime?               @updatedAt @map("updated_at")
+  lastLogin                             DateTime?               @map("last_login")
+  refreshTokenHash                      String?                 @map("refresh_token_hash")
+  refreshTokenExpiresAt                 DateTime?               @map("refresh_token_expires_at")
+  blacklistedTokens                     String[]                @default([]) @map("blacklisted_tokens")
+  ownedAgencies                         Agency[]                @relation("AgencyOwner")
+  auditLogs                             AuditLog[]
+  createdBookings                       Booking[]               @relation("BookingCreatedBy")
+  bookings_bookings_deleted_byTousers   Booking[]               @relation("bookings_deleted_byTousers")
+  signedContracts                       Contract[]              @relation("ContractAgent")
+  contracts_contracts_deleted_byTousers Contract[]              @relation("contracts_deleted_byTousers")
+  customers                             Customer[]
+  invoices                              Invoice[]
+  notifications                         Notification[]
+  payments_payments_deleted_byTousers   Payment[]               @relation("payments_deleted_byTousers")
+  processedPayments                     Payment[]               @relation("PaymentProcessedBy")
+  tax_declarations                      tax_declarations[]
+  agency                                Agency?                 @relation("AgencyUsers", fields: [agencyId], references: [id], onDelete: Cascade)
+  vehicle_price_history                 vehicle_price_history[]
+  vehicles                              Vehicle[]
+
+  @@index([email])
+  @@index([agencyId])
+  @@index([role])
+  @@map("users")
+}
+
+model Agency {
+  id                 String             @id @default(uuid()) @db.Uuid
+  ownerId            String?            @map("owner_id") @db.Uuid
+  parentAgencyId     String?            @map("parent_agency_id") @db.Uuid
+  name               String
+  legalName          String             @map("legal_name")
+  taxId              String             @unique @map("tax_id")
+  email              String             @unique
+  phone              String
+  address            String
+  city               String
+  postalCode         String?            @map("postal_code")
+  country            String             @default("Tunisia")
+  subscriptionPlan   SubscriptionPlan   @default(BASIQUE) @map("subscription_plan")
+  subscriptionStatus String             @default("active") @map("subscription_status")
+  trialEndsAt        DateTime?          @map("trial_ends_at")
+  subscriptionEndsAt DateTime?          @map("subscription_ends_at")
+  isActive           Boolean            @default(true) @map("is_active")
+  logo               String?
+  website            String?
+  timezone           String             @default("Africa/Tunis")
+  currency           String             @default("TND")
+  language           String             @default("fr")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime?          @updatedAt @map("updated_at")
+  owner              User?              @relation("AgencyOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  parentAgency       Agency?            @relation("AgencyBranches", fields: [parentAgencyId], references: [id], onDelete: Cascade)
+  branches           Agency[]           @relation("AgencyBranches")
+  auditLogs          AuditLog[]
+  bookings           Booking[]
+  contracts          Contract[]
+  customers          Customer[]
+  damageReports      DamageReport[]
+  discounts          Discount[]
+  documents          Document[]
+  insurances         Insurance[]
+  invoices           Invoice[]
+  maintenances       Maintenance[]
+  notifications      Notification[]
+  payments           Payment[]
+  pricingRules       PricingRule[]
+  reviews            Review[]
+  tax_declarations   tax_declarations[]
+  users              User[]             @relation("AgencyUsers")
+  vehicles           Vehicle[]
+
+  @@index([ownerId])
+  @@index([parentAgencyId])
+  @@index([taxId])
+  @@index([email])
+  @@index([name])
+  @@map("agencies")
+}
+
+model Vehicle {
+  id                    String                  @id @default(uuid()) @db.Uuid
+  agencyId              String                  @map("agency_id") @db.Uuid
+  licensePlate          String                  @unique @map("license_plate")
+  vin                   String?                 @unique
+  brand                 String
+  model                 String
+  year                  Int
+  color                 String?
+  fuelType              FuelType                @map("fuel_type")
+  transmission          TransmissionType
+  seats                 Int                     @default(5)
+  doors                 Int                     @default(4)
+  mileage               Int                     @default(0)
+  status                VehicleStatus           @default(DISPONIBLE)
+  dailyRate             Decimal                 @map("daily_rate") @db.Decimal(10, 3)
+  depositAmount         Decimal                 @default(0) @map("deposit_amount") @db.Decimal(10, 3)
+  features              String[]                @default([])
+  images                String[]                @default([])
+  thumbnail             String?
+  isActive              Boolean                 @default(true) @map("is_active")
+  purchaseDate          DateTime?               @map("purchase_date")
+  purchasePrice         Decimal?                @map("purchase_price") @db.Decimal(12, 3)
+  registrationDate      DateTime?               @map("registration_date")
+  notes                 String?
+  createdAt             DateTime                @default(now()) @map("created_at")
+  updatedAt             DateTime?               @updatedAt @map("updated_at")
+  deleted_at            DateTime?               @db.Timestamp(6)
+  deleted_by            String?                 @db.Uuid
+  bookings              Booking[]
+  damageReports         DamageReport[]
+  documents             Document[]
+  insurances            Insurance[]
+  maintenances          Maintenance[]
+  vehicle_price_history vehicle_price_history[]
+  agency                Agency                  @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  users                 User?                   @relation(fields: [deleted_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([agencyId])
+  @@index([licensePlate])
+  @@index([brand])
+  @@index([status])
+  @@index([agencyId, status], map: "vehicle_available_idx")
+  @@index([brand, model], map: "vehicle_search_idx")
+  @@index([deleted_at])
+  @@map("vehicles")
+}
+
+model Customer {
+  id                    Int                      @id @default(autoincrement())
+  agencyId              String                   @map("agency_id") @db.Uuid
+  customerType          CustomerType             @default(INDIVIDUAL) @map("customer_type")
+  firstName             String                   @map("first_name")
+  lastName              String                   @map("last_name")
+  email                 String
+  phone                 String
+  cinNumber             String?                  @unique @map("cin_number")
+  cinIssueDate          DateTime?                @map("cin_issue_date") @db.Date
+  cinExpiryDate         DateTime?                @map("cin_expiry_date") @db.Date
+  dateOfBirth           DateTime?                @map("date_of_birth") @db.Date
+  placeOfBirth          String?                  @map("place_of_birth")
+  licenseNumber         String                   @map("license_number")
+  licenseIssueDate      DateTime?                @map("license_issue_date") @db.Date
+  licenseExpiryDate     DateTime?                @map("license_expiry_date") @db.Date
+  licenseCategory       String?                  @map("license_category")
+  address               String?
+  city                  String?
+  postalCode            String?                  @map("postal_code")
+  country               String                   @default("Tunisia")
+  companyName           String?                  @map("company_name")
+  companyTaxId          String?                  @map("company_tax_id")
+  companyRegistryNumber String?                  @map("company_registry_number")
+  isActive              Boolean                  @default(true) @map("is_active")
+  isBlacklisted         Boolean                  @default(false) @map("is_blacklisted")
+  blacklistReason       String?                  @map("blacklist_reason")
+  notes                 String?
+  createdAt             DateTime                 @default(now()) @map("created_at")
+  updatedAt             DateTime?                @updatedAt @map("updated_at")
+  deleted_at            DateTime?                @db.Timestamp(6)
+  deleted_by            String?                  @db.Uuid
+  cin_validated         Boolean?                 @default(false)
+  cin_photo_front       String?
+  cin_photo_back        String?
+  search_vector         Unsupported("tsvector")? @default(dbgenerated("to_tsvector('french'::regconfig, ((((((COALESCE(first_name, ''::text) || ' '::text) || COALESCE(last_name, ''::text)) || ' '::text) || COALESCE(email, ''::text)) || ' '::text) || COALESCE(company_name, ''::text)))"))
+  bookings              Booking[]
+  agency                Agency                   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  users                 User?                    @relation(fields: [deleted_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  damageReports         DamageReport[]
+  documents             Document[]
+  invoices              Invoice[]
+  notifications         Notification[]
+  reviews               Review[]
+
+  @@index([agencyId])
+  @@index([email])
+  @@index([cinNumber])
+  @@index([email, agencyId], map: "customer_duplicate_idx")
+  @@index([agencyId, isBlacklisted], map: "customer_filter_idx")
+  @@index([cin_validated, agencyId], map: "customers_cin_validated_idx")
+  @@index([deleted_at])
+  @@index([search_vector], map: "customers_search_idx", type: Gin)
+  @@map("customers")
+}
+
+model Booking {
+  id                               Int               @id @default(autoincrement())
+  bookingNumber                    String            @unique @map("booking_number")
+  agencyId                         String            @map("agency_id") @db.Uuid
+  vehicleId                        String            @map("vehicle_id") @db.Uuid
+  customerId                       Int               @map("customer_id")
+  createdByUserId                  String            @map("created_by_user_id") @db.Uuid
+  startDate                        DateTime          @map("start_date") @db.Date
+  endDate                          DateTime          @map("end_date") @db.Date
+  pickupDatetime                   DateTime?         @map("pickup_datetime")
+  returnDatetime                   DateTime?         @map("return_datetime")
+  dailyRate                        Decimal           @map("daily_rate") @db.Decimal(10, 3)
+  durationDays                     Int               @map("duration_days")
+  subtotal                         Decimal           @db.Decimal(10, 3)
+  taxAmount                        Decimal           @default(0) @map("tax_amount") @db.Decimal(10, 3)
+  timbreFiscal                     Decimal           @default(1.000) @map("timbre_fiscal") @db.Decimal(10, 3)
+  totalAmount                      Decimal           @map("total_amount") @db.Decimal(10, 3)
+  depositAmount                    Decimal           @default(0) @map("deposit_amount") @db.Decimal(10, 3)
+  status                           BookingStatus     @default(PENDING)
+  paymentStatus                    PaymentStatus     @default(PENDING) @map("payment_status")
+  initialMileage                   Int?              @map("initial_mileage")
+  finalMileage                     Int?              @map("final_mileage")
+  mileageLimit                     Int?              @map("mileage_limit")
+  extraMileageRate                 Decimal?          @map("extra_mileage_rate") @db.Decimal(10, 3)
+  initialFuelLevel                 String?           @map("initial_fuel_level")
+  finalFuelLevel                   String?           @map("final_fuel_level")
+  fuelPolicy                       String            @default("full_to_full") @map("fuel_policy")
+  notes                            String?
+  cancellationReason               String?           @map("cancellation_reason")
+  createdAt                        DateTime          @default(now()) @map("created_at")
+  updatedAt                        DateTime?         @updatedAt @map("updated_at")
+  deleted_at                       DateTime?         @db.Timestamp(6)
+  deleted_by                       String?           @db.Uuid
+  grace_period_minutes             Int?              @default(60)
+  late_fee_per_hour                Decimal?          @db.Decimal(10, 3)
+  actual_return_datetime           DateTime?         @db.Timestamp(6)
+  late_fee_amount                  Decimal?          @default(0) @db.Decimal(10, 3)
+  bookingDiscounts                 BookingDiscount[]
+  agency                           Agency            @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  createdBy                        User              @relation("BookingCreatedBy", fields: [createdByUserId], references: [id])
+  customer                         Customer          @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  users_bookings_deleted_byTousers User?             @relation("bookings_deleted_byTousers", fields: [deleted_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  vehicle                          Vehicle           @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  contract                         Contract?
+  damageReports                    DamageReport[]
+  documents                        Document[]
+  invoices                         Invoice[]
+  payments                         Payment[]
+  review                           Review?
+
+  @@index([agencyId])
+  @@index([vehicleId])
+  @@index([customerId])
+  @@index([startDate])
+  @@index([endDate])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([vehicleId, startDate, endDate], map: "booking_availability_idx")
+  @@index([agencyId, status, startDate], map: "booking_dashboard_idx")
+  @@index([customerId, status], map: "booking_history_idx")
+  @@index([createdAt(sort: Desc)], map: "booking_pagination_idx")
+  @@index([deleted_at])
+  @@map("bookings")
+}
+
+model Contract {
+  id                                Int            @id @default(autoincrement())
+  contractNumber                    String         @unique @map("contract_number")
+  agencyId                          String         @map("agency_id") @db.Uuid
+  bookingId                         Int            @unique @map("booking_id")
+  status                            ContractStatus @default(DRAFT)
+  pdfUrl                            String?        @map("pdf_url")
+  pdfStoragePath                    String?        @map("pdf_storage_path")
+  pdfGeneratedAt                    DateTime?      @map("pdf_generated_at")
+  customerSignatureData             String?        @map("customer_signature_data")
+  customerSignedAt                  DateTime?      @map("customer_signed_at")
+  customerIpAddress                 String?        @map("customer_ip_address")
+  agentSignatureData                String?        @map("agent_signature_data")
+  agentSignedAt                     DateTime?      @map("agent_signed_at")
+  agentId                           String?        @map("agent_id") @db.Uuid
+  termsAndConditions                String         @map("terms_and_conditions")
+  customerAcceptedTerms             Boolean        @default(false) @map("customer_accepted_terms")
+  acceptedTermsAt                   DateTime?      @map("accepted_terms_at")
+  specialClauses                    Json?          @map("special_clauses")
+  timbreFiscalAmount                String         @default("0.600 TND") @map("timbre_fiscal_amount")
+  contractLanguage                  String         @default("fr") @map("contract_language")
+  createdAt                         DateTime       @default(now()) @map("created_at")
+  updatedAt                         DateTime?      @updatedAt @map("updated_at")
+  deleted_at                        DateTime?      @db.Timestamp(6)
+  deleted_by                        String?        @db.Uuid
+  agency                            Agency         @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  agent                             User?          @relation("ContractAgent", fields: [agentId], references: [id])
+  booking                           Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  users_contracts_deleted_byTousers User?          @relation("contracts_deleted_byTousers", fields: [deleted_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  documents                         Document[]
+
+  @@index([agencyId])
+  @@index([bookingId])
+  @@index([status])
+  @@index([agencyId, status, createdAt], map: "contract_lookup_idx")
+  @@index([deleted_at])
+  @@map("contracts")
+}
+
+model Payment {
+  id                               Int            @id @default(autoincrement())
+  paymentReference                 String         @unique @map("payment_reference")
+  agencyId                         String         @map("agency_id") @db.Uuid
+  bookingId                        Int            @map("booking_id")
+  invoiceId                        Int?           @map("invoice_id")
+  paymentMethod                    PaymentMethod  @map("payment_method")
+  paymentType                      PaymentType    @default(RENTAL_FEE) @map("payment_type")
+  amount                           Decimal        @db.Decimal(10, 3)
+  currency                         String         @default("TND")
+  status                           PaymentStatus  @default(PENDING)
+  gateway                          String?
+  gatewayTransactionId             String?        @map("gateway_transaction_id")
+  gatewayResponse                  Json?          @map("gateway_response")
+  gatewayFee                       Decimal        @default(0) @map("gateway_fee") @db.Decimal(10, 3)
+  webhookReceivedAt                DateTime?      @map("webhook_received_at")
+  callbackUrl                      String?        @map("callback_url")
+  cardLast4                        String?        @map("card_last4")
+  cardBrand                        String?        @map("card_brand")
+  description                      String?
+  paymentMetadata                  Json?          @map("payment_metadata")
+  processedByUserId                String?        @map("processed_by_user_id") @db.Uuid
+  paidAt                           DateTime?      @map("paid_at")
+  createdAt                        DateTime       @default(now()) @map("created_at")
+  updatedAt                        DateTime?      @updatedAt @map("updated_at")
+  deleted_at                       DateTime?      @db.Timestamp(6)
+  deleted_by                       String?        @db.Uuid
+  payment_logs                     payment_logs[]
+  agency                           Agency         @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  booking                          Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  users_payments_deleted_byTousers User?          @relation("payments_deleted_byTousers", fields: [deleted_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  invoice                          Invoice?       @relation(fields: [invoiceId], references: [id])
+  processedBy                      User?          @relation("PaymentProcessedBy", fields: [processedByUserId], references: [id])
+
+  @@index([agencyId])
+  @@index([bookingId])
+  @@index([status])
+  @@index([gatewayTransactionId])
+  @@index([agencyId, status, createdAt], map: "payment_reports_idx")
+  @@index([deleted_at])
+  @@map("payments")
+}
+
+model Invoice {
+  id            Int       @id @default(autoincrement())
+  invoiceNumber String    @unique @map("invoice_number")
+  agencyId      String    @map("agency_id") @db.Uuid
+  bookingId     Int       @map("booking_id")
+  customerId    Int       @map("customer_id")
+  issueDate     DateTime  @default(now()) @map("issue_date") @db.Date
+  dueDate       DateTime? @map("due_date") @db.Date
+  subtotal      Decimal   @db.Decimal(10, 3)
+  taxAmount     Decimal   @default(0) @map("tax_amount") @db.Decimal(10, 3)
+  totalAmount   Decimal   @map("total_amount") @db.Decimal(10, 3)
+  paidAmount    Decimal   @default(0) @map("paid_amount") @db.Decimal(10, 3)
+  status        String    @default("unpaid")
+  notes         String?
+  pdfUrl        String?   @map("pdf_url")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime? @updatedAt @map("updated_at")
+  deleted_at    DateTime? @db.Timestamp(6)
+  deleted_by    String?   @db.Uuid
+  agency        Agency    @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  booking       Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  customer      Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  users         User?     @relation(fields: [deleted_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  payments      Payment[]
+
+  @@index([agencyId])
+  @@index([bookingId])
+  @@index([customerId])
+  @@index([status])
+  @@index([deleted_at])
+  @@map("invoices")
+}
+
+model DamageReport {
+  id             Int       @id @default(autoincrement())
+  reportNumber   String    @unique @map("report_number")
+  agencyId       String    @map("agency_id") @db.Uuid
+  vehicleId      String    @map("vehicle_id") @db.Uuid
+  bookingId      Int?      @map("booking_id")
+  customerId     Int?      @map("customer_id")
+  reportType     String    @map("report_type")
+  severity       String
+  description    String
+  damageLocation String?   @map("damage_location")
+  photos         String[]  @default([])
+  repairCost     Decimal?  @map("repair_cost") @db.Decimal(10, 3)
+  insuranceClaim Boolean   @default(false) @map("insurance_claim")
+  status         String    @default("reported")
+  reportedAt     DateTime  @default(now()) @map("reported_at")
+  resolvedAt     DateTime? @map("resolved_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime? @updatedAt @map("updated_at")
+  agency         Agency    @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  booking        Booking?  @relation(fields: [bookingId], references: [id])
+  customer       Customer? @relation(fields: [customerId], references: [id])
+  vehicle        Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([agencyId])
+  @@index([vehicleId])
+  @@index([bookingId])
+  @@map("damage_reports")
+}
+
+model Maintenance {
+  id               Int       @id @default(autoincrement())
+  agencyId         String    @map("agency_id") @db.Uuid
+  vehicleId        String    @map("vehicle_id") @db.Uuid
+  maintenanceType  String    @map("maintenance_type")
+  description      String
+  cost             Decimal   @db.Decimal(10, 3)
+  mileageAtService Int       @map("mileage_at_service")
+  servicedBy       String?   @map("serviced_by")
+  scheduledDate    DateTime? @map("scheduled_date") @db.Date
+  completedDate    DateTime? @map("completed_date") @db.Date
+  nextServiceDate  DateTime? @map("next_service_date") @db.Date
+  status           String    @default("scheduled")
+  notes            String?
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime? @updatedAt @map("updated_at")
+  agency           Agency    @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  vehicle          Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([agencyId])
+  @@index([vehicleId])
+  @@index([status])
+  @@map("maintenances")
+}
+
+model Insurance {
+  id                    Int             @id @default(autoincrement())
+  policyNumber          String          @unique @map("policy_number")
+  agencyId              String          @map("agency_id") @db.Uuid
+  vehicleId             String          @map("vehicle_id") @db.Uuid
+  insuranceCompany      String          @map("insurance_company")
+  insuranceCompanyPhone String?         @map("insurance_company_phone")
+  insuranceCompanyEmail String?         @map("insurance_company_email")
+  insuranceType         InsuranceType   @map("insurance_type")
+  coverageDescription   String?         @map("coverage_description")
+  coverageLimits        Json?           @map("coverage_limits")
+  startDate             DateTime        @map("start_date") @db.Date
+  endDate               DateTime        @map("end_date") @db.Date
+  renewalDate           DateTime?       @map("renewal_date") @db.Date
+  premiumAmount         Decimal         @map("premium_amount") @db.Decimal(10, 3)
+  deductibleAmount      Decimal?        @map("deductible_amount") @db.Decimal(10, 3)
+  coverageAmount        Decimal?        @map("coverage_amount") @db.Decimal(12, 3)
+  status                InsuranceStatus @default(ACTIVE)
+  isActive              Boolean         @default(true) @map("is_active")
+  autoRenew             Boolean         @default(false) @map("auto_renew")
+  policyDocumentUrl     String?         @map("policy_document_url")
+  certificateUrl        String?         @map("certificate_url")
+  beneficiaries         Json?
+  specialConditions     String?         @map("special_conditions")
+  exclusions            String?
+  claimsCount           Int             @default(0) @map("claims_count")
+  totalClaimsAmount     Decimal         @default(0) @map("total_claims_amount") @db.Decimal(12, 3)
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedAt             DateTime?       @updatedAt @map("updated_at")
+  agency                Agency          @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  vehicle               Vehicle         @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([agencyId])
+  @@index([vehicleId])
+  @@index([startDate])
+  @@index([endDate])
+  @@index([status])
+  @@map("insurances")
+}
+
+model Discount {
+  id               Int               @id @default(autoincrement())
+  agencyId         String            @map("agency_id") @db.Uuid
+  code             String
+  name             String
+  description      String?
+  discountType     String            @map("discount_type")
+  value            Decimal           @db.Decimal(10, 3)
+  minDays          Int?              @map("min_days")
+  maxUses          Int?              @map("max_uses")
+  usedCount        Int               @default(0) @map("used_count")
+  startDate        DateTime?         @map("start_date") @db.Date
+  endDate          DateTime?         @map("end_date") @db.Date
+  isActive         Boolean           @default(true) @map("is_active")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime?         @updatedAt @map("updated_at")
+  bookingDiscounts BookingDiscount[]
+  agency           Agency            @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  @@unique([agencyId, code])
+  @@index([agencyId])
+  @@index([code])
+  @@map("discounts")
+}
+
+model BookingDiscount {
+  id           Int      @id @default(autoincrement())
+  bookingId    Int      @map("booking_id")
+  discountId   Int      @map("discount_id")
+  discountName String   @map("discount_name")
+  amount       Decimal  @db.Decimal(10, 3)
+  createdAt    DateTime @default(now()) @map("created_at")
+  booking      Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  discount     Discount @relation(fields: [discountId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+  @@index([discountId])
+  @@map("booking_discounts")
+}
+
+model PricingRule {
+  id          Int       @id @default(autoincrement())
+  agencyId    String    @map("agency_id") @db.Uuid
+  name        String
+  description String?
+  ruleType    String    @map("rule_type")
+  conditions  Json
+  adjustment  Decimal   @db.Decimal(10, 3)
+  priority    Int       @default(0)
+  isActive    Boolean   @default(true) @map("is_active")
+  startDate   DateTime? @map("start_date") @db.Date
+  endDate     DateTime? @map("end_date") @db.Date
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime? @updatedAt @map("updated_at")
+  agency      Agency    @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  @@index([agencyId])
+  @@index([ruleType])
+  @@map("pricing_rules")
+}
+
+model Document {
+  id           Int       @id @default(autoincrement())
+  agencyId     String    @map("agency_id") @db.Uuid
+  documentType String    @map("document_type")
+  name         String
+  description  String?
+  fileUrl      String    @map("file_url")
+  fileSize     Int?      @map("file_size")
+  mimeType     String?   @map("mime_type")
+  bookingId    Int?      @map("booking_id")
+  contractId   Int?      @map("contract_id")
+  customerId   Int?      @map("customer_id")
+  vehicleId    String?   @map("vehicle_id") @db.Uuid
+  uploadedAt   DateTime  @default(now()) @map("uploaded_at")
+  expiryDate   DateTime? @map("expiry_date") @db.Date
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime? @updatedAt @map("updated_at")
+  agency       Agency    @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  booking      Booking?  @relation(fields: [bookingId], references: [id])
+  contract     Contract? @relation(fields: [contractId], references: [id])
+  customer     Customer? @relation(fields: [customerId], references: [id])
+  vehicle      Vehicle?  @relation(fields: [vehicleId], references: [id])
+
+  @@index([agencyId])
+  @@index([documentType])
+  @@map("documents")
+}
+
+model Notification {
+  id         Int       @id @default(autoincrement())
+  agencyId   String    @map("agency_id") @db.Uuid
+  userId     String?   @map("user_id") @db.Uuid
+  customerId Int?      @map("customer_id")
+  type       String
+  title      String
+  message    String
+  isRead     Boolean   @default(false) @map("is_read")
+  readAt     DateTime? @map("read_at")
+  metadata   Json?
+  createdAt  DateTime  @default(now()) @map("created_at")
+  agency     Agency    @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  customer   Customer? @relation(fields: [customerId], references: [id])
+  user       User?     @relation(fields: [userId], references: [id])
+
+  @@index([agencyId])
+  @@index([userId])
+  @@index([customerId])
+  @@map("notifications")
+}
+
+model Review {
+  id         Int       @id @default(autoincrement())
+  agencyId   String    @map("agency_id") @db.Uuid
+  bookingId  Int       @unique @map("booking_id")
+  customerId Int       @map("customer_id")
+  rating     Int
+  comment    String?
+  response   String?
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime? @updatedAt @map("updated_at")
+  agency     Agency    @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  booking    Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  customer   Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([agencyId])
+  @@index([bookingId])
+  @@index([customerId])
+  @@map("reviews")
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  agencyId  String   @map("agency_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  action    String
+  entity    String
+  entityId  String   @map("entity_id")
+  changes   Json?
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+  agency    Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([agencyId])
+  @@index([userId])
+  @@index([entity])
+  @@map("audit_logs")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model payment_logs {
+  id            Int       @id @default(autoincrement())
+  payment_id    Int
+  status        String
+  request       Json?
+  response      Json?
+  http_status   Int?
+  error_code    String?
+  error_message String?
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+  payments      Payment   @relation(fields: [payment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([created_at(sort: Desc)])
+  @@index([payment_id, status], map: "payment_logs_payment_idx")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tax_declarations {
+  id                  Int       @id @default(autoincrement())
+  agency_id           String    @db.Uuid
+  declaration_type    String
+  period_start        DateTime  @db.Date
+  period_end          DateTime  @db.Date
+  total_revenue       Decimal   @db.Decimal(12, 3)
+  taxable_amount      Decimal   @db.Decimal(12, 3)
+  vat_collected       Decimal   @db.Decimal(12, 3)
+  vat_paid            Decimal?  @default(0) @db.Decimal(12, 3)
+  vat_due             Decimal   @db.Decimal(12, 3)
+  declaration_pdf_url String?
+  submitted_at        DateTime? @db.Timestamp(6)
+  submitted_by        String?   @db.Uuid
+  status              String?   @default("draft")
+  fiscal_year         Int
+  notes               String?
+  created_at          DateTime? @default(now()) @db.Timestamp(6)
+  updated_at          DateTime? @default(now()) @db.Timestamp(6)
+  agencies            Agency    @relation(fields: [agency_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users               User?     @relation(fields: [submitted_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([agency_id, period_start, period_end], map: "tax_declarations_unique_period")
+  @@index([agency_id, fiscal_year, status], map: "tax_declarations_agency_idx")
+  @@index([period_start, period_end], map: "tax_declarations_period_idx")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model vehicle_price_history {
+  id             Int       @id @default(autoincrement())
+  vehicle_id     String    @db.Uuid
+  daily_rate     Decimal   @db.Decimal(10, 3)
+  deposit_amount Decimal   @db.Decimal(10, 3)
+  valid_from     DateTime  @db.Timestamp(6)
+  valid_until    DateTime? @db.Timestamp(6)
+  changed_by     String?   @db.Uuid
+  reason         String?
+  created_at     DateTime? @default(now()) @db.Timestamp(6)
+  users          User?     @relation(fields: [changed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  vehicles       Vehicle   @relation(fields: [vehicle_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([vehicle_id, valid_from], map: "vehicle_price_history_vehicle_idx")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  PROPRIETAIRE
+  MANAGER
+  AGENT_COMPTOIR
+  AGENT_PARC
+  CLIENT
+}
+
+enum SubscriptionPlan {
+  BASIQUE
+  STANDARD
+  PREMIUM
+  ENTREPRISE
+}
+
+enum VehicleStatus {
+  DISPONIBLE
+  LOUE
+  MAINTENANCE
+  HORS_SERVICE
+}
+
+enum FuelType {
+  ESSENCE
+  DIESEL
+  HYBRIDE
+  ELECTRIQUE
+}
+
+enum TransmissionType {
+  MANUELLE
+  AUTOMATIQUE
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  PARTIALLY_PAID
+  REFUNDED
+  FAILED
+}
+
+enum ContractStatus {
+  DRAFT
+  PENDING_SIGNATURE
+  SIGNED
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  BANK_TRANSFER
+  PAYMEE
+  CLICTOPAY
+  ONLINE
+}
+
+enum PaymentType {
+  DEPOSIT
+  RENTAL_FEE
+  EXTRA_CHARGES
+  REFUND
+}
+
+enum CustomerType {
+  INDIVIDUAL
+  COMPANY
+}
+
+enum InsuranceType {
+  LIABILITY
+  COMPREHENSIVE
+  COLLISION
+  THEFT
+  FIRE
+  PERSONAL_ACCIDENT
+}
+
+enum InsuranceStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  PENDING_RENEWAL
+}
