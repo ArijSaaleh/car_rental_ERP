@@ -45,7 +45,7 @@ export class CustomersController {
   @ApiResponse({ status: 200, description: 'Customer retrieved successfully' })
   @ApiResponse({ status: 404, description: 'Customer not found' })
   findOne(@Param('id') id: string, @TenantContext() tenant: any) {
-    return this.customersService.findOne(+id, tenant.agencyId);
+    return this.customersService.findOne(+id, tenant);
   }
 
   @Patch(':id')
@@ -58,7 +58,7 @@ export class CustomersController {
     @Body() updateCustomerDto: UpdateCustomerDto,
     @TenantContext() tenant: any,
   ) {
-    return this.customersService.update(+id, tenant.agencyId, updateCustomerDto);
+    return this.customersService.update(+id, tenant, updateCustomerDto);
   }
 
   @Delete(':id')
@@ -67,14 +67,14 @@ export class CustomersController {
   @ApiResponse({ status: 200, description: 'Customer deleted successfully' })
   @ApiResponse({ status: 404, description: 'Customer not found' })
   remove(@Param('id') id: string, @TenantContext() tenant: any) {
-    return this.customersService.remove(+id, tenant.agencyId);
+    return this.customersService.remove(+id, tenant);
   }
 
   @Get(':id/bookings')
   @ApiOperation({ summary: 'Get customer booking history' })
   @ApiResponse({ status: 200, description: 'Bookings retrieved successfully' })
   getBookings(@Param('id') id: string, @TenantContext() tenant: any) {
-    return this.customersService.getBookings(+id, tenant.agencyId);
+    return this.customersService.getBookings(+id, tenant);
   }
 
   @Put(':id/blacklist')
@@ -82,6 +82,6 @@ export class CustomersController {
   @ApiOperation({ summary: 'Toggle customer blacklist status' })
   @ApiResponse({ status: 200, description: 'Blacklist status updated' })
   toggleBlacklist(@Param('id') id: string, @Body() data: any, @TenantContext() tenant: any) {
-    return this.customersService.toggleBlacklist(+id, tenant.agencyId, data.is_blacklisted, data.reason);
+    return this.customersService.toggleBlacklist(+id, tenant, data.is_blacklisted, data.reason);
   }
 }

@@ -13,9 +13,7 @@ import {
   TrendingUp,
   Power,
   Filter,
-  Car,
-  Users,
-  DollarSign
+  Car
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -111,11 +109,11 @@ export default function MyAgencies() {
           try {
             const [vehicles, bookings] = await Promise.all([
               vehicleService.getAll({ agencyId: agency.id }),
-              bookingService.getAll({ agencyId: agency.id }),
+              bookingService.getAll(agency.id),
             ]);
 
-            const vehiclesArray = Array.isArray(vehicles) ? vehicles : vehicles.vehicles || [];
-            const bookingsArray = Array.isArray(bookings) ? bookings : bookings.bookings || [];
+            const vehiclesArray = Array.isArray(vehicles) ? vehicles : [];
+            const bookingsArray = Array.isArray(bookings) ? bookings : [];
 
             return {
               ...agency,

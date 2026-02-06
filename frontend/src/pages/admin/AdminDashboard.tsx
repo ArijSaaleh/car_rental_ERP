@@ -89,7 +89,7 @@ export default function AdminDashboard() {
 
       // Fetch vehicles and bookings for each agency
       const vehiclePromises = agenciesData.map((agency) =>
-        vehicleService.getAll(agency.id).catch(() => [])
+        vehicleService.getAll({ agencyId: agency.id }).catch(() => [])
       );
       const bookingPromises = agenciesData.map((agency) =>
         bookingService.getAll(agency.id).catch(() => [])

@@ -56,20 +56,30 @@ export class CustomersService {
     });
   }
 
-  async findOne(id: number, agencyId: string) {
+  async findOne(id: number, tenant?: any) {
+    const where: any = { id };
+    
+    // If tenant is provided, scope by agency
+    if (tenant) {
+      if (tenant.isOwner) {
+        const agencyIds = await this.getOwnerAgencyIds(tenant.userId);
+        where.agencyId = { in: agencyIds };
+      } else {
+        where.agencyId = tenant.agencyId;
+      }
+    }
+
     return this.prisma.customer.findFirst({
-      where: { id, agencyId },
+      where,
     });
   }
 
-  async update(id: number, agencyId: string, updateCustomerDto: UpdateCustomerDto) {
-    // Verify customer belongs to agency before updating
-    const customer = await this.prisma.customer.findFirst({
-      where: { id, agencyId },
-    });
+  async update(id: number, tenant: any, updateCustomerDto: UpdateCustomerDto) {
+    // Verify customer belongs to user's agency (or one of owner's agencies)
+    const customer = await this.findOne(id, tenant);
 
     if (!customer) {
-      throw new NotFoundException('Customer not found');
+      throw new NotFoundException('Customer not found or does not belong to your agency');
     }
 
     const updateData: any = {
@@ -108,14 +118,12 @@ export class CustomersService {
     });
   }
 
-  async remove(id: number, agencyId: string) {
-    // Verify customer belongs to agency before deleting
-    const customer = await this.prisma.customer.findFirst({
-      where: { id, agencyId },
-    });
+  async remove(id: number, tenant: any) {
+    // Verify customer belongs to user's agency (or one of owner's agencies)
+    const customer = await this.findOne(id, tenant);
 
     if (!customer) {
-      throw new NotFoundException('Customer not found');
+      throw new NotFoundException('Customer not found or does not belong to your agency');
     }
 
     return this.prisma.customer.delete({
@@ -123,12 +131,26 @@ export class CustomersService {
     });
   }
 
-  async getBookings(id: number, agencyId: string) {
+  async getBookings(id: number, tenant: any) {
+    // Verify customer belongs to user's agency (or one of owner's agencies)
+    const customer = await this.findOne(id, tenant);
+
+    if (!customer) {
+      throw new NotFoundException('Customer not found or does not belong to your agency');
+    }
+
+    const where: any = { customerId: id };
+    
+    // Also filter bookings by agency access
+    if (tenant.isOwner) {
+      const agencyIds = await this.getOwnerAgencyIds(tenant.userId);
+      where.agencyId = { in: agencyIds };
+    } else {
+      where.agencyId = tenant.agencyId;
+    }
+
     return this.prisma.booking.findMany({
-      where: { 
-        customerId: id,
-        agencyId 
-      },
+      where,
       include: {
         vehicle: true,
       },
@@ -136,7 +158,14 @@ export class CustomersService {
     });
   }
 
-  async toggleBlacklist(id: number, agencyId: string, blacklisted: boolean, reason?: string) {
+  async toggleBlacklist(id: number, tenant: any, blacklisted: boolean, reason?: string) {
+    // Verify customer belongs to user's agency (or one of owner's agencies)
+    const customer = await this.findOne(id, tenant);
+
+    if (!customer) {
+      throw new NotFoundException('Customer not found or does not belong to your agency');
+    }
+
     return this.prisma.customer.update({
       where: { id },
       data: {

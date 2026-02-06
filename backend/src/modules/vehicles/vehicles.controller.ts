@@ -58,7 +58,7 @@ export class VehiclesController {
   @ApiResponse({ status: 200, description: 'Vehicle retrieved successfully' })
   @ApiResponse({ status: 404, description: 'Vehicle not found' })
   findOne(@Param('id') id: string, @TenantContext() tenant: any) {
-    return this.vehiclesService.findOne(id, tenant.agencyId);
+    return this.vehiclesService.findOne(id, tenant);
   }
 
   @Get(':id/availability')
@@ -89,7 +89,7 @@ export class VehiclesController {
     @Body() updateVehicleDto: UpdateVehicleDto,
     @TenantContext() tenant: any,
   ) {
-    return this.vehiclesService.update(id, tenant.agencyId, updateVehicleDto);
+    return this.vehiclesService.update(id, tenant, updateVehicleDto);
   }
 
   @Delete(':id')
@@ -100,6 +100,6 @@ export class VehiclesController {
   @ApiResponse({ status: 404, description: 'Vehicle not found' })
   @ApiResponse({ status: 403, description: 'Insufficient permissions' })
   remove(@Param('id') id: string, @TenantContext() tenant: any) {
-    return this.vehiclesService.remove(id, tenant.agencyId);
+    return this.vehiclesService.remove(id, tenant);
   }
 }

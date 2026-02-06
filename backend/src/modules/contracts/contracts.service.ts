@@ -67,9 +67,21 @@ export class ContractsService {
     });
   }
 
-  async findOne(id: number, agencyId: string) {
+  async findOne(id: number, tenant?: any) {
+    const where: any = { id };
+    
+    // If tenant is provided, scope by agency
+    if (tenant) {
+      if (tenant.isOwner) {
+        const agencyIds = await this.getOwnerAgencyIds(tenant.userId);
+        where.agencyId = { in: agencyIds };
+      } else {
+        where.agencyId = tenant.agencyId;
+      }
+    }
+
     return this.prisma.contract.findFirst({
-      where: { id, agencyId },
+      where,
       include: {
         booking: {
           include: {
@@ -81,7 +93,14 @@ export class ContractsService {
     });
   }
 
-  async update(id: number, agencyId: string, updateContractDto: any) {
+  async update(id: number, tenant: any, updateContractDto: any) {
+    // Verify contract belongs to user's agency (or one of owner's agencies)
+    const contract = await this.findOne(id, tenant);
+
+    if (!contract) {
+      throw new Error('Contract not found or does not belong to your agency');
+    }
+
     const updateData: any = {};
     
     if (updateContractDto.terms) {
@@ -110,18 +129,25 @@ export class ContractsService {
     });
   }
 
-  async remove(id: number, agencyId: string) {
+  async remove(id: number, tenant: any) {
+    // Verify contract belongs to user's agency (or one of owner's agencies)
+    const contract = await this.findOne(id, tenant);
+
+    if (!contract) {
+      throw new Error('Contract not found or does not belong to your agency');
+    }
+
     return this.prisma.contract.delete({
       where: { id },
     });
   }
 
-  async generatePdf(id: number, agencyId: string) {
-    // Get contract data
-    const contract = await this.findOne(id, agencyId);
+  async generatePdf(id: number, tenant: any) {
+    // Get contract data - automatically validates agency access
+    const contract = await this.findOne(id, tenant);
     
     if (!contract) {
-      throw new Error('Contract not found');
+      throw new Error('Contract not found or does not belong to your agency');
     }
 
     // TODO: Implement actual PDF generation using a library like pdfkit or puppeteer

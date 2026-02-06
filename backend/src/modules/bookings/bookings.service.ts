@@ -89,9 +89,21 @@ export class BookingsService {
     });
   }
 
-  async findOne(id: number, agencyId: string) {
+  async findOne(id: number, tenant?: any) {
+    const where: any = { id };
+    
+    // If tenant is provided, scope by agency
+    if (tenant) {
+      if (tenant.isOwner) {
+        const agencyIds = await this.getOwnerAgencyIds(tenant.userId);
+        where.agencyId = { in: agencyIds };
+      } else {
+        where.agencyId = tenant.agencyId;
+      }
+    }
+
     return this.prisma.booking.findFirst({
-      where: { id, agencyId },
+      where,
       include: {
         vehicle: true,
         customer: true,
@@ -102,11 +114,9 @@ export class BookingsService {
     });
   }
 
-  async update(id: number, agencyId: string, updateData: any) {
-    // Verify booking belongs to agency before updating
-    const booking = await this.prisma.booking.findFirst({
-      where: { id, agencyId },
-    });
+  async update(id: number, tenant: any, updateData: any) {
+    // Verify booking belongs to user's agency (or one of owner's agencies)
+    const booking = await this.findOne(id, tenant);
 
     if (!booking) {
       throw new BadRequestException('Booking not found or does not belong to your agency');
@@ -118,7 +128,14 @@ export class BookingsService {
     });
   }
 
-  async cancel(id: number, agencyId: string, reason: string) {
+  async cancel(id: number, tenant: any, reason: string) {
+    // Verify booking belongs to user's agency (or one of owner's agencies)
+    const booking = await this.findOne(id, tenant);
+
+    if (!booking) {
+      throw new BadRequestException('Booking not found or does not belong to your agency');
+    }
+
     return this.prisma.booking.update({
       where: { id },
       data: {
@@ -128,11 +145,9 @@ export class BookingsService {
     });
   }
 
-  async remove(id: number, agencyId: string) {
-    // Verify booking belongs to agency before deleting
-    const booking = await this.prisma.booking.findFirst({
-      where: { id, agencyId },
-    });
+  async remove(id: number, tenant: any) {
+    // Verify booking belongs to user's agency (or one of owner's agencies)
+    const booking = await this.findOne(id, tenant);
 
     if (!booking) {
       throw new BadRequestException('Booking not found or does not belong to your agency');
@@ -180,14 +195,28 @@ export class BookingsService {
     };
   }
 
-  async confirm(id: number, agencyId: string) {
+  async confirm(id: number, tenant: any) {
+    // Verify booking belongs to user's agency (or one of owner's agencies)
+    const booking = await this.findOne(id, tenant);
+
+    if (!booking) {
+      throw new BadRequestException('Booking not found or does not belong to your agency');
+    }
+
     return this.prisma.booking.update({
       where: { id },
       data: { status: BookingStatus.CONFIRMED },
     });
   }
 
-  async start(id: number, agencyId: string) {
+  async start(id: number, tenant: any) {
+    // Verify booking belongs to user's agency (or one of owner's agencies)
+    const booking = await this.findOne(id, tenant);
+
+    if (!booking) {
+      throw new BadRequestException('Booking not found or does not belong to your agency');
+    }
+
     return this.prisma.booking.update({
       where: { id },
       data: { 
@@ -197,7 +226,14 @@ export class BookingsService {
     });
   }
 
-  async complete(id: number, agencyId: string) {
+  async complete(id: number, tenant: any) {
+    // Verify booking belongs to user's agency (or one of owner's agencies)
+    const booking = await this.findOne(id, tenant);
+
+    if (!booking) {
+      throw new BadRequestException('Booking not found or does not belong to your agency');
+    }
+
     return this.prisma.booking.update({
       where: { id },
       data: { 

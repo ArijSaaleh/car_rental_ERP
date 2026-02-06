@@ -24,19 +24,19 @@ export class BookingsController {
   @Get(':id')
   @ApiOperation({ summary: 'Get a specific booking' })
   findOne(@Param('id') id: string, @TenantContext() tenant: any) {
-    return this.bookingsService.findOne(+id, tenant.agencyId);
+    return this.bookingsService.findOne(+id, tenant);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update a booking' })
   update(@Param('id') id: string, @Body() updateData: any, @TenantContext() tenant: any) {
-    return this.bookingsService.update(+id, tenant.agencyId, updateData);
+    return this.bookingsService.update(+id, tenant, updateData);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a booking' })
   remove(@Param('id') id: string, @TenantContext() tenant: any) {
-    return this.bookingsService.remove(+id, tenant.agencyId);
+    return this.bookingsService.remove(+id, tenant);
   }
 
   @Post('check-availability')
@@ -53,24 +53,24 @@ export class BookingsController {
   @Post(':id/confirm')
   @ApiOperation({ summary: 'Confirm a booking' })
   confirm(@Param('id') id: string, @TenantContext() tenant: any) {
-    return this.bookingsService.confirm(+id, tenant.agencyId);
+    return this.bookingsService.confirm(+id, tenant);
   }
 
   @Post(':id/start')
   @ApiOperation({ summary: 'Start a rental (vehicle pickup)' })
   start(@Param('id') id: string, @TenantContext() tenant: any) {
-    return this.bookingsService.start(+id, tenant.agencyId);
+    return this.bookingsService.start(+id, tenant);
   }
 
   @Post(':id/complete')
   @ApiOperation({ summary: 'Complete a rental (vehicle return)' })
   complete(@Param('id') id: string, @TenantContext() tenant: any) {
-    return this.bookingsService.complete(+id, tenant.agencyId);
+    return this.bookingsService.complete(+id, tenant);
   }
 
   @Post(':id/cancel')
   @ApiOperation({ summary: 'Cancel a booking' })
   cancel(@Param('id') id: string, @Body('reason') reason: string, @TenantContext() tenant: any) {
-    return this.bookingsService.cancel(+id, tenant.agencyId, reason);
+    return this.bookingsService.cancel(+id, tenant, reason);
   }
 }

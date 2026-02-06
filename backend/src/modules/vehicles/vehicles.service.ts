@@ -112,14 +112,20 @@ export class VehiclesService {
   /**
    * Get a single vehicle by ID
    */
-  async findOne(id: string, agencyId?: string) {
+  async findOne(id: string, tenant?: any) {
     const where: any = {
       id,
       deleted_at: null, // Exclude soft-deleted vehicles
     };
     
-    if (agencyId) {
-      where.agencyId = agencyId;
+    // If tenant is provided, scope by agency
+    if (tenant) {
+      if (tenant.isOwner) {
+        const agencyIds = await this.getOwnerAgencyIds(tenant.userId);
+        where.agencyId = { in: agencyIds };
+      } else {
+        where.agencyId = tenant.agencyId;
+      }
     }
 
     const vehicle = await this.prisma.vehicle.findFirst({
@@ -170,13 +176,34 @@ export class VehiclesService {
   /**
    * Update a vehicle
    */
-  async update(id: string, agencyId: string, updateVehicleDto: UpdateVehicleDto) {
-    // Verify vehicle belongs to agency
-    const vehicle = await this.findOne(id, agencyId);
+  async update(id: string, tenant: any, updateVehicleDto: UpdateVehicleDto) {
+    console.log('=== VEHICLE UPDATE DEBUG ===');
+    console.log('Vehicle ID:', id);
+    console.log('Tenant:', JSON.stringify(tenant, null, 2));
+    console.log('Received DTO:', JSON.stringify(updateVehicleDto, null, 2));
+    
+    // Verify vehicle belongs to user's agency (or one of owner's agencies)
+    const vehicle = await this.findOne(id, tenant);
+    console.log('Found vehicle:', vehicle.id);
 
-    return this.prisma.vehicle.update({
+    // Clean data: remove fields that shouldn't be updated
+    const { 
+      id: _id, 
+      createdAt, 
+      updatedAt, 
+      deleted_at,
+      agencyId,
+      agency,
+      bookings,
+      maintenances,
+      ...cleanData 
+    } = updateVehicleDto as any;
+
+    console.log('Clean data to update:', JSON.stringify(cleanData, null, 2));
+
+    const result = await this.prisma.vehicle.update({
       where: { id },
-      data: updateVehicleDto,
+      data: cleanData,
       include: {
         agency: {
           select: {
@@ -186,16 +213,26 @@ export class VehiclesService {
         },
       },
     });
+    
+    console.log('Update successful');
+    return result;
   }
 
   /**
    * Delete a vehicle (soft delete by setting isActive to false)
    */
-  async remove(id: string, agencyId: string) {
+  async remove(id: string, tenant: any) {
+    // Build where clause for agency check
+    const where: any = { id };
+    if (tenant.isOwner) {
+      const agencyIds = await this.getOwnerAgencyIds(tenant.userId);
+      where.agencyId = { in: agencyIds };
+    } else {
+      where.agencyId = tenant.agencyId;
+    }
+
     // Find vehicle including soft-deleted ones for delete operation
-    const vehicle = await this.prisma.vehicle.findFirst({
-      where: { id, agencyId },
-    });
+    const vehicle = await this.prisma.vehicle.findFirst({ where });
     if (!vehicle) {
       throw new NotFoundException('Vehicle not found');
     }

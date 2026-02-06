@@ -133,7 +133,7 @@ export default function AgencyManagement() {
         try {
           const [users, vehicles, bookings] = await Promise.all([
             userService.getAll(agency.id).catch(() => []),
-            vehicleService.getAll(agency.id).catch(() => []),
+            vehicleService.getAll({ agencyId: agency.id }).catch(() => []),
             bookingService.getAll(agency.id).catch(() => []),
           ]);
 

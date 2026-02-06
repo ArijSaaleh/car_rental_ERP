@@ -14,13 +14,13 @@ export class PaymentsController {
   @Get()
   @Roles(UserRole.SUPER_ADMIN, UserRole.PROPRIETAIRE, UserRole.MANAGER, UserRole.AGENT_COMPTOIR)
   findAll(@Query() query: any, @TenantContext() tenant: any) {
-    return this.paymentsService.findAll(tenant.agencyId, query);
+    return this.paymentsService.findAll(tenant, query);
   }
 
   @Get(':id')
   @Roles(UserRole.SUPER_ADMIN, UserRole.PROPRIETAIRE, UserRole.MANAGER, UserRole.AGENT_COMPTOIR)
   findOne(@Param('id') id: string, @TenantContext() tenant: any) {
-    return this.paymentsService.findOne(+id, tenant.agencyId);
+    return this.paymentsService.findOne(+id, tenant);
   }
 
   @Post()
@@ -32,12 +32,12 @@ export class PaymentsController {
   @Patch(':id')
   @Roles(UserRole.SUPER_ADMIN, UserRole.PROPRIETAIRE, UserRole.MANAGER, UserRole.AGENT_COMPTOIR)
   update(@Param('id') id: string, @Body() updatePaymentDto: any, @TenantContext() tenant: any) {
-    return this.paymentsService.update(+id, tenant.agencyId, updatePaymentDto);
+    return this.paymentsService.update(+id, tenant, updatePaymentDto);
   }
 
   @Delete(':id')
   @Roles(UserRole.SUPER_ADMIN, UserRole.PROPRIETAIRE, UserRole.MANAGER)
   remove(@Param('id') id: string, @TenantContext() tenant: any) {
-    return this.paymentsService.remove(+id, tenant.agencyId);
+    return this.paymentsService.remove(+id, tenant);
   }
 }

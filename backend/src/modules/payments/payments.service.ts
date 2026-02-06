@@ -5,6 +5,15 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 export class PaymentsService {
   constructor(private prisma: PrismaService) {}
 
+  // Helper to get all agency IDs for an owner
+  private async getOwnerAgencyIds(userId: string): Promise<string[]> {
+    const agencies = await this.prisma.agency.findMany({
+      where: { ownerId: userId },
+      select: { id: true },
+    });
+    return agencies.map(a => a.id);
+  }
+
   async create(agencyId: string, createPaymentDto: any) {
     return this.prisma.payment.create({
       data: {
@@ -27,8 +36,16 @@ export class PaymentsService {
     });
   }
 
-  async findAll(agencyId: string, filters: any = {}) {
-    const where: any = { agencyId };
+  async findAll(tenant: any, filters: any = {}) {
+    const where: any = {};
+    
+    // If owner, get all payments from owned agencies
+    if (tenant.isOwner) {
+      const agencyIds = await this.getOwnerAgencyIds(tenant.userId);
+      where.agencyId = { in: agencyIds };
+    } else {
+      where.agencyId = tenant.agencyId;
+    }
     
     if (filters.bookingId) {
       where.bookingId = parseInt(filters.bookingId);
@@ -56,9 +73,21 @@ export class PaymentsService {
     });
   }
 
-  async findOne(id: number, agencyId: string) {
+  async findOne(id: number, tenant?: any) {
+    const where: any = { id };
+    
+    // If tenant is provided, scope by agency
+    if (tenant) {
+      if (tenant.isOwner) {
+        const agencyIds = await this.getOwnerAgencyIds(tenant.userId);
+        where.agencyId = { in: agencyIds };
+      } else {
+        where.agencyId = tenant.agencyId;
+      }
+    }
+
     return this.prisma.payment.findFirst({
-      where: { id, agencyId },
+      where,
       include: {
         booking: {
           include: {
@@ -70,7 +99,14 @@ export class PaymentsService {
     });
   }
 
-  async update(id: number, agencyId: string, updatePaymentDto: any) {
+  async update(id: number, tenant: any, updatePaymentDto: any) {
+    // Verify payment belongs to user's agency (or one of owner's agencies)
+    const payment = await this.findOne(id, tenant);
+
+    if (!payment) {
+      throw new Error('Payment not found or does not belong to your agency');
+    }
+
     const updateData: any = {};
     
     if (updatePaymentDto.amount !== undefined) {
@@ -107,7 +143,14 @@ export class PaymentsService {
     });
   }
 
-  async remove(id: number, agencyId: string) {
+  async remove(id: number, tenant: any) {
+    // Verify payment belongs to user's agency (or one of owner's agencies)
+    const payment = await this.findOne(id, tenant);
+
+    if (!payment) {
+      throw new Error('Payment not found or does not belong to your agency');
+    }
+
     return this.prisma.payment.delete({
       where: { id },
     });
