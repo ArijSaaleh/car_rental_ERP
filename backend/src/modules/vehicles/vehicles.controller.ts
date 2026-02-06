@@ -71,11 +71,7 @@ export class VehiclesController {
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
   ) {
-    return this.vehiclesService.checkAvailability(
-      id,
-      new Date(startDate),
-      new Date(endDate),
-    );
+    return this.vehiclesService.checkAvailability(id, new Date(startDate), new Date(endDate));
   }
 
   @Patch(':id')

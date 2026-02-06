@@ -13,7 +13,7 @@ export class VehiclesService {
       where: { ownerId: userId },
       select: { id: true },
     });
-    return agencies.map(a => a.id);
+    return agencies.map((a) => a.id);
   }
 
   /**
@@ -57,7 +57,7 @@ export class VehiclesService {
     const where: any = {
       deleted_at: null, // Exclude soft-deleted vehicles
     };
-    
+
     // If owner, get all vehicles from owned agencies
     if (tenant.isOwner) {
       const agencyIds = await this.getOwnerAgencyIds(tenant.userId);
@@ -117,7 +117,7 @@ export class VehiclesService {
       id,
       deleted_at: null, // Exclude soft-deleted vehicles
     };
-    
+
     // If tenant is provided, scope by agency
     if (tenant) {
       if (tenant.isOwner) {
@@ -181,22 +181,22 @@ export class VehiclesService {
     console.log('Vehicle ID:', id);
     console.log('Tenant:', JSON.stringify(tenant, null, 2));
     console.log('Received DTO:', JSON.stringify(updateVehicleDto, null, 2));
-    
+
     // Verify vehicle belongs to user's agency (or one of owner's agencies)
     const vehicle = await this.findOne(id, tenant);
     console.log('Found vehicle:', vehicle.id);
 
     // Clean data: remove fields that shouldn't be updated
-    const { 
-      id: _id, 
-      createdAt, 
-      updatedAt, 
+    const {
+      id: _id,
+      createdAt,
+      updatedAt,
       deleted_at,
       agencyId,
       agency,
       bookings,
       maintenances,
-      ...cleanData 
+      ...cleanData
     } = updateVehicleDto as any;
 
     console.log('Clean data to update:', JSON.stringify(cleanData, null, 2));
@@ -213,7 +213,7 @@ export class VehiclesService {
         },
       },
     });
-    
+
     console.log('Update successful');
     return result;
   }
@@ -273,22 +273,13 @@ export class VehiclesService {
         },
         OR: [
           {
-            AND: [
-              { startDate: { lte: startDate } },
-              { endDate: { gte: startDate } },
-            ],
+            AND: [{ startDate: { lte: startDate } }, { endDate: { gte: startDate } }],
           },
           {
-            AND: [
-              { startDate: { lte: endDate } },
-              { endDate: { gte: endDate } },
-            ],
+            AND: [{ startDate: { lte: endDate } }, { endDate: { gte: endDate } }],
           },
           {
-            AND: [
-              { startDate: { gte: startDate } },
-              { endDate: { lte: endDate } },
-            ],
+            AND: [{ startDate: { gte: startDate } }, { endDate: { lte: endDate } }],
           },
         ],
       },
@@ -305,7 +296,7 @@ export class VehiclesService {
    */
   async getStatistics(tenant: any) {
     const where: any = { isActive: true };
-    
+
     // If owner, get statistics across all owned agencies
     if (tenant.isOwner) {
       const agencyIds = await this.getOwnerAgencyIds(tenant.userId);
@@ -313,7 +304,7 @@ export class VehiclesService {
     } else {
       where.agencyId = tenant.agencyId;
     }
-    
+
     const [total, available, rented, maintenance, outOfService] = await Promise.all([
       this.prisma.vehicle.count({ where }),
       this.prisma.vehicle.count({ where: { ...where, status: VehicleStatus.DISPONIBLE } }),

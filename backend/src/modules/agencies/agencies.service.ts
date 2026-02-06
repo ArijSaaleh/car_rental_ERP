@@ -76,7 +76,7 @@ export class AgenciesService {
         ...createData,
         ownerId: user.id,
       };
-      
+
       // Create agency
       const agency = await this.prisma.agency.create({
         data,
@@ -85,7 +85,7 @@ export class AgenciesService {
           branches: true,
         },
       });
-      
+
       // If this is a principal agency (no parent), update user's agencyId
       if (!createData.parentAgencyId) {
         await this.prisma.user.update({
@@ -93,10 +93,10 @@ export class AgenciesService {
           data: { agencyId: agency.id },
         });
       }
-      
+
       return agency;
     }
-    
+
     // SUPER_ADMIN can create with any ownerId
     return this.prisma.agency.create({
       data: createData,
@@ -122,7 +122,7 @@ export class AgenciesService {
 
     // Remove fields that shouldn't be updated directly
     const { id: _id, createdAt, updatedAt, owner, branches, _count, ...cleanData } = updateData;
-    
+
     return this.prisma.agency.update({
       where: { id },
       data: cleanData,
@@ -145,7 +145,7 @@ export class AgenciesService {
         throw new ForbiddenException('You do not have permission to delete this agency');
       }
     }
-    
+
     // Soft delete
     return this.prisma.agency.update({
       where: { id },

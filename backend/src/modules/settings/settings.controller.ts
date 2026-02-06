@@ -26,7 +26,11 @@ export class SettingsController {
   @Post()
   @Roles(UserRole.SUPER_ADMIN, UserRole.PROPRIETAIRE)
   @ApiOperation({ summary: 'Update system settings' })
-  updateSettings(@Body() settingsData: any, @TenantContext() tenant: any, @CurrentUser() user: any) {
+  updateSettings(
+    @Body() settingsData: any,
+    @TenantContext() tenant: any,
+    @CurrentUser() user: any,
+  ) {
     const agencyId = user.role === UserRole.SUPER_ADMIN ? null : tenant.agencyId;
     return this.settingsService.updateSettings(agencyId, settingsData);
   }

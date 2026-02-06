@@ -56,13 +56,13 @@ export class UsersService {
 
   async findAll(agencyId: string | null, query: any = {}) {
     const whereClause: any = agencyId ? { agencyId } : {};
-    
+
     // Support role filtering (comma-separated roles)
     if (query.role) {
       const roles = query.role.split(',').map((r: string) => r.trim());
       whereClause.role = { in: roles };
     }
-    
+
     return this.prisma.user.findMany({
       where: whereClause,
       select: {

@@ -43,10 +43,10 @@ export class BookingsController {
   @ApiOperation({ summary: 'Check vehicle availability for booking dates' })
   checkAvailability(@Body() checkData: any, @TenantContext() tenant: any) {
     return this.bookingsService.checkAvailability(
-      checkData.vehicleId, 
-      new Date(checkData.startDate), 
+      checkData.vehicleId,
+      new Date(checkData.startDate),
       new Date(checkData.endDate),
-      tenant.agencyId
+      tenant.agencyId,
     );
   }
 
